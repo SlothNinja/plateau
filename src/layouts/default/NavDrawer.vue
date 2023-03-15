@@ -2,7 +2,7 @@
   <v-navigation-drawer v-model='value'>
     <v-list v-if='cu'>
       <v-list-item>
-        <UserButton v-if='cu' :user='cu' :size='40'> {{name}} </UserButton>
+        <UserButton v-if='cu' :user='cu' :size='32'> {{name}} </UserButton>
       </v-list-item>
     </v-list>
     <v-divider></v-divider>
@@ -21,7 +21,11 @@
 
   const props = defineProps(['modelValue'])
   const emit = defineEmits(['update:modelValue'])
-  const { data, error } = useFetch('https://plateau.fake-slothninja.com:8091/sn/home')
+  let url = '/sn/home'
+  if (process.env.NODE_ENV == 'development') {
+    url = 'https://plateau.fake-slothninja.com:8091' + url
+  }
+  const { data, error } = useFetch(url)
 
   const value = computed({
     get() {
@@ -39,4 +43,5 @@
   const name = computed( () => {
     return get(cu, 'value.name', '')
   })
+
 </script>

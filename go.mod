@@ -6,13 +6,17 @@ require (
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/SlothNinja/client v1.0.2
 	github.com/SlothNinja/log v1.0.6
+	github.com/SlothNinja/plateau/pkg/plateau v1.0.0
 	github.com/SlothNinja/sn/v2 v2.0.15
 	github.com/SlothNinja/user v1.0.26
+	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.8.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	google.golang.org/api v0.94.0
 )
+
+replace github.com/SlothNinja/sn/v2 => ./private/sn
 
 require (
 	cloud.google.com/go v0.104.0 // indirect
@@ -25,7 +29,6 @@ require (
 	cloud.google.com/go/storage v1.26.0 // indirect
 	github.com/SlothNinja/glicko v1.0.0 // indirect
 	github.com/elliotchance/pie/v2 v2.2.0 // indirect
-	github.com/gin-contrib/cors v1.4.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect

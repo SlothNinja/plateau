@@ -1,4 +1,4 @@
-package main
+package plateau
 
 import (
 	"context"
@@ -18,6 +18,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/patrickmn/go-cache"
 	"google.golang.org/api/option"
+)
+
+const (
+	gameKey   = "Game"
+	homePath  = "/home"
+	jsonKey   = "JSON"
+	statusKey = "Status"
+	hParam    = "hid"
+	msgEnter  = "Entering"
+	msgExit   = "Exiting"
 )
 
 const (

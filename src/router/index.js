@@ -14,23 +14,30 @@ const routes = [
         // which is lazy-loaded when the route is visited.
         component: () => import(/* webpackChunkName: "home" */ '@/views/Home.vue'),
       },
-    ],
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    beforeEnter() {
-      window.location.replace('https://plateau.fake-slothninja.com:8091/sn/login')
-    }
-  },
-  {
-    path: '/logout',
-    name: 'Logout',
-    beforeEnter() {
-      window.location.replace('https://plateau.fake-slothninja.com:8091/sn/logout')
-    }
-  },
-
+      {
+        path: '/login',
+        name: 'Login',
+        beforeEnter() {
+          let url = '/sn/login'
+          if (process.env.NODE_ENV == "development") {
+            url = 'https://plateau.fake-slothninja.com:8091' + url
+          }
+          window.location.replace(url)
+        }
+      },
+      {
+        path: '/logout',
+        name: 'Logout',
+        beforeEnter() {
+          let url = '/sn/logout'
+          if (process.env.NODE_ENV == "development") {
+            url = 'https://plateau.fake-slothninja.com:8091' + url
+          }
+          window.location.replace(url)
+        }
+      }
+    ]
+  }
 ]
 
 const router = createRouter({

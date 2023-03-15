@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"math/rand"
-	"net/http"
 	"os"
 	"time"
 
+	"github.com/SlothNinja/plateau/pkg/plateau"
 	"github.com/SlothNinja/sn/v2"
 	"github.com/gin-gonic/gin"
 )
@@ -29,13 +29,13 @@ func main() {
 
 	if sn.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
-		cl := NewClient(ctx)
+		cl := plateau.NewClient(ctx)
 		defer cl.Close()
 		cl.Router.TrustedPlatform = gin.PlatformGoogleAppEngine
 		cl.Router.Run()
 	} else {
 		gin.SetMode(gin.DebugMode)
-		cl := staticRoutes(NewClient(ctx))
+		cl := staticRoutes(plateau.NewClient(ctx))
 		defer cl.Close()
 		cl.Router.SetTrustedProxies(nil)
 		cl.Router.RunTLS(getPort(), "cert.pem", "key.pem")
@@ -46,7 +46,7 @@ func getPort() string {
 	return ":" + os.Getenv("PORT")
 }
 
-func staticRoutes(cl *Client) *Client {
+func staticRoutes(cl *plateau.Client) *plateau.Client {
 	if sn.IsProduction() {
 		return cl
 	}
@@ -64,16 +64,16 @@ func staticRoutes(cl *Client) *Client {
 	return cl
 }
 
-func (cl *Client) homeHandler(c *gin.Context) {
-	cl.Log.Debugf(msgEnter)
-	defer cl.Log.Debugf(msgExit)
-
-	cu, err := cl.User.Current(c)
-	if err != nil {
-		cl.Log.Warningf(err.Error())
-	}
-
-	cl.Log.Debugf("cu: %#v", cu)
-
-	c.JSON(http.StatusOK, gin.H{"cu": cu})
-}
+// func (cl *Client) homeHandler(c *gin.Context) {
+// 	cl.Log.Debugf(msgEnter)
+// 	defer cl.Log.Debugf(msgExit)
+//
+// 	cu, err := cl.User.Current(c)
+// 	if err != nil {
+// 		cl.Log.Warningf(err.Error())
+// 	}
+//
+// 	cl.Log.Debugf("cu: %#v", cu)
+//
+// 	c.JSON(http.StatusOK, gin.H{"cu": cu})
+// }
