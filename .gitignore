@@ -2,6 +2,12 @@
 node_modules
 /dist
 .yarn
+backend
+db
+*.pem
+app.yaml
+gin-bin
+plateau
 
 # local env files
 .env.local

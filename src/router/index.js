@@ -16,6 +16,21 @@ const routes = [
       },
     ],
   },
+  {
+    path: '/login',
+    name: 'Login',
+    beforeEnter() {
+      window.location.replace('https://plateau.fake-slothninja.com:8091/sn/login')
+    }
+  },
+  {
+    path: '/logout',
+    name: 'Logout',
+    beforeEnter() {
+      window.location.replace('https://plateau.fake-slothninja.com:8091/sn/logout')
+    }
+  },
+
 ]
 
 const router = createRouter({

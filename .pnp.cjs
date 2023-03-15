@@ -29,6 +29,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./",\
           "packageDependencies": [\
             ["@mdi/font", "npm:7.0.96"],\
+            ["@vitejs/plugin-basic-ssl", "virtual:3ca5b4c726e90e167647e6ab741d09efed1c2620257fc35ec75a4a091b5f9204d63e908eeffa4ccb2eac45b99733e3ada6149c2ff55af9ebff9ba0156da95fa0#npm:1.0.1"],\
             ["@vitejs/plugin-vue", "virtual:3ca5b4c726e90e167647e6ab741d09efed1c2620257fc35ec75a4a091b5f9204d63e908eeffa4ccb2eac45b99733e3ada6149c2ff55af9ebff9ba0156da95fa0#npm:3.2.0"],\
             ["core-js", "npm:3.29.1"],\
             ["eslint", "npm:8.36.0"],\
@@ -268,6 +269,28 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/@tootallnate-once-npm-2.0.0-e36cf4f140-ad87447820.zip/node_modules/@tootallnate/once/",\
           "packageDependencies": [\
             ["@tootallnate/once", "npm:2.0.0"]\
+          ],\
+          "linkType": "HARD"\
+        }]\
+      ]],\
+      ["@vitejs/plugin-basic-ssl", [\
+        ["npm:1.0.1", {\
+          "packageLocation": "./.yarn/cache/@vitejs-plugin-basic-ssl-npm-1.0.1-54d353eb6f-9060dd9b02.zip/node_modules/@vitejs/plugin-basic-ssl/",\
+          "packageDependencies": [\
+            ["@vitejs/plugin-basic-ssl", "npm:1.0.1"]\
+          ],\
+          "linkType": "SOFT"\
+        }],\
+        ["virtual:3ca5b4c726e90e167647e6ab741d09efed1c2620257fc35ec75a4a091b5f9204d63e908eeffa4ccb2eac45b99733e3ada6149c2ff55af9ebff9ba0156da95fa0#npm:1.0.1", {\
+          "packageLocation": "./.yarn/__virtual__/@vitejs-plugin-basic-ssl-virtual-821c7d1672/0/cache/@vitejs-plugin-basic-ssl-npm-1.0.1-54d353eb6f-9060dd9b02.zip/node_modules/@vitejs/plugin-basic-ssl/",\
+          "packageDependencies": [\
+            ["@vitejs/plugin-basic-ssl", "virtual:3ca5b4c726e90e167647e6ab741d09efed1c2620257fc35ec75a4a091b5f9204d63e908eeffa4ccb2eac45b99733e3ada6149c2ff55af9ebff9ba0156da95fa0#npm:1.0.1"],\
+            ["@types/vite", null],\
+            ["vite", "virtual:3ca5b4c726e90e167647e6ab741d09efed1c2620257fc35ec75a4a091b5f9204d63e908eeffa4ccb2eac45b99733e3ada6149c2ff55af9ebff9ba0156da95fa0#npm:3.2.5"]\
+          ],\
+          "packagePeers": [\
+            "@types/vite",\
+            "vite"\
           ],\
           "linkType": "HARD"\
         }]\
@@ -2354,6 +2377,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageDependencies": [\
             ["plateau", "workspace:."],\
             ["@mdi/font", "npm:7.0.96"],\
+            ["@vitejs/plugin-basic-ssl", "virtual:3ca5b4c726e90e167647e6ab741d09efed1c2620257fc35ec75a4a091b5f9204d63e908eeffa4ccb2eac45b99733e3ada6149c2ff55af9ebff9ba0156da95fa0#npm:1.0.1"],\
             ["@vitejs/plugin-vue", "virtual:3ca5b4c726e90e167647e6ab741d09efed1c2620257fc35ec75a4a091b5f9204d63e908eeffa4ccb2eac45b99733e3ada6149c2ff55af9ebff9ba0156da95fa0#npm:3.2.0"],\
             ["core-js", "npm:3.29.1"],\
             ["eslint", "npm:8.36.0"],\
