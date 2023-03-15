@@ -4,10 +4,8 @@ go 1.19
 
 require (
 	firebase.google.com/go v3.13.0+incompatible
-	github.com/SlothNinja/client v1.0.2
 	github.com/SlothNinja/log v1.0.6
 	github.com/SlothNinja/sn/v2 v2.0.15
-	github.com/SlothNinja/user v1.0.26
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.8.1
