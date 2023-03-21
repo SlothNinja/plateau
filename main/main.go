@@ -6,19 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/SlothNinja/plateau/pkg/plateau"
 	"github.com/SlothNinja/sn/v2"
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	gameKey   = "Game"
-	homePath  = "/home"
-	jsonKey   = "JSON"
-	statusKey = "Status"
-	hParam    = "hid"
-	msgEnter  = "Entering"
-	msgExit   = "Exiting"
 )
 
 func main() {
@@ -29,13 +18,13 @@ func main() {
 
 	if sn.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
-		cl := plateau.NewClient(ctx)
+		cl := NewClient(ctx)
 		defer cl.Close()
 		cl.Router.TrustedPlatform = gin.PlatformGoogleAppEngine
 		cl.Router.Run()
 	} else {
 		gin.SetMode(gin.DebugMode)
-		cl := staticRoutes(plateau.NewClient(ctx))
+		cl := staticRoutes(NewClient(ctx))
 		defer cl.Close()
 		cl.Router.SetTrustedProxies(nil)
 		cl.Router.RunTLS(getPort(), "cert.pem", "key.pem")
@@ -46,7 +35,7 @@ func getPort() string {
 	return ":" + os.Getenv("PORT")
 }
 
-func staticRoutes(cl *plateau.Client) *plateau.Client {
+func staticRoutes(cl *Client) *Client {
 	if sn.IsProduction() {
 		return cl
 	}

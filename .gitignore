@@ -8,7 +8,7 @@ db
 app.yaml
 gin-bin
 private
-web
+/main/main
 
 # local env files
 .env.local

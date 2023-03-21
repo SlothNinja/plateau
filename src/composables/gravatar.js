@@ -13,5 +13,5 @@ export function useGravatar(hash, size, t) {
   if (!includes(gravTypes, t)) {
     t = 'monsterid'
   }
-  return `https://www.gravatar.com/avatar/${hash}?s=${sz}&d=${t.value}&f=y`
+  return `https://www.gravatar.com/avatar/${hash}?s=${sz}&d=${t}&f=y`
 }

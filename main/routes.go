@@ -1,4 +1,4 @@
-package plateau
+package main
 
 import (
 	"context"
@@ -18,16 +18,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/patrickmn/go-cache"
 	"google.golang.org/api/option"
-)
-
-const (
-	gameKey   = "Game"
-	homePath  = "/home"
-	jsonKey   = "JSON"
-	statusKey = "Status"
-	hParam    = "hid"
-	msgEnter  = "Entering"
-	msgExit   = "Exiting"
 )
 
 const (
@@ -56,11 +46,8 @@ const (
 	PlateauCreds = "PLATEAU_CREDS"
 
 	sessionName              = "sng-oauth"
-	invitationPath           = "invitation"
 	invitationsPath          = "invitations"
 	gamePath                 = "game"
-	gamesPath                = "games"
-	gamesIndexPath           = ":status"
 	showPath                 = "show/:id"
 	selectWardPath           = "selectWard/:id"
 	placePiecesPath          = "place/:id"
@@ -83,10 +70,6 @@ const (
 	redoPath                 = "/redo/:id"
 	rollbackPath             = "/rollback/:id"
 	rollforwardPath          = "/rollforward/:id"
-	newPath                  = "/new"
-	dropPath                 = "/drop/:id"
-	acceptPath               = "/accept/:id"
-	detailsPath              = "/details/:id"
 	subPath                  = "/subscribe/:id"
 )
 
@@ -146,8 +129,9 @@ func NewClient(ctx context.Context) *Client {
 
 	if !sn.IsProduction() {
 		config := cors.DefaultConfig()
-		config.AllowOrigins = []string{"https://plateau.fake-slothninja.com:8092"}
+		config.AllowOrigins = []string{"https://plateau.fake-slothninja.com:8092/*"}
 		config.AllowCredentials = true
+		config.AllowWildcard = true
 		// config.AllowOrigins = []string{"http://google.com", "http://facebook.com"}
 		// config.AllowAllOrigins = true
 		snClient.Router.Use(cors.New(config))
@@ -160,7 +144,7 @@ func NewClient(ctx context.Context) *Client {
 		Elo:       sn.NewEloClient(snClient, "elo"),
 		Messaging: newMsgClient(ctx),
 	}
-	return nClient.addRoutes("")
+	return nClient.addRoutes("sn")
 }
 
 // CloseErrors provides struct of errors returned by the multiple clients that make up the tammany service Client
@@ -254,41 +238,42 @@ func (cl *Client) logoutHandler(c *gin.Context) {
 func (cl *Client) addRoutes(prefix string) *Client {
 	////////////////////////////////////////////
 	// Home
-	cl.Router.GET("sn/home", cl.homeHandler)
+	// cl.Router.GET(prefix+"/home", cl.homeHandler)
 
-	// 	////////////////////////////////////////////
-	// 	// Invitation Group
-	// 	inv := cl.Router.Group(invitationPath)
-	//
-	// 	// New
-	// 	inv.GET(newPath, cl.newInvitationHandler)
-	//
-	// 	// Create
-	// 	inv.PUT(newPath, cl.createHandler)
-	//
-	// 	// Drop
-	// 	inv.PUT(dropPath, cl.dropHandler)
-	//
-	// 	// Accept
-	// 	inv.PUT(acceptPath, cl.acceptHandler)
-	//
-	// 	// Details
-	// 	inv.GET(detailsPath, cl.detailsHandler)
-	//
-	// 	/////////////////////////////////////////////
-	// 	// Invitations Group
-	// 	invs := cl.Router.Group(invitationsPath)
-	//
-	// 	// Index
-	// 	invs.POST("", cl.invitationsIndexHandler)
-	//
-	// 	/////////////////////////////////////////////
-	// 	// Games Group
-	// 	gs := cl.Router.Group(gamesPath)
-	//
-	// 	// JSON Data for Index
-	// 	gs.POST(gamesIndexPath, cl.gamesIndex)
-	//
+	////////////////////////////////////////////
+	// Invitation Group
+	inv := cl.Router.Group(prefix + "/invitation")
+
+	// New
+	inv.GET("/new", cl.newInvitationHandler)
+
+	// Create
+	inv.PUT("/new", cl.createHandler)
+
+	// Drop
+	inv.PUT("/drop/:id", cl.dropHandler)
+
+	// Accept
+	inv.PUT("/accept/:id", cl.acceptHandler)
+
+	// Details
+	inv.GET("/details/:id", cl.detailsHandler)
+
+	/////////////////////////////////////////////
+	// Invitations Group
+	// invs := cl.Router.Group(invitationsPath)
+
+	// Index
+	// invs.POST("", cl.invitationsIndexHandler)
+	cl.Router.GET(prefix+"/invitations", cl.invitationsIndexHandler)
+
+	/////////////////////////////////////////////
+	// Games Group
+	gs := cl.Router.Group(prefix + "/games")
+
+	// JSON Data for Index
+	gs.GET("/:status", cl.gamesIndex)
+
 	// 	/////////////////////////////////////////////
 	// 	// Game Group
 	// 	g := cl.Router.Group(gamePath)
@@ -363,10 +348,13 @@ func (cl *Client) addRoutes(prefix string) *Client {
 	// 	g.PUT(subPath, cl.subHandler)
 	//
 	// login
-	cl.Router.GET("sn/login", cl.loginHandler)
+	cl.Router.GET(prefix+"/login", cl.loginHandler)
 	//
 	// logout
-	cl.Router.GET("sn/logout", cl.logoutHandler)
+	cl.Router.GET(prefix+"/logout", cl.logoutHandler)
+
+	// current user
+	cl.Router.GET(prefix+"/cu", cl.cuHandler)
 	//
 	// 	////////////////////////////////////////////
 	// 	// Message Log

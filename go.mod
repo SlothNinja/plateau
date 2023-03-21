@@ -3,13 +3,17 @@ module github.com/SlothNinja/plateau
 go 1.19
 
 require (
+	cloud.google.com/go/datastore v1.8.0
 	firebase.google.com/go v3.13.0+incompatible
+	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/SlothNinja/log v1.0.6
-	github.com/SlothNinja/sn/v2 v2.0.15
+	github.com/SlothNinja/sn/v2 v2.0.16
+	github.com/elliotchance/pie/v2 v2.2.0
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.8.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
+	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
 	google.golang.org/api v0.94.0
 )
 
@@ -19,13 +23,11 @@ require (
 	cloud.google.com/go v0.104.0 // indirect
 	cloud.google.com/go/cloudtasks v1.4.0 // indirect
 	cloud.google.com/go/compute v1.9.0 // indirect
-	cloud.google.com/go/datastore v1.8.0 // indirect
 	cloud.google.com/go/firestore v1.6.1 // indirect
 	cloud.google.com/go/iam v0.3.0 // indirect
 	cloud.google.com/go/logging v1.5.0 // indirect
 	cloud.google.com/go/storage v1.26.0 // indirect
 	github.com/SlothNinja/glicko v1.0.0 // indirect
-	github.com/elliotchance/pie/v2 v2.2.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
@@ -51,7 +53,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90 // indirect
 	golang.org/x/exp v0.0.0-20220321173239-a90fa8a75705 // indirect
 	golang.org/x/net v0.0.0-20220826154423-83b083e8dc8b // indirect
 	golang.org/x/oauth2 v0.0.0-20220822191816-0ebed06d0094 // indirect

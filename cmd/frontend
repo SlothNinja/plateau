@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+cd ..
+yarn dev --host plateau.fake-slothninja.com --port 8092 --https true

@@ -1,19 +1,19 @@
 <template>
-  <div>
-    <v-avatar color='black' :size='size' class='mr-1'>
-      <v-avatar :image='path' :size='0.9*size'></v-avatar>
-    </v-avatar>
-    <slot>
-    User Name
-    </slot>
-  </div>
+  <Avatar
+      :color='color'
+      :user='user'
+      :size='size'
+      @click="toUser"
+      style="cursor:pointer"
+      >
+      <slot></slot>
+  </Avatar>
 </template>
 
 <script setup>
-
-import  { useGravatar } from '@/composables/gravatar.js'
-import { computed } from 'vue'
-import { get } from 'lodash'
+import Avatar from '@/components/Avatar'
+import { useRouter } from 'vue-router'
+import _get from 'lodash/get'
 
 const props = defineProps({
   color: { type: String, default: 'black' },
@@ -21,6 +21,12 @@ const props = defineProps({
   size: { type: Number, required: true },
 })
 
-const path = computed( () => useGravatar(props.user.emailHash, props.size, props.user.gravType ))
+const router = useRouter()
 
+function toUser() {
+  let id = _get(props.user, 'id', -1)
+  if (id != -1) {
+    router.push({ name: 'User', params: { id: id } })
+  }
+}
 </script>
