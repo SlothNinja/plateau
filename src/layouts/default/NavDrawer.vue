@@ -2,7 +2,7 @@
   <v-navigation-drawer v-model='value'>
     <v-list v-if='cu'>
       <v-list-item>
-        <UserButton v-if='cu' :user='cu' :size='32'> {{name}} </UserButton>
+        <UserButton v-if='cu' :user='cu' :size='32' />
       </v-list-item>
     </v-list>
     <v-divider></v-divider>
@@ -24,7 +24,7 @@ import UserButton from '@/components/UserButton.vue'
 import { cuKey } from '@/composables/keys.js'
 import { get } from 'lodash'
 
-const props = defineProps(['modelValue', 'cu'])
+const props = defineProps(['modelValue'])
 const emit = defineEmits(['update:modelValue'])
 
 const value = computed({

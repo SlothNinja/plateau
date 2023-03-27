@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	log2 "log"
+	"math/rand"
 	"net/http"
 	"os"
 	"time"
@@ -47,8 +48,6 @@ const (
 
 	sessionName              = "sng-oauth"
 	invitationsPath          = "invitations"
-	gamePath                 = "game"
-	showPath                 = "show/:id"
 	selectWardPath           = "selectWard/:id"
 	placePiecesPath          = "place/:id"
 	removeImmigrantPath      = "remove/:id"
@@ -59,7 +58,6 @@ const (
 	takeChipPath             = "takeChip/:id"
 	deputyTakeChipPath       = "deputyTakeChip/:id"
 	assignOfficesPath        = "assignOffices/:id"
-	bidPath                  = "bid/:id"
 	actionsFinishPath        = "actionsFinish/:id"
 	takeChipFinishPath       = "takeChipFinish/:id"
 	assignOfficesFinishPath  = "assignOfficesFinish/:id"
@@ -100,6 +98,7 @@ type Client struct {
 	MLog      *sn.MLogClient
 	Elo       *sn.EloClient
 	Messaging *messaging.Client
+	Rand      rand.Source
 }
 
 // NewClient returns a new Client for the plateau service
@@ -274,13 +273,15 @@ func (cl *Client) addRoutes(prefix string) *Client {
 	// JSON Data for Index
 	gs.GET("/:status", cl.gamesIndex)
 
-	// 	/////////////////////////////////////////////
-	// 	// Game Group
-	// 	g := cl.Router.Group(gamePath)
-	//
-	// 	// Show
-	// 	g.GET(showPath, cl.showHandler)
-	//
+	/////////////////////////////////////////////
+	// Game Group
+	g := cl.Router.Group(prefix + "/game")
+
+	// Show
+	g.GET("/show/:id", cl.showHandler)
+
+	// Place Bid
+	g.PUT("bid/:id", cl.bidHandler)
 	// 	// // Select Ward
 	// 	// g.PUT(selectWardPath, cl.selectWard)
 	//
@@ -311,9 +312,7 @@ func (cl *Client) addRoutes(prefix string) *Client {
 	// 	// Assign Offices
 	// 	g.PUT(assignOfficesPath, cl.assignOfficesHandler)
 	//
-	// 	// Place Bid
-	// 	g.PUT(bidPath, cl.bidHandler)
-	//
+
 	// 	// Actions Finish
 	// 	g.PUT(actionsFinishPath, cl.actionsFinishTurnHandler)
 	//

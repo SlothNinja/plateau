@@ -29,7 +29,7 @@ func (cl *Client) createHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	cu, err := cl.User.Current(c)
+	cu, err := cl.requireLogin(c)
 	if err != nil {
 		sn.JErr(c, err)
 		return
@@ -47,10 +47,13 @@ func (cl *Client) createHandler(c *gin.Context) {
 		sn.JErr(c, err)
 		return
 	}
+	t := time.Now()
 	inv.Key = newInvitationKey(ks[0].ID)
+	inv.CreatedAt, inv.UpdatedAt = t, t
 
 	_, err = cl.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
 		m := sn.NewMLog(inv.Key.ID)
+		m.UpdatedAt, m.CreatedAt = t, t
 		ks := []*datastore.Key{inv.Key, m.Key}
 		es := []interface{}{inv, m}
 
@@ -238,30 +241,26 @@ func (cl *Client) detailsHandler(c *gin.Context) {
 		return
 	}
 
-	cu, err := cl.User.Current(c)
+	cu, err := cl.requireLogin(c)
 	if err != nil {
 		sn.JErr(c, err)
 		return
 	}
 
-	ks := make([]*datastore.Key, len(inv.UserKeys))
-	copy(ks, inv.UserKeys)
+	uids := make([]sn.UID, len(inv.UserIDS))
+	copy(uids, inv.UserIDS)
 
-	if hasKey := pie.Any(inv.UserKeys, func(k *datastore.Key) bool { return k.Equal(cu.Key) }); !hasKey {
-		ks = append(ks, cu.Key)
+	if hasUID := pie.Any(inv.UserIDS, func(id sn.UID) bool { return id == cu.ID() }); !hasUID {
+		uids = append(uids, cu.ID())
 	}
 
-	for i, k := range ks {
-		cl.Log.Debugf("ks[%d]: %#v", i, k)
-	}
-
-	elos, err := cl.Elo.GetByUserKeys(c, ks)
+	elos, err := cl.Elo.GetMulti(c, uids)
 	if err != nil {
 		sn.JErr(c, err)
 		return
 	}
 
-	ustats, err := cl.getUStats(c, ks...)
+	ustats, err := cl.getUStats(c, uids...)
 	if err != nil {
 		sn.JErr(c, err)
 		return
@@ -296,7 +295,7 @@ func (cl *Client) acceptHandler(c *gin.Context) {
 		return
 	}
 
-	cu, err := cl.User.Current(c)
+	cu, err := cl.requireLogin(c)
 	if err != nil {
 		sn.JErr(c, err)
 		return
@@ -333,10 +332,11 @@ func (cl *Client) acceptHandler(c *gin.Context) {
 	}
 
 	g := newGame(inv.Key.ID, 0)
-	g.Header = inv.Header
+	g.Header = inv.Header.Header
 	g.start()
 
 	_, err = cl.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
+		cl.Log.Debugf("inv.Key: %s", inv.Key)
 		err = tx.Delete(inv.Key)
 		if err != nil {
 			return err
@@ -366,7 +366,7 @@ func (cl *Client) acceptHandler(c *gin.Context) {
 			`<div>Game: %d has started.</div>
 			<div></div>
 			<div><strong>%s</strong> is start player.</div>`,
-			g.id(), g.NameFor(cp.ID)),
+			g.id(), g.NameFor(cp.id)),
 	})
 }
 
@@ -380,7 +380,7 @@ func (cl *Client) dropHandler(c *gin.Context) {
 		return
 	}
 
-	cu, err := cl.User.Current(c)
+	cu, err := cl.requireLogin(c)
 	if err != nil {
 		sn.JErr(c, err)
 		return

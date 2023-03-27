@@ -1,7 +1,7 @@
 <template>
   <v-container fluid >
     <v-card>
-      <CardStamp title='Le Plateu' :subtitle="`${status} Games`" :src='board36' width='74' />
+      <CardStamp title='Le Plateu' :subtitle="`${_capitalize(status)} Games`" :src='board36' width='74' />
       <v-card-text>
         <v-data-table
             v-if='items'
@@ -14,17 +14,13 @@
               {{item.title}}
             </template>
           <template v-slot:item.creator='{ item }'>
-            <UserButton :user='useCreator(item.raw)' :size='size'>
-            {{useCreator(item.raw).name}}
-            </UserButton>
+            <UserButton :user='useCreator(item.raw)' :size='size' />
           </template>
           <template v-slot:item.pRounds='{ item }'>
             {{item.raw.numPlayers}} : {{item.raw.roundsPerPlayer}}
           </template>
           <template v-slot:item.players="{ item }">
-            <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item.raw)' :key='user.id' >
-            {{user.name}}
-            </UserButton>
+            <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item.raw)' :key='user.id' />
           </template>
         </v-data-table>
         <div v-else>No Invitations</div>
@@ -64,7 +60,7 @@ const router = useRouter()
 
 
 // fetch game headers from server
-const status = computed(() => _capitalize(_get(route, 'params.status', '')))
+const status = computed(() => _get(route, 'params.status', ''))
 const url = computed(() => `/sn/games/${status.value}`)
 const { data, error } = useFetch(url.value)
 

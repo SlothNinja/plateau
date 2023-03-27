@@ -1,7 +1,5 @@
 <template>
-  <div id='board'>
-    <v-img :src='board36' ></v-img>
-  </div>
+  <v-img :src='board36' ></v-img>
 </template>
 
 <script setup>

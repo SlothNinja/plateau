@@ -6,7 +6,6 @@
       @click="toUser"
       style="cursor:pointer"
       >
-      <slot></slot>
   </Avatar>
 </template>
 

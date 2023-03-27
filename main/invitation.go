@@ -14,7 +14,7 @@ import (
 const invitationKind = "Invitation"
 
 type invitation struct {
-	Key *datastore.Key `datastore:"__key__"`
+	Key *datastore.Key `json:"-" datastore:"__key__"`
 	Header
 }
 
@@ -28,23 +28,23 @@ func (inv *invitation) MarshalJSON() ([]byte, error) {
 		Type             sn.Type          `json:"type"`
 		Title            string           `json:"title"`
 		NumPlayers       int              `json:"numPlayers"`
-		CreatorID        int64            `json:"creatorId"`
+		CreatorID        sn.UID           `json:"creatorId"`
 		CreatorKey       *datastore.Key   `json:"creatorKey"`
 		CreatorName      string           `json:"creatorName"`
 		CreatorEmailHash string           `json:"creatorEmailHash"`
 		CreatorGravType  string           `json:"creatorGravType"`
-		UserIDS          []int64          `json:"userIds"`
+		UserIDS          []sn.UID         `json:"userIds"`
 		UserKeys         []*datastore.Key `json:"userKeys"`
 		UserNames        []string         `json:"userNames"`
 		UserEmailHashes  []string         `json:"userEmailHashes"`
 		UserGravTypes    []string         `json:"userGravTypes"`
-		RoundsPerPlayer  int              `json:"roundsPerPlayer"`
+		HandsPerPlayer   int              `json:"handsPerPlayer"`
 		CreatedAt        time.Time        `json:"createdAt"`
 		UpdatedAt        time.Time        `json:"updatedAt"`
 		LastUpdated      string           `json:"lastUpdated"`
 		Public           bool             `json:"public"`
 	}{
-		ID:               inv.ID(),
+		ID:               inv.id(),
 		Type:             inv.Type,
 		Title:            inv.Title,
 		NumPlayers:       inv.NumPlayers,
@@ -58,7 +58,7 @@ func (inv *invitation) MarshalJSON() ([]byte, error) {
 		UserNames:        inv.UserNames,
 		UserEmailHashes:  inv.UserEmailHashes,
 		UserGravTypes:    inv.UserGravTypes,
-		RoundsPerPlayer:  opt.RoundsPerPlayer,
+		HandsPerPlayer:   opt.HandsPerPlayer,
 		CreatedAt:        inv.CreatedAt,
 		UpdatedAt:        inv.UpdatedAt,
 		LastUpdated:      sn.LastUpdated(inv.UpdatedAt),
@@ -66,7 +66,7 @@ func (inv *invitation) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (inv *invitation) ID() int64 {
+func (inv *invitation) id() int64 {
 	if inv == nil || inv.Key == nil {
 		return 0
 	}
@@ -79,24 +79,6 @@ func newInvitation(id int64) *invitation {
 
 func newInvitationKey(id int64) *datastore.Key {
 	return datastore.IDKey(invitationKind, id, rootKey(id))
-}
-
-func (inv *invitation) Load(ps []datastore.Property) error {
-	return datastore.LoadStruct(inv, ps)
-}
-
-func (inv *invitation) Save() ([]datastore.Property, error) {
-	t := time.Now()
-	if inv.CreatedAt.IsZero() {
-		inv.CreatedAt = t
-	}
-	inv.UpdatedAt = t
-	return datastore.SaveStruct(inv)
-}
-
-func (inv *invitation) LoadKey(k *datastore.Key) error {
-	inv.Key = k
-	return nil
 }
 
 func defaultInvitation() (*invitation, error) {
@@ -132,38 +114,12 @@ func (cl *Client) getInvitation(c *gin.Context) (*invitation, error) {
 	return inv, err
 }
 
-// func toInvitation(h *sn.Header) (*invitation, error) {
-// 	opts, err := getOptions(h.OptString)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-//
-// 	return &invitation{
-// 		ID:               h.ID(),
-// 		AdmiralVariant:   opts.AdmiralVariant,
-// 		BasicGame:        opts.BasicGame,
-// 		Title:            h.Title,
-// 		Public:           len(h.PasswordHash) == 0,
-// 		Status:           h.Status,
-// 		CreatorID:        h.CreatorID,
-// 		CreatorName:      h.CreatorName,
-// 		CreatorEmailHash: h.CreatorEmailHash,
-// 		CreatorGravType:  h.CreatorGravType,
-// 		NumPlayers:       h.NumPlayers,
-// 		UserIDS:          h.UserIDS,
-// 		UserNames:        h.UserNames,
-// 		UserEmailHashes:  h.UserEmailHashes,
-// 		UserGravTypes:    h.UserGravTypes,
-// 		LastUpdated:      sn.LastUpdated(h.UpdatedAt),
-// 	}, nil
-// }
-
 type Options struct {
-	RoundsPerPlayer int `json:"roundsPerPlayer"`
+	HandsPerPlayer int `json:"handsPerPlayer"`
 }
 
-func options(rounds int) (string, error) {
-	options := Options{RoundsPerPlayer: rounds}
+func options(hands int) (string, error) {
+	options := Options{HandsPerPlayer: hands}
 
 	bs, err := json.Marshal(options)
 	if err != nil {

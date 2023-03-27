@@ -8,7 +8,7 @@
 
     <DefaultNavDrawer v-model='nav' />
 
-    <DefaultSnack />
+    <DefaultSnack v-model:open='snackbar.open' v-model:message='snackbar.message' />
   </v-app>
 </template>
 
@@ -29,7 +29,18 @@ const snackbar = ref({
 
 provide( snackKey, snackbar )
 
-const open = ref(false)
+// function clearMessage () {
+//   console.log('clearMessage')
+//   if (_get(snackbar, 'value.open', false) == false) {
+//     snackbar.value.message = ''
+//   }
+// }
+
+// import { ref, inject } from 'vue'
+
+// const snackbar = inject(snackKey)
+
+// const open = ref(false)
 
 </script>
 

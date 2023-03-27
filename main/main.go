@@ -10,10 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func main() {
-	// Seed random number generator
-	rand.Seed(time.Now().UnixNano())
+var myRandomSource = rand.NewSource(time.Now().UnixNano())
 
+func main() {
 	ctx := context.Background()
 
 	if sn.IsProduction() {

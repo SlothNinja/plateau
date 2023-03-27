@@ -3,13 +3,13 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/sn/v2"
+	"github.com/elliotchance/pie/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,7 +24,7 @@ type game struct {
 	Key          *datastore.Key `datastore:"__key__"`
 	EncodedState string         `datastore:",noindex"`
 	EncodedLog   string         `datastore:",noindex"`
-	Header
+	sn.Header
 	glog
 	state
 }
@@ -45,7 +45,7 @@ func newGameKey(id, rev int64) *datastore.Key {
 	return datastore.NameKey(gameKind, fmt.Sprintf("%d-%d", id, rev), rootKey(id))
 }
 
-func cachedKey(id, rev, uid int64) *datastore.Key {
+func cachedKey(id, rev int64, uid sn.UID) *datastore.Key {
 	return datastore.IDKey(gameKind, rev, cachedRootKey(id, uid))
 }
 
@@ -73,17 +73,22 @@ func (g *game) rev() int64 {
 }
 
 func (g *game) Load(ps []datastore.Property) error {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
 	err := datastore.LoadStruct(g, ps)
 	if err != nil {
 		return err
 	}
 
+	sn.Debugf("g.EncodedState: %#v", g.EncodedState)
 	var s state
 	err = json.Unmarshal([]byte(g.EncodedState), &s)
 	if err != nil {
 		return err
 	}
 	g.state = s
+	sn.Debugf("g.state: %#v", g.state)
 
 	var l glog
 	err = json.Unmarshal([]byte(g.EncodedLog), &l)
@@ -95,11 +100,14 @@ func (g *game) Load(ps []datastore.Property) error {
 }
 
 func (g *game) Save() ([]datastore.Property, error) {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
 
 	encodedState, err := json.Marshal(g.state)
 	if err != nil {
 		return nil, err
 	}
+
 	g.EncodedState = string(encodedState)
 
 	encodedLog, err := json.Marshal(g.glog)
@@ -117,19 +125,32 @@ func (g *game) Save() ([]datastore.Property, error) {
 	return datastore.SaveStruct(g)
 }
 
+type jGame struct {
+	ID     int64     `json:"id"`
+	Rev    int64     `json:"rev"`
+	Hands  int       `json:"hands"`
+	Header sn.Header `json:"header"`
+	State  state     `json:"state"`
+	GLog   glog      `json:"glog"`
+}
+
 func (g *game) MarshalJSON() ([]byte, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	dm := g.Header.data()
-	dm = g.state.dmap(dm)
+	opt, err := getOptions(g.OptString)
+	if err != nil {
+		return nil, err
+	}
 
-	dm["key"] = g.Key
-	dm["id"] = g.id()
-	dm["log"] = g.glog
-	dm["rev"] = g.rev()
-
-	return json.Marshal(dm)
+	return json.Marshal(jGame{
+		ID:     g.id(),
+		Rev:    g.rev(),
+		Hands:  opt.HandsPerPlayer * g.NumPlayers,
+		Header: g.Header,
+		State:  g.state,
+		GLog:   g.glog,
+	})
 }
 
 // // CurrentWard returns the ward currently conducting an election.
@@ -183,132 +204,63 @@ func (g *game) start() {
 	defer sn.Debugf(msgExit)
 
 	g.Status = sn.Running
-	g.Phase = setup
+	g.Phase = setupPhase
 
 	g.addNewPlayers()
-	g.randomTurnOrder()
+	g.randomSeats()
 
-	// g.setYear(1)
-	// g.wards = newWards()
-	// g.setMoveFromWard(nil)
-	// g.setCurrentWard(nil)
-	// g.bag = defaultBag()
-	// g.castleGarden = make(nationals)
-	// g.immigration()
+	// set initial dealer
+	if p := pie.First(g.players); p != nil {
+		g.dealerPID = p.id
+	}
+
+	g.deck = deckFor(g.NumPlayers)
 
 	g.newEntry(message{
 		"template": "start-game",
 		"pids":     pids(g.players),
 	})
 
-	// g.castleGardenPhase(g.currentPlayer())
-	g.startActionsPhase()
+	g.Phase = dealPhase
+
+	// Standard Round field of header used to track hands/rounds of game
+	g.Round = 1
+
+	g.deal()
+	g.startBidPhase()
 }
 
-// func (g *game) startNextTerm(cp *player) {
-// 	g.setYear(g.Year() + 1)
-//
-// 	for _, p := range g.players {
-// 		p.reset()
-// 		p.LockedUp = 0
-// 	}
-//
-// 	g.beginningOfTurnReset()
-// 	g.unlockWards()
-//
-// 	g.immigration()
-// 	g.castleGardenPhase(cp)
-// 	g.startActionsPhase()
-// }
-//
-// func (g *game) unlockWards() {
-// 	for _, w := range g.activeWards() {
-// 		w.LockedUp = false
-// 	}
-// }
-
-func (g *game) startActionsPhase() {
-	g.Phase = actions
+func (g *game) dealer() *player {
+	return g.playerByPID(g.dealerPID)
 }
 
-// func (g *game) startElections(c *gin.Context, cp *player) bool {
-// 	sn.Debugf(msgEnter)
-// 	defer sn.Debugf(msgExit)
-//
-// 	g.Phase = elections
-// 	g.emptyGarden()
-// 	g.beginningOfTurnReset()
-//
-// 	for _, p := range g.players {
-// 		p.reset()
-// 	}
-//
-// 	for _, w := range g.activeWards() {
-// 		w.Resolved = false
-// 	}
-//
-// 	return g.continueElections(c)
-// }
-//
-// func (g *game) candidates() []*player {
-// 	var cs []*player
-// 	for _, p := range g.players {
-// 		if p.Candidate {
-// 			cs = append(cs, p)
-// 		}
-// 	}
-// 	return cs
-// }
-
-func (g *game) newTurnOrder(c *gin.Context) {
-	//	if g.mayor() != nil {
-	//		index, _ := g.indexFor(g.mayor())
-	//		playersTwice := append(g.players, g.players...)
-	//		newOrder := playersTwice[index : index+g.NumPlayers]
-	//		g.players = newOrder
-	//	}
+func (g *game) forehand() *player {
+	return g.nextPlayer(g.dealer())
 }
 
-func (g *game) setCurrentPlayer(p *player) {
-	if len(g.players) < 1 {
-		return
-	}
-	g.CPIDS = []sn.PID{g.players[0].ID}
+func (g *game) startBidPhase() {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
+	g.Phase = bidPhase
+	g.setCurrentPlayers(g.forehand())
 }
 
-func (g *game) randomTurnOrder() {
-	rand.Shuffle(len(g.players), func(i, j int) {
-		g.players[i], g.players[j] = g.players[j], g.players[i]
-	})
-	g.setCurrentPlayer(g.players[0])
+func (g *game) randomSeats() {
+	g.players = pie.Shuffle(g.players, myRandomSource)
 
-	g.OrderIDS = make([]sn.PID, len(g.players))
-	for i, p := range g.players {
-		g.OrderIDS[i] = p.ID
-	}
+	// reflect player order game state to header
+	g.OrderIDS = pie.Map(g.players, func(p *player) sn.PID { return p.id })
 }
 
 // currentPlayers returns the players whose turn it is.
 func (g *game) currentPlayers() []*player {
-	l := len(g.CPIDS)
-	if l < 1 {
-		return nil
-	}
-
-	ps := make([]*player, l)
-	for i, id := range g.CPIDS {
-		ps[i] = g.playerByPID(id)
-	}
-	return ps
+	return pie.Map(g.CPIDS, func(pid sn.PID) *player { return g.playerByPID(pid) })
 }
 
 // currentPlayer returns the player whose turn it is.
 func (g *game) currentPlayer() *player {
-	cps := g.currentPlayers()
-	if len(cps) == 0 {
-		return nil
-	}
-	return cps[0]
+	return pie.First(g.currentPlayers())
 }
 
 // Returns player asssociated with user if such player is current player
@@ -327,27 +279,22 @@ func (g *game) currentPlayerFor(u *sn.User) *player {
 }
 
 func (g *game) setCurrentPlayers(ps ...*player) {
-	g.CPIDS = nil
-	if len(ps) < 1 {
-		return
-	}
-	for _, p := range ps {
-		g.CPIDS = append(g.CPIDS, p.ID)
-	}
+	sn.Debugf("ps: %#v", ps)
+	g.CPIDS = pie.Map(ps, func(p *player) sn.PID { return p.id })
 }
 
-func (g *game) removeCurrentPlayer(p *player) {
-	if p == nil {
-		return
-	}
-
-	for i, pid := range g.CPIDS {
-		if pid == p.ID {
-			g.CPIDS = append(g.CPIDS[:i], g.CPIDS[i+1:]...)
-			return
-		}
-	}
-}
+// func (g *game) removeCurrentPlayer(p *player) {
+// 	if p == nil {
+// 		return
+// 	}
+//
+// 	for i, pid := range g.CPIDS {
+// 		if pid == p.id {
+// 			g.CPIDS = append(g.CPIDS[:i], g.CPIDS[i+1:]...)
+// 			return
+// 		}
+// 	}
+// }
 
 func (cl *Client) getGame(c *gin.Context, cu *sn.User, action stackFunc) (*game, error) {
 	cl.Log.Debugf(msgEnter)
@@ -424,7 +371,7 @@ func (cl *Client) getGame(c *gin.Context, cu *sn.User, action stackFunc) (*game,
 	return g, nil
 }
 
-func (cl *Client) getCached(c *gin.Context, rev, uid int64) (*game, error) {
+func (cl *Client) getCached(c *gin.Context, rev int64, uid sn.UID) (*game, error) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -452,7 +399,7 @@ func (cl *Client) getRev(c *gin.Context, rev int64) (*game, error) {
 	return g, err
 }
 
-func (cl *Client) save(c *gin.Context, g *game, uid int64) error {
+func (cl *Client) save(c *gin.Context, g *game, uid sn.UID) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -468,7 +415,7 @@ func (cl *Client) save(c *gin.Context, g *game, uid int64) error {
 	return err
 }
 
-func (cl *Client) commit(c *gin.Context, g *game, uid int64) error {
+func (cl *Client) commit(c *gin.Context, g *game, uid sn.UID) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -476,7 +423,7 @@ func (cl *Client) commit(c *gin.Context, g *game, uid int64) error {
 	return cl.save(c, g, uid)
 }
 
-func (cl *Client) clearCached(c *gin.Context, g *game, cuid int64) error {
+func (cl *Client) clearCached(c *gin.Context, g *game, cuid sn.UID) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -491,7 +438,7 @@ func (cl *Client) clearCached(c *gin.Context, g *game, cuid int64) error {
 	return cl.DS.DeleteMulti(c, ks)
 }
 
-func (cl *Client) putCached(c *gin.Context, g *game, rev, uid int64) error {
+func (cl *Client) putCached(c *gin.Context, g *game, rev int64, uid sn.UID) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 

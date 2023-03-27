@@ -43,18 +43,18 @@ func (s *Sub) LoadKey(k *datastore.Key) error {
 	return nil
 }
 
-func newSubParentKey(gid, uid int64) *datastore.Key {
-	return datastore.IDKey(subParentKey, uid, rootKey(gid))
+func newSubParentKey(gid int64, uid sn.UID) *datastore.Key {
+	return datastore.IDKey(subParentKey, int64(uid), rootKey(gid))
 }
 
-func newSubKey(id, gid, uid int64) *datastore.Key {
+func newSubKey(id, gid int64, uid sn.UID) *datastore.Key {
 	return datastore.IDKey(subKind, id, newSubParentKey(gid, uid))
 }
 
 // uid return the user ID associated with the subscription
-func (s *Sub) uid() int64 {
+func (s *Sub) uid() sn.UID {
 	if s.Key != nil && s.Key.Parent != nil {
-		return s.Key.Parent.ID
+		return sn.UID(s.Key.Parent.ID)
 	}
 	return 0
 }
@@ -71,7 +71,7 @@ func (cl *Client) subHandler(c *gin.Context) {
 
 	obj := struct {
 		Token string `json:"token"`
-		CUID  int64  `json:"cuid"`
+		CUID  sn.UID `json:"cuid"`
 	}{}
 
 	err = c.ShouldBind(&obj)
@@ -103,7 +103,7 @@ func (cl *Client) subHandler(c *gin.Context) {
 	})
 }
 
-func (cl *Client) getSubsFor(c *gin.Context, gid, cuid int64) ([]*Sub, error) {
+func (cl *Client) getSubsFor(c *gin.Context, gid int64, cuid sn.UID) ([]*Sub, error) {
 	var subs []*Sub
 	_, err := cl.DS.GetAll(c, datastore.NewQuery(subKind).Ancestor(newSubParentKey(gid, cuid)), &subs)
 	if err != nil && err != datastore.ErrNoSuchEntity {
@@ -169,11 +169,7 @@ func (g *game) otherSubs(subs []*Sub) []*Sub {
 	}
 
 	uids := g.uidsForPIDS(g.CPIDS)
-	sn.Debugf("otherSubs uids: %v", uids)
-	return pie.FilterNot(subs, func(s *Sub) bool {
-		sn.Debugf("s.UID: %v", s.uid())
-		return pie.Contains(uids, s.uid())
-	})
+	return pie.FilterNot(subs, func(s *Sub) bool { return pie.Contains(uids, s.uid()) })
 }
 
 func (g *game) cpSubs(subs []*Sub) []*Sub {

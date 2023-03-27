@@ -23,9 +23,9 @@
           </v-select> 
 
             <v-select
-                label="Rounds per Player"
+                label="Hands per Player"
                 :items="[ 1, 2, 3, 4, 5 ]"
-                v-model="invitation.roundsPerPlayer"
+                v-model="invitation.handsPerPlayer"
                 >
             </v-select> 
 

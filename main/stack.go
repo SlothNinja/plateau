@@ -8,11 +8,11 @@ import (
 
 const stackKind = "Stack"
 
-func stackKey(id, uid int64) *datastore.Key {
+func stackKey(id int64, uid sn.UID) *datastore.Key {
 	return datastore.NameKey(stackKind, "stack", cachedRootKey(id, uid))
 }
 
-func (cl *Client) getStack(c *gin.Context, uid int64) (*sn.Stack, error) {
+func (cl *Client) getStack(c *gin.Context, uid sn.UID) (*sn.Stack, error) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 

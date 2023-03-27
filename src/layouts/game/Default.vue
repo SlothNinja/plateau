@@ -8,7 +8,7 @@
 
     <DefaultNavDrawer v-model='nav' />
 
-    <DefaultSnack />
+    <DefaultSnack v-model:open='snackbar.open' v-model:message='snackbar.message' />
   </v-app>
 </template>
 
@@ -29,7 +29,7 @@ const snackbar = ref({
 
 provide( snackKey, snackbar )
 
-const open = ref(false)
+// const open = ref(false)
 
 </script>
 

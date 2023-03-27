@@ -1,8 +1,9 @@
 import { useUser } from '@/composables/user.js'
-import { map } from 'lodash'
+import { unref } from 'vue'
+import _map from 'lodash/map'
+import _get from 'lodash/get'
 
 export function useUsers(header) {
-  return map(header.userIds, function (id, i) {
-    return useUser(header, i)
-  })
+  const h = unref(header)
+  return _map(_get(h, 'userIds', []), (id, i) => useUser(h, i))
 }

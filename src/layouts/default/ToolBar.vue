@@ -8,9 +8,9 @@
         <span>Menu</span>
       </v-tooltip>
       <slot></slot>
-      <v-card :to="{ name: 'Home' }" color='white' min-width='100' class='mx-1' >
+      <v-sheet color='white' min-width='100' class='mx-1' >
         <v-img width='100' :src="logo100" />
-      </v-card>
+      </v-sheet>
     </div>
   </v-app-bar>
 </template>

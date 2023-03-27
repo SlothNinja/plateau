@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+npx dsadmin --project=plateau-slothninja-games --datastore-emulator-host=plateau.fake-slothninja.com:8090

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 
@@ -12,28 +13,61 @@ import (
 
 // Player represents a player of the game.
 type player struct {
+	id              sn.PID     `json:"id"`
+	score           int        `json:"score"`
+	passed          bool       `json:"passed"`
+	colors          []sn.Color `json:"colors"`
+	performedAction bool       `json:"performedAction"`
+	stats           stats      `json:"stats"`
+	hand            []card     `json:"hand"`
+}
+
+type jPlayer struct {
 	ID              sn.PID     `json:"id"`
 	Score           int        `json:"score"`
 	Passed          bool       `json:"passed"`
 	Colors          []sn.Color `json:"colors"`
 	PerformedAction bool       `json:"performedAction"`
 	Stats           stats      `json:"stats"`
-	HasBid          bool       `json:"hasBid"`
-	// 	Chips            chips        `json:"chips"`
-	// 	PlayedChips      chips        `json:"playedChips"`
-	// 	Office           office       `json:"office"`
-	// 	SlanderChips     slanderChips `json:"slanderChips"`
-	// 	PlacedBosses     int          `json:"placedBosses"`
-	// 	PlacedImmigrants int          `json:"placedImmigrants"`
-	// 	LockedUp         int          `json:"lockedUp"`
-	// 	Slandered        int          `json:"slandered"`
-	// 	Candidate        bool         `json:"candidate"`
-	// 	UsedOffice       bool         `json:"usedOffice"`
+	Hand            []card     `json:"hand"`
+}
+
+func (p player) MarshalJSON() ([]byte, error) {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
+	return json.Marshal(jPlayer{
+		ID:              p.id,
+		Score:           p.score,
+		Passed:          p.passed,
+		Colors:          p.colors,
+		PerformedAction: p.performedAction,
+		Stats:           p.stats,
+		Hand:            p.hand,
+	})
+}
+
+func (p *player) UnmarshalJSON(bs []byte) error {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
+	var obj jPlayer
+	err := json.Unmarshal(bs, &obj)
+	if err != nil {
+		return err
+	}
+	p.id = obj.ID
+	p.score = obj.Score
+	p.passed = obj.Passed
+	p.colors = obj.Colors
+	p.performedAction = obj.PerformedAction
+	p.stats = obj.Stats
+	p.hand = obj.Hand
+	return nil
 }
 
 func (p *player) reset() {
-	p.PerformedAction = false
-	p.HasBid = false
+	p.performedAction = false
 	// p.PlacedBosses = 0
 	// p.PlacedImmigrants = 0
 	// p.Slandered = 0
@@ -63,9 +97,9 @@ func sortedByScore(ps []*player, c comparison) {
 }
 func (p *player) compareByScore(p2 *player) comparison {
 	switch {
-	case p.Score < p2.Score:
+	case p.score < p2.score:
 		return lessThan
-	case p.Score > p2.Score:
+	case p.score > p2.score:
 		return greaterThan
 	default:
 		return equalTo
@@ -139,7 +173,7 @@ const (
 
 // equal returns true if players equal, false otherwise.
 func (p *player) equal(op *player) bool {
-	return p != nil && op != nil && p.ID == op.ID
+	return p != nil && op != nil && p.id == op.id
 }
 
 func (client *Client) determinePlaces(c *gin.Context, g *game) (sn.Results, error) {
@@ -156,7 +190,7 @@ func (client *Client) determinePlaces(c *gin.Context, g *game) (sn.Results, erro
 		// Find all players tied at place
 		found := pie.Filter(ps, func(p *player) bool { return ps[0].compareByScore(p) == equalTo })
 		// Get user keys for found players
-		rs[place] = pie.Map(found, func(p *player) *datastore.Key { return g.userKeyFor(p.ID) })
+		rs[place] = pie.Map(found, func(p *player) *datastore.Key { return g.userKeyFor(p.id) })
 		// Set ps to remaining players
 		_, ps = pie.Diff(ps, found)
 		// Above does not guaranty order so sort
@@ -211,11 +245,8 @@ func (g *game) addNewPlayers() {
 
 func (g *game) newPlayer(i int) *player {
 	return &player{
-		ID: sn.PID(i + 1),
-		// Colors: defaultColors()[:g.NumPlayers],
-		// Chips:        make(chips),
-		// PlayedChips:  make(chips),
-		// SlanderChips: slanderChips{2: true, 3: true, 4: true},
+		id:     sn.PID(i + 1),
+		colors: defaultColors(),
 	}
 }
 
@@ -247,7 +278,16 @@ func (g *game) indexFor(p1 *player) (int, bool) {
 
 func (g *game) playerByPID(pid sn.PID) *player {
 	const notFound = -1
-	index := pie.FindFirstUsing(g.players, func(p *player) bool { return p.ID == pid })
+	index := pie.FindFirstUsing(g.players, func(p *player) bool { return p.id == pid })
+	if index == notFound {
+		return nil
+	}
+	return g.players[index]
+}
+
+func (g *game) playerByUID(uid sn.UID) *player {
+	const notFound = -1
+	index := pie.FindFirstUsing(g.UserIDS, func(id sn.UID) bool { return id == uid })
 	if index == notFound {
 		return nil
 	}
@@ -278,17 +318,34 @@ func (g *game) playerByUserKey(key *datastore.Key) *player {
 }
 
 func pids(ps []*player) []sn.PID {
-	return pie.Map(ps, func(p *player) sn.PID { return p.ID })
+	return pie.Map(ps, func(p *player) sn.PID { return p.id })
 }
 
-func (g *game) uidForPID(pid sn.PID) int64 {
+func (g *game) uidForPID(pid sn.PID) sn.UID {
 	return g.UserIDS[pid.ToIndex()]
 }
 
-func (g *game) uidsForPIDS(pids []sn.PID) []int64 {
-	return pie.Map(pids, func(pid sn.PID) int64 { return g.uidForPID(pid) })
+func (g *game) uidsForPIDS(pids []sn.PID) []sn.UID {
+	return pie.Map(pids, func(pid sn.PID) sn.UID { return g.uidForPID(pid) })
 }
 
 func (g *game) userKeyFor(pid sn.PID) *datastore.Key {
 	return g.UserKeys[pid.ToIndex()]
+}
+
+// ps is an optional parameter.
+// If no player is provided, assume current player.
+func (g *game) nextPlayer(ps ...*player) *player {
+	if len(ps) == 1 {
+		i, _ := g.indexFor(ps[0])
+		return g.playerByIndex(i + 1)
+	}
+
+	cp := g.currentPlayer()
+	if cp == nil {
+		return nil
+	}
+
+	i, _ := g.indexFor(cp)
+	return g.playerByIndex(i + 1)
 }

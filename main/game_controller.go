@@ -18,19 +18,19 @@ const (
 	msgExit   = "Exiting"
 )
 
-func (cl *Client) requireLogin(c *gin.Context) error {
-	_, err := cl.User.Current(c)
+func (cl *Client) requireLogin(c *gin.Context) (*sn.User, error) {
+	cu, err := cl.User.Current(c)
 	if err != nil {
-		return fmt.Errorf("must login to access resource: %w", err)
+		return nil, fmt.Errorf("must login to access resource: %w", err)
 	}
-	return nil
+	return cu, nil
 }
 
 func (cl *Client) gamesIndex(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	err := cl.requireLogin(c)
+	_, err := cl.requireLogin(c)
 	if err != nil {
 		sn.JErr(c, err)
 		return
@@ -67,7 +67,7 @@ func (cl *Client) showHandler(c *gin.Context) {
 		return
 	}
 
-	subs, err := cl.getSubsFor(c, g.ID(), cu.ID())
+	subs, err := cl.getSubsFor(c, g.id(), cu.ID())
 	if err != nil {
 		sn.JErr(c, err)
 		return
@@ -96,18 +96,6 @@ func (cl *Client) showHandler(c *gin.Context) {
 	})
 }
 
-// func (cl *Client) homeHandler(c *gin.Context) {
-// 	cl.Log.Debugf(msgEnter)
-// 	defer cl.Log.Debugf(msgExit)
-//
-// 	cu, err := cl.User.Current(c)
-// 	if err != nil {
-// 		cl.Log.Warningf(err.Error())
-// 	}
-//
-// 	c.JSON(http.StatusOK, gin.H{"cu": cu})
-// }
-
 func (cl *Client) cuHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
@@ -124,7 +112,7 @@ func (cl *Client) resetHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	cu, err := cl.User.Current(c)
+	cu, err := cl.requireLogin(c)
 	if err != nil {
 		sn.JErr(c, err)
 		return
@@ -158,7 +146,7 @@ func (cl *Client) undoHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	cu, err := cl.User.Current(c)
+	cu, err := cl.requireLogin(c)
 	if err != nil {
 		cl.Log.Warningf(err.Error())
 	}
@@ -186,7 +174,7 @@ func (cl *Client) redoHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	cu, err := cl.User.Current(c)
+	cu, err := cl.requireLogin(c)
 	if err != nil {
 		cl.Log.Warningf(err.Error())
 	}
@@ -214,7 +202,7 @@ func (cl *Client) rollbackHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	cu, err := cl.User.Current(c)
+	cu, err := cl.requireLogin(c)
 	if err != nil {
 		cl.Log.Warningf(err.Error())
 	}
@@ -266,7 +254,7 @@ func (cl *Client) rollforwardHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	cu, err := cl.User.Current(c)
+	cu, err := cl.requireLogin(c)
 	if err != nil {
 		cl.Log.Warningf(err.Error())
 	}

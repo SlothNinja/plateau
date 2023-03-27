@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
+	"github.com/SlothNinja/sn/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -62,9 +63,9 @@ type ustat struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-func newUStat(ukey *datastore.Key) *ustat {
+func newUStat(uid sn.UID) *ustat {
 	return &ustat{
-		Key:                   newUStatsKey(ukey),
+		Key:                   newUStatsKey(uid),
 		Played:                make([]int64, maxPlayers+1),
 		Won:                   make([]int64, maxPlayers+1),
 		Scored:                make([]int64, maxPlayers+1),
@@ -79,43 +80,43 @@ func newUStat(ukey *datastore.Key) *ustat {
 	}
 }
 
-func newUStatsKey(ukey *datastore.Key) *datastore.Key {
-	return datastore.NameKey(ustatsKind, "singleton", ukey)
+func newUStatsKey(uid sn.UID) *datastore.Key {
+	return datastore.NameKey(ustatsKind, "singleton", sn.NewUser(uid).Key)
 }
 
 func (g *game) updateUStats(stats []*ustat) {
 	for i := range stats {
-		g.updateUStat(stats[i], g.UserKeys[i])
+		g.updateUStat(stats[i], g.UserIDS[i])
 	}
 }
 
-func (g *game) updateUStat(stat *ustat, ukey *datastore.Key) {
+func (g *game) updateUStat(stat *ustat, uid sn.UID) {
 	stat.Played[0]++
 	stat.Played[g.NumPlayers]++
-	for _, key := range g.WinnerKeys {
-		if key.Equal(ukey) {
+	for _, id := range g.WinnerIDS {
+		if id == uid {
 			stat.Won[0]++
 			stat.Won[g.NumPlayers]++
 			break
 		}
 	}
 
-	p := g.playerByUserKey(ukey)
+	p := g.playerByUID(uid)
 	if p == nil {
 		return
 	}
 
-	stat.Moves[0] += p.Stats.Moves
-	stat.Moves[g.NumPlayers] += p.Stats.Moves
+	stat.Moves[0] += p.stats.Moves
+	stat.Moves[g.NumPlayers] += p.stats.Moves
 
-	stat.Think[0] += p.Stats.Think
-	stat.Think[g.NumPlayers] += p.Stats.Think
+	stat.Think[0] += p.stats.Think
+	stat.Think[g.NumPlayers] += p.stats.Think
 
-	stat.Scored[0] += int64(p.Score)
-	stat.Scored[g.NumPlayers] += int64(p.Score)
+	stat.Scored[0] += int64(p.score)
+	stat.Scored[g.NumPlayers] += int64(p.score)
 
-	stat.Finish[0] += int64(p.Stats.Finish)
-	stat.Finish[g.NumPlayers] += int64(p.Stats.Finish)
+	stat.Finish[0] += int64(p.stats.Finish)
+	stat.Finish[g.NumPlayers] += int64(p.stats.Finish)
 
 	if stat.Played[0] > 0 {
 		stat.WinPercentage[0] = float32(stat.Won[0]) / float32(stat.Played[0])
@@ -136,15 +137,15 @@ func (g *game) updateUStat(stat *ustat, ukey *datastore.Key) {
 
 }
 
-func (cl *Client) getUStats(c *gin.Context, ukeys ...*datastore.Key) ([]*ustat, error) {
+func (cl *Client) getUStats(c *gin.Context, uids ...sn.UID) ([]*ustat, error) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	l := len(ukeys)
+	l := len(uids)
 	ustats := make([]*ustat, l)
 	ks := make([]*datastore.Key, l)
-	for i, ukey := range ukeys {
-		ustats[i] = newUStat(ukey)
+	for i, uid := range uids {
+		ustats[i] = newUStat(uid)
 		ks[i] = ustats[i].Key
 	}
 
@@ -159,7 +160,7 @@ func (cl *Client) getUStats(c *gin.Context, ukeys ...*datastore.Key) ([]*ustat, 
 				continue // no error
 			}
 			if e == datastore.ErrNoSuchEntity {
-				ustats[i] = newUStat(ukeys[i])
+				ustats[i] = newUStat(uids[i])
 				ustats[i].CreatedAt = time.Now()
 				continue
 			}

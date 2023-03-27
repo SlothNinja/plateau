@@ -2,6 +2,7 @@ package main
 
 import (
 	"cloud.google.com/go/datastore"
+	"github.com/SlothNinja/sn/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,8 +19,8 @@ func committedKey(id int64) *datastore.Key {
 	return datastore.IDKey(committedKind, id, rootKey(id))
 }
 
-func cachedRootKey(id, uid int64) *datastore.Key {
-	return datastore.IDKey(cachedRootKind, uid, rootKey(id))
+func cachedRootKey(id int64, uid sn.UID) *datastore.Key {
+	return datastore.IDKey(cachedRootKind, int64(uid), rootKey(id))
 }
 
 func newCommitted(id int64) *game {
@@ -35,7 +36,9 @@ func (cl *Client) getCommitted(c *gin.Context) (*game, error) {
 		return nil, err
 	}
 
+	cl.Log.Debugf("getCommitted id: %d", id)
 	g := newCommitted(id)
 	err = cl.DS.Get(c, g.Key, g)
+	cl.Log.Debugf("getCommitted key: %s", g.Key)
 	return g, err
 }
