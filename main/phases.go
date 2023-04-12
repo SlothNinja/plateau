@@ -1,14 +1,16 @@
 package main
 
-import "github.com/SlothNinja/sn/v2"
+import "github.com/SlothNinja/sn/v3"
 
 const (
-	noPhase            sn.Phase = ""
-	dealPhase          sn.Phase = "Deal"
-	bidPhase           sn.Phase = "bid"
-	endGameScoring     sn.Phase = "End Game Scoring"
-	scoreVictoryPoints sn.Phase = "Score Victory Points"
-	setupPhase         sn.Phase = "Setup"
-	announceWinners    sn.Phase = "Announce Winners"
-	gameOverPhase      sn.Phase = "Game Over"
+	noPhase           sn.Phase = ""
+	setupPhase        sn.Phase = "setup"
+	dealPhase         sn.Phase = "deal"
+	bidPhase          sn.Phase = "bid"
+	exchangePhase     sn.Phase = "card exchange"
+	pickPartnerPhase  sn.Phase = "pick parner"
+	incObjectivePhase sn.Phase = "increase objective"
+	cardPlayPhase     sn.Phase = "card play"
+	endHandPhase      sn.Phase = "end of hand"
+	announceWinners   sn.Phase = "announce winners"
 )

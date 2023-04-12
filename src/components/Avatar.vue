@@ -1,11 +1,12 @@
 <template>
   <div>
     <div :class='klass'>
-      <v-avatar color='black' :size='size'>
+      <v-avatar :color='color' :size='size'>
         <v-avatar :image='path' :size='size-6'></v-avatar>
       </v-avatar>
       <div class='ml-1'>
-        <div>{{user.name}}</div>
+        <slot v-if='showSlot'></slot>
+        <div v-else>{{user.name}}</div>
       </div>
     </div>
   </div>
@@ -14,8 +15,9 @@
 <script setup>
 
 import  { useGravatar } from '@/composables/gravatar.js'
-import { computed } from 'vue'
-import { get } from 'lodash'
+import { computed, useSlots } from 'vue'
+import _get from 'lodash/get'
+import _isEmpty from 'lodash/isEmpty'
 
 const props = defineProps({
   color: { type: String, default: 'black' },
@@ -33,5 +35,9 @@ const klass = computed( () => {
       return 'd-flex align-center'
   }
 })
+
+const slots = useSlots()
+
+const showSlot = computed(() => (!_isEmpty(_get(slots.default(), '[0].children[0]', {}))))
 
 </script>

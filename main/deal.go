@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 )
 
@@ -40,5 +40,7 @@ func (g *game) normalDeal() {
 func (g *game) twoPlayerDeal() {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
+
+	sn.Warningf("2P not yet implemented")
 
 }

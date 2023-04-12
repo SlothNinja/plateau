@@ -1,7 +1,8 @@
 <template>
-      <div :style='style'>
-        <v-img :src='src' />
-      </div>
+  <div :style='style'>
+    <div v-if="text != ''" class='text-center' style='white-space: pre'>{{text}}</div>
+    <v-img :src='src' />
+  </div>
 </template>
 
 <script setup>
@@ -35,8 +36,8 @@ import eightdiamonds from '@/assets/card_40.png'
 import ninediamonds from '@/assets/card_50.png'
 import tendiamonds from '@/assets/card_22.png'
 import valetdiamonds from '@/assets/card_23.png'
-import cavalierdiamonds from '@/assets/card_22.png'
-import damediamonds from '@/assets/card_22.png'
+import cavalierdiamonds from '@/assets/card_60.png'
+import damediamonds from '@/assets/card_70.png'
 import roidiamonds from '@/assets/card_21.png'
 
 // Hearts
@@ -52,7 +53,7 @@ import ninehearts from '@/assets/card_61.png'
 import tenhearts from '@/assets/card_52.png'
 import valethearts from '@/assets/card_62.png'
 import cavalierhearts from '@/assets/card_71.png'
-import damehearts from '@/assets/card_70.png'
+import damehearts from '@/assets/card_32.png'
 import roihearts from '@/assets/card_42.png'
 
 // Spades
@@ -86,7 +87,7 @@ import eleventrumps from '@/assets/card_56.png'
 import twelvetrumps from '@/assets/card_66.png'
 import thirteentrumps from '@/assets/card_76.png'
 import fourteentrumps from '@/assets/card_57.png'
-import fiveteentrumps from '@/assets/card_58.png'
+import fifteentrumps from '@/assets/card_58.png'
 import sixteentrumps from '@/assets/card_59.png'
 import seventeentrumps from '@/assets/card_67.png'
 import eighteentrumps from '@/assets/card_77.png'
@@ -98,7 +99,7 @@ import excusetrumps from '@/assets/card_24.png'
 import { computed, ref } from 'vue'
 import _lowerCase from 'lodash/lowerCase'
 
-const props = defineProps([ 'suit', 'rank', 'width' ])
+const props = defineProps([ 'suit', 'rank', 'width', 'text' ])
 
 const style = computed(() => (`width:${props.width}px`))
 

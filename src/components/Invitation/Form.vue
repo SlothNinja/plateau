@@ -56,8 +56,7 @@ import { ref, watch, inject } from 'vue'
 
 /////////////////////////////////////////////////////
 // Composables
-import  { useFetch } from '@/composables/fetch.js'
-import  { usePut } from '@/composables/put.js'
+import  { useFetch, usePut } from '@/composables/fetch.js'
 import  { snackKey } from '@/composables/keys.js'
 
 ////////////////////////////////////////////////////

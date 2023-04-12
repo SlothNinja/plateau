@@ -6,26 +6,28 @@ import (
 	"sort"
 
 	"cloud.google.com/go/datastore"
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 	"github.com/gin-gonic/gin"
 )
 
 // Player represents a player of the game.
 type player struct {
-	id              sn.PID     `json:"id"`
-	score           int        `json:"score"`
-	passed          bool       `json:"passed"`
-	colors          []sn.Color `json:"colors"`
-	performedAction bool       `json:"performedAction"`
-	stats           stats      `json:"stats"`
-	hand            []card     `json:"hand"`
+	id              sn.PID     // `json:"id"`
+	score           int        // `json:"score"`
+	passed          bool       // `json:"passed"`
+	bid             bool       // `json:"bid"`
+	colors          []sn.Color // `json:"colors"`
+	performedAction bool       // `json:"performedAction"`
+	stats           stats      // `json:"stats"`
+	hand            []card     // `json:"hand"`
 }
 
 type jPlayer struct {
 	ID              sn.PID     `json:"id"`
 	Score           int        `json:"score"`
 	Passed          bool       `json:"passed"`
+	Bid             bool       `json:"bid"`
 	Colors          []sn.Color `json:"colors"`
 	PerformedAction bool       `json:"performedAction"`
 	Stats           stats      `json:"stats"`
@@ -40,6 +42,7 @@ func (p player) MarshalJSON() ([]byte, error) {
 		ID:              p.id,
 		Score:           p.score,
 		Passed:          p.passed,
+		Bid:             p.bid,
 		Colors:          p.colors,
 		PerformedAction: p.performedAction,
 		Stats:           p.stats,
@@ -59,6 +62,7 @@ func (p *player) UnmarshalJSON(bs []byte) error {
 	p.id = obj.ID
 	p.score = obj.Score
 	p.passed = obj.Passed
+	p.bid = obj.Bid
 	p.colors = obj.Colors
 	p.performedAction = obj.PerformedAction
 	p.stats = obj.Stats
@@ -75,12 +79,17 @@ func (p *player) reset() {
 	// p.UsedOffice = false
 }
 
-func (g *game) beginningOfTurnReset() {
-	// g.slanderedPlayerID = sn.NoPID
-	// g.slanderNationality = noNationality
-	// g.currentWardID = noWardID
-	// g.moveFromWardID = noWardID
+func (p *player) bidReset() {
+	p.bid = false
+	p.passed = false
 }
+
+// func (g *game) beginningOfTurnReset() {
+// 	// g.slanderedPlayerID = sn.NoPID
+// 	// g.slanderNationality = noNationality
+// 	// g.currentWardID = noWardID
+// 	// g.moveFromWardID = noWardID
+// }
 
 // type slanderChips map[int]bool
 
@@ -266,14 +275,9 @@ func (g *game) newPlayer(i int) *player {
 // }
 
 // IndexFor returns the index for the player and bool indicating whether player found.
-func (g *game) indexFor(p1 *player) (int, bool) {
-	const notFound = -1
-	const found = true
-	index := pie.FindFirstUsing(g.players, func(p2 *player) bool { return p1.equal(p2) })
-	if index == notFound {
-		return index, !found
-	}
-	return index, found
+// if not found, returns -1
+func (g *game) indexFor(p1 *player) int {
+	return pie.FindFirstUsing(g.players, func(p2 *player) bool { return p1.equal(p2) })
 }
 
 func (g *game) playerByPID(pid sn.PID) *player {
@@ -317,7 +321,7 @@ func (g *game) playerByUserKey(key *datastore.Key) *player {
 	return g.players[i]
 }
 
-func pids(ps []*player) []sn.PID {
+func pidsFor(ps []*player) []sn.PID {
 	return pie.Map(ps, func(p *player) sn.PID { return p.id })
 }
 
@@ -333,19 +337,85 @@ func (g *game) userKeyFor(pid sn.PID) *datastore.Key {
 	return g.UserKeys[pid.ToIndex()]
 }
 
-// ps is an optional parameter.
-// If no player is provided, assume current player.
-func (g *game) nextPlayer(ps ...*player) *player {
-	if len(ps) == 1 {
-		i, _ := g.indexFor(ps[0])
-		return g.playerByIndex(i + 1)
-	}
+// // ps is an optional parameter.
+// // If no player is provided, assume current player.
+// func (g *game) nextPlayer(ps ...*player) *player {
+// 	if len(ps) == 1 {
+// 		i, _ := g.indexFor(ps[0])
+// 		return g.playerByIndex(i + 1)
+// 	}
+//
+// 	cp := g.currentPlayer()
+// 	if cp == nil {
+// 		return nil
+// 	}
+//
+// 	i, _ := g.indexFor(cp)
+// 	return g.playerByIndex(i + 1)
+// }
 
-	cp := g.currentPlayer()
-	if cp == nil {
+type test func(*player) bool
+
+// cp specifies the current
+// return player after cp that satisfies all tests ts
+// if tests ts is empty, return player after cp
+func (g game) nextPlayer(cp *player, ts ...test) (np *player) {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
+	start := g.indexFor(cp) + 1
+	stop := start + g.NumPlayers
+
+	// g.playerByIndex uses the players slice as-if it were circular buffer
+	// start is one index after cp
+	// stop is num players later, thus one pass through circular buffer
+	for i := start; i <= stop; i++ {
+		np := g.playerByIndex(i)
+		if pie.All(ts, func(t test) bool { return t(np) }) {
+			return np
+		}
+	}
+	return nil
+}
+
+func (g game) declarer() *player {
+	return g.playerByPID(pie.First(g.declarersTeam))
+}
+
+func (g game) partner() *player {
+	if len(g.declarersTeam) == 2 {
+		return g.playerByPID(pie.Last(g.declarersTeam))
+	}
+	return nil
+}
+
+func (g game) partners() []*player {
+	if len(g.declarersTeam) < 2 {
 		return nil
 	}
+	return pie.Map(g.declarersTeam[1:], func(pid sn.PID) *player { return g.playerByPID(pid) })
+}
 
-	i, _ := g.indexFor(cp)
-	return g.playerByIndex(i + 1)
+func (g game) declarers() []*player {
+	return pie.Filter(g.players, func(p *player) bool {
+		return pie.Any(g.declarersTeam, func(pid sn.PID) bool {
+			return pid == p.id
+		})
+	})
+}
+
+func (g game) opposersTeam() []sn.PID {
+	return pie.FilterNot(pidsFor(g.players), func(pid1 sn.PID) bool {
+		return pie.Any(g.declarersTeam, func(pid2 sn.PID) bool {
+			return pid1 == pid2
+		})
+	})
+}
+
+func (g game) opposers() []*player {
+	return pie.FilterNot(g.players, func(p *player) bool {
+		return pie.Any(g.declarersTeam, func(pid sn.PID) bool {
+			return pid == p.id
+		})
+	})
 }

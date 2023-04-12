@@ -1,23 +1,56 @@
-<template>
-  <v-sheet elevation='4' rounded color='green' class='d-flex align-center justify-center h-100 w-100'>
-    <BidForm v-if="bidPhase" />
-    <div v-else>
-      Trick play
-    </div>
-  </v-sheet>
-</template>
+  <template>
+    <v-card color='green'>
+      <v-container class='fill-height'>
+
+        <v-row>
+          <v-col cols='12'>
+            <Bids :game='game' />
+          </v-col>
+        </v-row>
+
+        <v-row v-if='showForm'>
+          <v-col cols='12'>
+              <BidForm />
+          </v-col>
+        </v-row>
+
+        <v-row>
+          <v-col cols='12'>
+            <Trick v-if="showTrick" />
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-card>
+  </template>
 
 <script setup>
+// components
+import Bids from '@/components/Game/Bids.vue'
 import BidForm from '@/components/Game/BidForm.vue'
+
+// vue
 import { computed, inject } from 'vue'
+
+// lodash
 import _get from 'lodash/get'
 
-// inject game 
-import { gameKey } from '@/composables/keys.js'
-const { game, updateGame } = inject(gameKey)
+// composables
+import { cuKey, gameKey } from '@/composables/keys.js'
+import { useIsCP } from '@/composables/player.js'
 
-// const header = computed(() => _get(game, 'value.header', {}))
-const phase = computed(() => _get(game, 'value.header.phase', ''))
-const bidPhase = computed(() => (phase.value == 'bid'))
+const { game, updateGame } = inject(gameKey)
+const cu = inject(cuKey)
+
+const isCP = computed(() => (useIsCP(game, cu)))
+
+const showForm = computed(() => {
+  const phase = _get(game, 'value.header.phase', '')
+  return isCP.value && (phase == 'bid' || phase == 'increase objective')
+})
+
+const showTrick = computed(() => {
+  const phase = _get(game, 'value.header.phase', '')
+  return phase == 'card play'
+})
 
 </script>

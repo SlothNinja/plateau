@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -333,7 +333,8 @@ func (cl *Client) acceptHandler(c *gin.Context) {
 
 	g := newGame(inv.Key.ID, 0)
 	g.Header = inv.Header.Header
-	g.start()
+	cp := g.start()
+	g.setCurrentPlayers(cp)
 
 	_, err = cl.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
 		cl.Log.Debugf("inv.Key: %s", inv.Key)
@@ -353,7 +354,6 @@ func (cl *Client) acceptHandler(c *gin.Context) {
 		return
 	}
 
-	cp := g.currentPlayer()
 	// cl.sendTurnNotificationsTo(c, g, cp)
 	err = cl.sendNotifications(c, g)
 	if err != nil {

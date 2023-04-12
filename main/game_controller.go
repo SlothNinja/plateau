@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"cloud.google.com/go/datastore"
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 	"github.com/gin-gonic/gin"
 )
 
@@ -130,10 +130,7 @@ func (cl *Client) resetHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"game": g,
-		"cu":   cu,
-	})
+	c.JSON(http.StatusOK, gin.H{"game": g})
 }
 
 type stackFunc func(*sn.Stack) bool
@@ -164,10 +161,7 @@ func (cl *Client) undoHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"game": g,
-		"cu":   cu,
-	})
+	c.JSON(http.StatusOK, gin.H{"game": g})
 }
 
 func (cl *Client) redoHandler(c *gin.Context) {
@@ -192,10 +186,7 @@ func (cl *Client) redoHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"game": g,
-		"cu":   cu,
-	})
+	c.JSON(http.StatusOK, gin.H{"game": g})
 }
 
 func (cl *Client) rollbackHandler(c *gin.Context) {
@@ -244,10 +235,7 @@ func (cl *Client) rollbackHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"game": g,
-		"cu":   cu,
-	})
+	c.JSON(http.StatusOK, gin.H{"game": g})
 }
 
 func (cl *Client) rollforwardHandler(c *gin.Context) {

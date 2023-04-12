@@ -1,6 +1,6 @@
 <template>
   <v-app>
-    <DefaultToolBar v-model='nav' />
+    <DefaultToolBar @toggleNav='toggleNav' />
 
     <DefaultView />
 
@@ -28,6 +28,11 @@ const snackbar = ref({
 })
 
 provide( snackKey, snackbar )
+
+function toggleNav() {
+  nav.value = !nav.value
+}
+
 
 // function clearMessage () {
 //   console.log('clearMessage')

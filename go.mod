@@ -1,23 +1,24 @@
 module github.com/SlothNinja/plateau
 
-go 1.19
+go 1.20
 
 require (
 	cloud.google.com/go/datastore v1.10.0
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/SlothNinja/log v1.0.6
-	github.com/SlothNinja/sn/v2 v2.0.16
+	github.com/SlothNinja/sn/v3 v3.0.0
 	github.com/elliotchance/pie/v2 v2.5.1
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.8.1
+	github.com/mailjet/mailjet-apiv3-go v0.0.0-20201009050126-c24bc15a9394
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90
 	google.golang.org/api v0.114.0
 )
 
-replace github.com/SlothNinja/sn/v2 => ./private/sn
+replace github.com/SlothNinja/sn/v3 => ./private/sn
 
 require (
 	cloud.google.com/go v0.110.0 // indirect
@@ -48,14 +49,14 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kortemy/elo-go v0.0.0-20190919090953-f9d3a99fd7b7 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/mailjet/mailjet-apiv3-go v0.0.0-20201009050126-c24bc15a9394 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/exp v0.0.0-20220321173239-a90fa8a75705 // indirect
+	golang.org/x/exp v0.0.0-20220827204233-334a2380cb91 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/oauth2 v0.6.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
@@ -63,6 +64,7 @@ require (
 	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
+	gonum.org/v1/gonum v0.12.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230323212658-478b75c54725 // indirect
 	google.golang.org/grpc v1.54.0 // indirect

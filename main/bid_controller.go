@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 	"github.com/gin-gonic/gin"
 )
 
@@ -50,14 +50,17 @@ func (g *game) placeBid(c *gin.Context, cu *sn.User) error {
 		return err
 	}
 
-	sn.Debugf("placeBid bid: %#v", bid)
-
 	cp.performedAction = true
+	cp.bid = true
 	g.bids = append(g.bids, bid)
+	g.declarersTeam = []sn.PID{cp.id}
+
 	g.newEntryFor(cp.id, message{
 		"template": "placed-bid",
 		"bid":      bid,
 	})
+
+	g.Undo.Update()
 	return nil
 }
 
@@ -73,39 +76,150 @@ func (g *game) validatePlaceBid(c *gin.Context, cu *sn.User) (*player, bid, erro
 		return nil, noBid, err
 	}
 
-	bid, err := getBid(c)
-	if err != nil {
-		return nil, noBid, err
-	}
-	sn.Debugf("getBid bid: %#v", bid)
-
-	bidValue, err := bid.value(g.NumPlayers)
+	bid, err := g.validateBid(c, cu)
 	if err != nil {
 		return nil, noBid, err
 	}
 
-	minValue, err := minBid(g.NumPlayers).value(g.NumPlayers)
-	if err != nil {
-		return nil, noBid, err
-	}
+	bidValue := bid.value(g.NumPlayers)
 
-	currentBid := g.currentBid()
-	currentBidValue, err := g.currentBidValue(g.NumPlayers)
-	if err != nil {
-		return nil, noBid, err
-	}
+	currentBidValue := g.currentBidValue()
 
 	switch {
-	case bidValue < minValue:
-		return nil, noBid, fmt.Errorf("bid has value of %d, which is less than the minimum bid of %d: %w",
-			bidValue, minValue, sn.ErrValidation)
-	case bidValue < currentBidValue:
-		return nil, noBid, fmt.Errorf("bid has value of %d, which is less than the current bid of %d: %w",
+	case g.Phase != bidPhase:
+		return nil, noBid, fmt.Errorf("expected %q phase but have %q phase: %w", bidPhase, g.Phase, sn.ErrValidation)
+	case bidValue <= currentBidValue:
+		return nil, noBid, fmt.Errorf("bid has value of %d, which is not greater than the current bid of %d: %w",
 			bidValue, currentBidValue, sn.ErrValidation)
-		// the following should never happen
-	case bid.pid == currentBid.pid:
-		return nil, noBid, fmt.Errorf("you already have the current bid: %w", sn.ErrValidation)
 	default:
 		return cp, bid, nil
 	}
 }
+
+func (g *game) validateBid(c *gin.Context, cu *sn.User) (bid, error) {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
+	// define noBid here, as bid type shadowed by bid variable after getBid call
+	noBid := bid{}
+
+	bid, err := getBid(c)
+	if err != nil {
+		return noBid, err
+	}
+
+	bidValue := bid.value(g.NumPlayers)
+
+	minValue := minBid(g.NumPlayers).value(g.NumPlayers)
+
+	if bidValue < minValue {
+		return noBid, fmt.Errorf("bid has value of %d, which is less than the minimum bid of %d: %w",
+			bidValue, minValue, sn.ErrValidation)
+	}
+	return bid, nil
+}
+
+func (cl *Client) passBidHandler(c *gin.Context) {
+	cl.Log.Debugf(msgEnter)
+	defer cl.Log.Debugf(msgExit)
+
+	cu, err := cl.User.Current(c)
+	if err != nil {
+		cl.Log.Warningf(err.Error())
+	}
+
+	g, err := cl.getGame(c, cu, noUndo)
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+
+	err = g.passBid(c, cu)
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+
+	err = cl.putCached(c, g, g.Undo.Current, cu.ID())
+	if err != nil {
+		sn.JErr(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"game": g})
+}
+
+func (g *game) passBid(c *gin.Context, cu *sn.User) error {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
+	cp, err := g.validatePassBid(c, cu)
+	if err != nil {
+		return err
+	}
+
+	cp.performedAction = true
+	cp.bid = true
+	cp.passed = true
+
+	g.newEntryFor(cp.id, message{"template": "pass-bid"})
+
+	g.Undo.Update()
+	return nil
+}
+
+func (g *game) validatePassBid(c *gin.Context, cu *sn.User) (*player, error) {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
+	return g.validatePlayerAction(cu)
+}
+
+func (g *game) bidFinishTurn(c *gin.Context, cu *sn.User) (*player, *player, error) {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
+	cp, err := g.validateBidFinishTurn(c, cu)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	np := g.nextPlayer(cp, func(p *player) bool {
+		return !p.passed && p.id != g.lastBid().pid
+	})
+	if np == nil {
+		lastBid := g.lastBid()
+		g.newEntryFor(lastBid.pid, message{
+			"template": "won-bid",
+			"bid":      lastBid,
+		})
+		np = g.startExchange()
+	}
+	return cp, np, nil
+}
+
+func (g *game) validateBidFinishTurn(c *gin.Context, cu *sn.User) (*player, error) {
+	cp, err := g.validateFinishTurn(c, cu)
+	switch {
+	case err != nil:
+		return nil, err
+	case g.Phase != bidPhase:
+		return nil, fmt.Errorf("expected %q phase but have %q phase: %w", bidPhase, g.Phase, sn.ErrValidation)
+	case !cp.bid:
+		return nil, fmt.Errorf("you must bid or pass before finishing turn: %w", sn.ErrValidation)
+	default:
+		return cp, nil
+	}
+}
+
+// func (g *game) validateFinishTurn(c *gin.Context, cu *sn.User) (*player, error) {
+// 	cp, err := g.validateCurrentPlayer(cu)
+// 	switch {
+// 	case err != nil:
+// 		return nil, err
+// 	case !cp.performedAction:
+// 		return nil, fmt.Errorf("%s has yet to perform an action: %w", cu.Name, sn.ErrValidation)
+// 	default:
+// 		return cp, nil
+// 	}
+// }

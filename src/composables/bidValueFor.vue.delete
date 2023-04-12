@@ -1,0 +1,158 @@
+import UserButton from '@/components/UserButton'
+import { computed, inject, ref, watch, onMounted } from 'vue'
+import _get from 'lodash/get'
+import _find from 'lodash/find'
+import _last from 'lodash/last'
+import _isEmpty from 'lodash/isEmpty'
+
+import { usePut } from '@/composables/put.js'
+
+// inject game and current user
+import { cuKey, gameKey, snackKey } from '@/composables/keys.js'
+const cu = inject(cuKey)
+const { game, updateGame } = inject(gameKey)
+
+import { usePlayerFor } from '@/composables/playerFor.js'
+import { useUser } from '@/composables/user.js'
+const cp = computed(() => usePlayerFor(game, cu))
+const cpid = computed(() => _get(cp, 'value.id', -1))
+
+const bvalue = ref({})
+
+const bid = computed({
+  get() {
+    if (_isEmpty(bvalue.value)) {
+      bvalue.value = minBid.value
+    }
+    return bvalue.value
+  },
+  set(value) {
+    bvalue.value = value
+  }
+})
+
+const minBid = computed(() => {
+  switch (numPlayers.value) {
+    case 2:
+      return { exchange: 'exchange', objective: 'y', pid: cpid.value }
+    case 3:
+      return { exchange: 'exchange', objective: 'bridge', pid: cpid.value }
+    case 4:
+      return { exchange: 'exchange', objective: 'y', teams: 'duo', pid: cpid.value }
+    case 5:
+      return { exchange: 'exchange', objective: 'bridge', teams: 'duo', pid: cpid.value }
+    case 6:
+      return { objective: 'y', teams: 'trio', pid: cpid.value }
+    default:
+      return { exchange: '', objective: '', teams: '', pid: -1 }
+  }
+})
+
+const exchangeValue = computed(() => exValue(bid.value.exchange))
+
+function exValue(bid) {
+  return (bid == 'exchange') ? 1 : 2
+}
+
+const objectiveValue = computed(() => obValue(bid.value.objective))
+
+function  obValue(bid) {
+  switch (bid) {
+    case 'bridge':
+      return 0
+    case 'y':
+      return 2
+    case 'fork':
+      return 4
+    case '5-sides':
+      return 6
+    case '6-sides':
+      return 8
+    default:
+      return 0
+  }
+}
+
+const numPlayers = computed(() => _get(game, 'value.header.numPlayers', 0))
+const showExchange = computed(() => (numPlayers.value < 6))
+const showTeams = computed(() => (numPlayers.value >= 4))
+const showTrio = computed(() => (numPlayers.value == 6))
+
+const teamsValue = computed(() => tValue(bid.value.teams))
+
+// watch(numPlayers, () => (bid.value = minBid.value))
+
+function tValue(bid) {
+  switch (numPlayers.value) {
+    case 4:
+      return team45(bid)
+    case 5:
+      return team45(bid)
+    case 6:
+      return team6(bid)
+    default:
+      return 0
+  }
+}
+
+function team45(bid) {
+  return (bid == 'solo') ? 5 : 0
+}
+
+function team6(bid) {
+  switch (bid) {
+    case 'duo':
+      return 5
+    case 'solo':
+      return 10
+    default:
+      return 0
+  }
+}
+
+const bidValue = computed(() => (exchangeValue.value + objectiveValue.value + teamsValue.value))
+
+function bidLabel(pid) {
+  const p = _find(_get(game, 'value.state.players', []), [ 'id', pid])
+  if (p.passed) {
+    return 'has passed'
+  }
+  const bid = _find(_get(game, 'value.state.bids', []), [ 'pid', pid ])
+  if (_isEmpty(bid)) {
+    return 'has not bid'
+  }
+  const exchange = _get(bid, 'exchange', '')
+  const objective = _get(bid, 'objective', '')
+  const teams = _get(bid, 'teams', '')
+  const bidValue = exValue(exchange) + obValue(objective) + tValue(teams)
+  return `bid ${exchange} ${objective} ${teams} for ${bidValue}`
+}
+//////////////////////////////////////
+// Snackbar
+const snackbar = inject(snackKey)
+
+function submit() {
+  const { response, error } = usePut(`/sn/game/bid/${game.value.id}`, bid)
+
+  watch(response, () => update(response))
+}
+
+function pass() {
+  const { response, error } = usePut(`/sn/game/passBid/${game.value.id}`)
+
+  watch(response, () => update(response))
+}
+
+function update(response) {
+    const g = _get(response, 'value.game', {})
+    if (!_isEmpty(g)) {
+      updateGame(g)
+    }
+    const msg = _get(response, 'value.message', '')
+    if (!_isEmpty(msg)) {
+      snackbar.value.message = msg
+      snackbar.value.open = true
+    }
+}
+
+</script>

@@ -44,13 +44,12 @@ import board36 from '@/assets/board36.png'
 // Components
 import UserButton from '@/components/UserButton.vue'
 import CardStamp from '@/components/CardStamp.vue'
-import Expansion from '@/components/Expansion.vue'
+import Expansion from '@/components/Invitation/Expansion.vue'
 import { VDataTable } from 'vuetify/labs/VDataTable'
 
 // Composables
 import { useFetch } from '@/composables/fetch.js'
-import { useCreator } from '@/composables/creator.js'
-import { useUsers } from '@/composables/users.js'
+import { useCreator, useUsers } from '@/composables/user.js'
 
 // Vue
 import { computed, ref } from 'vue'

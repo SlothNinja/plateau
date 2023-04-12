@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"cloud.google.com/go/datastore"
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 )
 
 const headerKind = "Header"
@@ -13,6 +13,32 @@ const headerKind = "Header"
 type Header struct {
 	Key *datastore.Key `datastore:"__key__" json:"-"`
 	sn.Header
+}
+
+// sn.Header.Turn used to track card played in current hand
+// zero based to align with indices of trick slice
+func (g *game) trickNumber() int {
+	return g.Turn
+}
+
+func (g *game) incTrickNumber() int {
+	g.Turn++
+	return g.Turn
+}
+
+func (g *game) resetTrickNumber() int {
+	g.Turn = 0
+	return g.Turn
+}
+
+// sn.Header.Round used to track # of hands
+func (g *game) handNumber() int {
+	return g.Round
+}
+
+func (g *game) incHandNumber() int {
+	g.Round++
+	return g.Round
 }
 
 func (h Header) id() int64 {

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 	"github.com/gin-gonic/gin"
 )
@@ -81,14 +81,12 @@ func (g *game) Load(ps []datastore.Property) error {
 		return err
 	}
 
-	sn.Debugf("g.EncodedState: %#v", g.EncodedState)
 	var s state
 	err = json.Unmarshal([]byte(g.EncodedState), &s)
 	if err != nil {
 		return err
 	}
 	g.state = s
-	sn.Debugf("g.state: %#v", g.state)
 
 	var l glog
 	err = json.Unmarshal([]byte(g.EncodedLog), &l)
@@ -153,53 +151,10 @@ func (g *game) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// // CurrentWard returns the ward currently conducting an election.
-// func (g *game) CurrentWard() *ward {
-// 	return g.wardByID(g.currentWardID)
-// }
-//
-// func (g *game) wardByID(wid wardID) *ward {
-// 	return g.wards[wid]
-// }
-//
-// func (g *game) setCurrentWard(w *ward) {
-// 	wid := noWardID
-// 	if w != nil {
-// 		wid = w.ID
-// 	}
-// 	g.currentWardID = wid
-// }
-//
-// func (g *game) moveFromWard() *ward {
-// 	return g.wardByID(g.moveFromWardID)
-// }
-//
-// func (g *game) setMoveFromWard(w *ward) {
-// 	wid := noWardID
-// 	if w != nil {
-// 		wid = w.ID
-// 	}
-// 	g.moveFromWardID = wid
-// }
-//
-// // Term provides the current game term.
-// func (g *game) Term() int {
-// 	return (g.Round + 3) / 4
-// }
-//
-// // Year provides the current game year.
-// func (g *game) Year() int {
-// 	return g.Round
-// }
-
-func (g *game) setYear(y int) {
-	g.Round = y
-}
-
 // Games provides a slice of Games.
 type Games []*game
 
-func (g *game) start() {
+func (g *game) start() *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -207,49 +162,51 @@ func (g *game) start() {
 	g.Phase = setupPhase
 
 	g.addNewPlayers()
-	g.randomSeats()
-
-	// set initial dealer
-	if p := pie.First(g.players); p != nil {
-		g.dealerPID = p.id
-	}
-
-	g.deck = deckFor(g.NumPlayers)
 
 	g.newEntry(message{
 		"template": "start-game",
-		"pids":     pids(g.players),
+		"pids":     pidsFor(g.players),
 	})
 
-	g.Phase = dealPhase
-
-	// Standard Round field of header used to track hands/rounds of game
-	g.Round = 1
-
-	g.deal()
-	g.startBidPhase()
+	return g.startHand()
 }
 
 func (g *game) dealer() *player {
-	return g.playerByPID(g.dealerPID)
+	return pie.First(g.players)
 }
 
 func (g *game) forehand() *player {
-	return g.nextPlayer(g.dealer())
+	if len(g.players) < 2 {
+		return nil
+	}
+	return g.players[1]
 }
 
-func (g *game) startBidPhase() {
+func (g *game) startBidPhase() *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	g.Phase = bidPhase
-	g.setCurrentPlayers(g.forehand())
+	pie.Each(g.players, (*player).bidReset)
+	g.bids = nil
+	return g.forehand()
 }
 
 func (g *game) randomSeats() {
 	g.players = pie.Shuffle(g.players, myRandomSource)
+	g.updateOrder()
+}
 
-	// reflect player order game state to header
+// Basically a circular shift left of players so dealer is always first element in slice
+func (g *game) newDealer() {
+	oldDealer := g.dealer()
+	rest := g.players[1:]
+	g.players = append(rest, oldDealer)
+	g.updateOrder()
+}
+
+// reflect player order game state to header
+func (g *game) updateOrder() {
 	g.OrderIDS = pie.Map(g.players, func(p *player) sn.PID { return p.id })
 }
 
@@ -279,7 +236,6 @@ func (g *game) currentPlayerFor(u *sn.User) *player {
 }
 
 func (g *game) setCurrentPlayers(ps ...*player) {
-	sn.Debugf("ps: %#v", ps)
 	g.CPIDS = pie.Map(ps, func(p *player) sn.PID { return p.id })
 }
 

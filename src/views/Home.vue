@@ -12,6 +12,6 @@
 </template>
 
 <script setup>
-import Greeting from '@/components/Greeting.vue'
+import Greeting from '@/components/Home/Greeting.vue'
 import board36 from '@/assets/board36.png'
 </script>

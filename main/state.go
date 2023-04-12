@@ -3,22 +3,24 @@ package main
 import (
 	"encoding/json"
 
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 )
 
 // state stores the game state of a Tammany Hall game.
 type state struct {
-	players   []*player
-	deck      deck
-	dealerPID sn.PID
-	bids      []bid
+	players       []*player
+	deck          []card
+	declarersTeam []sn.PID
+	tricks        []trick
+	bids          []bid
 }
 
 type jState struct {
-	Players   []*player `json:"players"`
-	Deck      deck      `json:"deck"`
-	DealerPID sn.PID    `json:"dealerPID"`
-	Bids      []bid     `json:"bids"`
+	Players       []*player `json:"players"`
+	Deck          []card    `json:"deck"`
+	DeclarersTeam []sn.PID  `json:"declarersTeam"`
+	Tricks        []trick   `json:"tricks"`
+	Bids          []bid     `json:"bids"`
 }
 
 func (s state) MarshalJSON() ([]byte, error) {
@@ -26,10 +28,11 @@ func (s state) MarshalJSON() ([]byte, error) {
 	defer sn.Debugf(msgExit)
 
 	return json.Marshal(jState{
-		Players:   s.players,
-		Deck:      s.deck,
-		DealerPID: s.dealerPID,
-		Bids:      s.bids,
+		Players:       s.players,
+		Deck:          s.deck,
+		DeclarersTeam: s.declarersTeam,
+		Tricks:        s.tricks,
+		Bids:          s.bids,
 	})
 }
 
@@ -44,7 +47,8 @@ func (s *state) UnmarshalJSON(bs []byte) error {
 	}
 	s.players = obj.Players
 	s.deck = obj.Deck
-	s.dealerPID = obj.DealerPID
+	s.declarersTeam = obj.DeclarersTeam
+	s.tricks = obj.Tricks
 	s.bids = obj.Bids
 	return nil
 }

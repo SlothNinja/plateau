@@ -4,53 +4,58 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 )
 
 type glog []*entry
 
 func (g *game) newEntry(m ...message) {
 	g.glog = append(g.glog, &entry{
-		messages:  append([]message(nil), m...),
-		round:     g.Round,
-		rev:       g.rev(),
-		updatedAt: time.Now(),
+		messages:    append([]message(nil), m...),
+		handNumber:  g.handNumber(),
+		trickNumber: g.trickNumber(),
+		rev:         g.rev(),
+		updatedAt:   time.Now(),
 	})
 }
 
 func (g *game) newEntryFor(pid sn.PID, m ...message) {
 	g.glog = append(g.glog, &entry{
-		messages:  append([]message(nil), m...),
-		pid:       pid,
-		round:     g.Round,
-		rev:       g.rev(),
-		updatedAt: time.Now(),
+		messages:    append([]message(nil), m...),
+		pid:         pid,
+		handNumber:  g.handNumber(),
+		trickNumber: g.trickNumber(),
+		rev:         g.rev(),
+		updatedAt:   time.Now(),
 	})
 }
 
 type entry struct {
-	messages  []message
-	pid       sn.PID
-	round     int
-	rev       int64
-	updatedAt time.Time
+	messages    []message
+	pid         sn.PID
+	handNumber  int
+	trickNumber int
+	rev         int64
+	updatedAt   time.Time
 }
 
 type jEntry struct {
-	Messages  []message `json:"messages"`
-	PID       sn.PID    `json:"pid,omitempty"`
-	Round     int       `json:"round"`
-	Rev       int64     `json:"rev"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	Messages    []message `json:"messages"`
+	PID         sn.PID    `json:"pid,omitempty"`
+	HandNumber  int       `json:"handNumber"`
+	TrickNumber int       `json:"trickNumber"`
+	Rev         int64     `json:"rev"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 func (e entry) MarshalJSON() ([]byte, error) {
 	return json.Marshal(jEntry{
-		Messages:  e.messages,
-		PID:       e.pid,
-		Round:     e.round,
-		Rev:       e.rev,
-		UpdatedAt: e.updatedAt,
+		Messages:    e.messages,
+		PID:         e.pid,
+		HandNumber:  e.handNumber,
+		TrickNumber: e.trickNumber,
+		Rev:         e.rev,
+		UpdatedAt:   e.updatedAt,
 	})
 }
 
@@ -62,7 +67,8 @@ func (e *entry) UnmarshalJSON(bs []byte) error {
 	}
 	e.messages = obj.Messages
 	e.pid = obj.PID
-	e.round = obj.Round
+	e.handNumber = obj.HandNumber
+	e.trickNumber = obj.TrickNumber
 	e.rev = obj.Rev
 	e.updatedAt = obj.UpdatedAt
 	return nil

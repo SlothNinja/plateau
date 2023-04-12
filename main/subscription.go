@@ -6,7 +6,7 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"firebase.google.com/go/messaging"
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 	"github.com/gin-gonic/gin"
 )

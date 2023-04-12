@@ -88,6 +88,9 @@
 </template>
 
 <script setup>
+// components
+import ExpansionRow from '@/components/Invitation/ExpansionRow'
+
 // lodash
 import _get from 'lodash/get'
 import _find from 'lodash/find'
@@ -97,11 +100,10 @@ import _isEmpty from 'lodash/isEmpty'
 
 // Vue
 import { computed, ref, inject, watch } from 'vue'
-import ExpansionRow from '@/components/ExpansionRow'
-import { useFetch } from '@/composables/fetch.js'
-import { usePut } from '@/composables/put.js'
-import { useCreator } from '@/composables/creator.js'
-import { useUsers } from '@/composables/users.js'
+
+// composables
+import { useFetch, usePut } from '@/composables/fetch.js'
+import { useCreator, useUsers } from '@/composables/user.js'
 import { cuKey, snackKey } from '@/composables/keys.js'
 
 // Props

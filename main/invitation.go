@@ -7,7 +7,7 @@ import (
 
 	"cloud.google.com/go/datastore"
 	"github.com/Pallinder/go-randomdata"
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,11 +33,14 @@ func (inv *invitation) MarshalJSON() ([]byte, error) {
 		CreatorName      string           `json:"creatorName"`
 		CreatorEmailHash string           `json:"creatorEmailHash"`
 		CreatorGravType  string           `json:"creatorGravType"`
+		Status           sn.Status        `json:"status"`
+		CPIDS            []sn.PID         `json:"cpids"`
 		UserIDS          []sn.UID         `json:"userIds"`
 		UserKeys         []*datastore.Key `json:"userKeys"`
 		UserNames        []string         `json:"userNames"`
 		UserEmailHashes  []string         `json:"userEmailHashes"`
 		UserGravTypes    []string         `json:"userGravTypes"`
+		WinnerIDS        []sn.UID         `json:"winnerIds"`
 		HandsPerPlayer   int              `json:"handsPerPlayer"`
 		CreatedAt        time.Time        `json:"createdAt"`
 		UpdatedAt        time.Time        `json:"updatedAt"`
@@ -53,11 +56,14 @@ func (inv *invitation) MarshalJSON() ([]byte, error) {
 		CreatorName:      inv.CreatorName,
 		CreatorEmailHash: inv.CreatorEmailHash,
 		CreatorGravType:  inv.CreatorGravType,
+		Status:           inv.Status,
+		CPIDS:            inv.CPIDS,
 		UserIDS:          inv.UserIDS,
 		UserKeys:         inv.UserKeys,
 		UserNames:        inv.UserNames,
 		UserEmailHashes:  inv.UserEmailHashes,
 		UserGravTypes:    inv.UserGravTypes,
+		WinnerIDS:        inv.WinnerIDS,
 		HandsPerPlayer:   opt.HandsPerPlayer,
 		CreatedAt:        inv.CreatedAt,
 		UpdatedAt:        inv.UpdatedAt,

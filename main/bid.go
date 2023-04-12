@@ -2,9 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 	"github.com/gin-gonic/gin"
 )
@@ -24,21 +23,8 @@ const (
 	exchangeBid     exchange = "exchange"
 )
 
-func (b bid) value(numPlayers int) (int, error) {
-
-	ev, err := b.exchange.value(numPlayers)
-	if err != nil {
-		return 0, err
-	}
-	ov, err := b.objective.value()
-	if err != nil {
-		return 0, err
-	}
-	tv, err := b.teams.value(numPlayers)
-	if err != nil {
-		return 0, err
-	}
-	return ev + ov + tv, nil
+func (b bid) value(numPlayers int) int {
+	return b.exchange.value(numPlayers) + b.objective.value() + b.teams.value(numPlayers)
 }
 
 func minBid(numPlayers int) bid {
@@ -75,36 +61,39 @@ func (g *game) currentBid() bid {
 	return pie.Last(g.bids)
 }
 
-func (g *game) currentBidValue(numPlayers int) (int, error) {
+func (g *game) currentBidValue() int {
 	if len(g.bids) == 0 {
-		return 0, nil
+		return 0
 	}
-	return g.currentBid().value(numPlayers)
+	return g.currentBid().value(g.NumPlayers)
 }
 
-func (e exchange) value(numPlayers int) (int, error) {
+func (e exchange) value(numPlayers int) int {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
-	sn.Debugf("exchange: %q numPlayers: %d", e, numPlayers)
+
 	switch numPlayers {
 	case 2, 3, 4, 5:
 		switch e {
 		case noExchangeBid:
-			return 1, nil
+			return 2
 		case exchangeBid:
-			return 2, nil
+			return 1
 		default:
-			return 0, fmt.Errorf("%s is an invalid exchange bid: %w", e, sn.ErrValidation)
+			sn.Warningf("%s is an invalid exchange bid", e)
+			return 0
 		}
 	case 6:
 		switch e {
 		case nullExchangeBid:
-			return 0, nil
+			return 0
 		default:
-			return 0, fmt.Errorf("%s is an invalid exchange bid: %w", e, sn.ErrValidation)
+			sn.Warningf("%s is an invalid exchange bid", e)
+			return 0
 		}
 	default:
-		return 0, fmt.Errorf("%s is an invalid exchange bid: %w", e, sn.ErrValidation)
+		sn.Warningf("%s is an invalid exchange bid", e)
+		return 0
 	}
 }
 
@@ -146,28 +135,29 @@ func bidFrom(obj jBid) bid {
 type objective string
 
 const (
-	bridgeBid    objective = "bridge"
-	yBid         objective = "y"
-	forkBid      objective = "fork"
-	fiveSidesBid objective = "five sides"
-	sixSidesBid  objective = "six sides"
+	noObjectiveBid objective = ""
+	bridgeBid      objective = "bridge"
+	yBid           objective = "y"
+	forkBid        objective = "fork"
+	fiveSidesBid   objective = "five sides"
+	sixSidesBid    objective = "six sides"
 )
 
-func (o objective) value() (int, error) {
+func (o objective) value() int {
 	switch o {
-
 	case "bridge":
-		return 0, nil
+		return 0
 	case "y":
-		return 2, nil
+		return 2
 	case "fork":
-		return 4, nil
+		return 4
 	case "five sides":
-		return 6, nil
+		return 6
 	case "six sides":
-		return 8, nil
+		return 8
 	default:
-		return 0, fmt.Errorf("invalid objective bid of: %s: %w", o, sn.ErrValidation)
+		sn.Warningf("invalid objective bid of: %s", o)
+		return 0
 	}
 }
 
@@ -180,36 +170,44 @@ const (
 	trioBid   teams = "trio"
 )
 
-func (t teams) value(numPlayers int) (int, error) {
+func (t teams) value(numPlayers int) int {
 	switch numPlayers {
 	case 2, 3:
 		switch t {
 		case noTeamBid:
-			return 0, nil
+			return 0
 		default:
-			return 0, fmt.Errorf("for %d players, %s is invalid teams bid: %w", numPlayers, t, sn.ErrValidation)
+			sn.Warningf("for %d players, %s is invalid teams bid", numPlayers, t)
+			return 0
 		}
 	case 4, 5:
 		switch t {
 		case duoBid:
-			return 0, nil
+			return 0
 		case soloBid:
-			return 5, nil
+			return 5
 		default:
-			return 0, fmt.Errorf("for %d players, %s is invalid teams bid: %w", numPlayers, t, sn.ErrValidation)
+			sn.Warningf("for %d players, %s is invalid teams bid", numPlayers, t)
+			return 0
 		}
 	case 6:
 		switch t {
 		case trioBid:
-			return 0, nil
+			return 0
 		case duoBid:
-			return 5, nil
+			return 5
 		case soloBid:
-			return 10, nil
+			return 10
 		default:
-			return 0, fmt.Errorf("for %d players, %s is invalid teams bid: %w", numPlayers, t, sn.ErrValidation)
+			sn.Warningf("for %d players, %s is invalid teams bid", numPlayers, t)
+			return 0
 		}
 	default:
-		return 0, fmt.Errorf("for %d players, %s is invalid teams bid: %w", numPlayers, t, sn.ErrValidation)
+		sn.Warningf("for %d players, %s is invalid teams bid", numPlayers, t)
+		return 0
 	}
+}
+
+func (g *game) lastBid() bid {
+	return pie.Last(g.bids)
 }

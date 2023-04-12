@@ -13,7 +13,7 @@ import (
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
 	"github.com/SlothNinja/log"
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -46,29 +46,19 @@ const (
 	// used to specify the credentials for connecting to the client
 	PlateauCreds = "PLATEAU_CREDS"
 
-	sessionName              = "sng-oauth"
-	invitationsPath          = "invitations"
-	selectWardPath           = "selectWard/:id"
-	placePiecesPath          = "place/:id"
-	removeImmigrantPath      = "remove/:id"
-	moveImmigrantFromPath    = "move-from/:id"
-	moveImmigrantToPath      = "move-to/:id"
-	lockUpPath               = "lock-up/:id"
-	slanderPath              = "slander/:id"
-	takeChipPath             = "takeChip/:id"
-	deputyTakeChipPath       = "deputyTakeChip/:id"
-	assignOfficesPath        = "assignOffices/:id"
-	actionsFinishPath        = "actionsFinish/:id"
-	takeChipFinishPath       = "takeChipFinish/:id"
-	assignOfficesFinishPath  = "assignOfficesFinish/:id"
-	electionsFinishPath      = "electionsFinish/:id"
-	placeImmigrantFinishPath = "placeImmigrantFinish/:id"
-	resetPath                = "/reset/:id"
-	undoPath                 = "/undo/:id"
-	redoPath                 = "/redo/:id"
-	rollbackPath             = "/rollback/:id"
-	rollforwardPath          = "/rollforward/:id"
-	subPath                  = "/subscribe/:id"
+	sessionName           = "sng-oauth"
+	invitationsPath       = "invitations"
+	selectWardPath        = "selectWard/:id"
+	placePiecesPath       = "place/:id"
+	removeImmigrantPath   = "remove/:id"
+	moveImmigrantFromPath = "move-from/:id"
+	moveImmigrantToPath   = "move-to/:id"
+	lockUpPath            = "lock-up/:id"
+	slanderPath           = "slander/:id"
+	takeChipPath          = "takeChip/:id"
+	deputyTakeChipPath    = "deputyTakeChip/:id"
+	assignOfficesPath     = "assignOffices/:id"
+	subPath               = "/subscribe/:id"
 )
 
 func projectID() string {
@@ -282,67 +272,37 @@ func (cl *Client) addRoutes(prefix string) *Client {
 
 	// Place Bid
 	g.PUT("bid/:id", cl.bidHandler)
-	// 	// // Select Ward
-	// 	// g.PUT(selectWardPath, cl.selectWard)
-	//
-	// 	// Place Pieces
-	// 	g.PUT(placePiecesPath, cl.placePiecesHandler)
-	//
-	// 	// Remove Immigrant
-	// 	g.PUT(removeImmigrantPath, cl.removeImmigrantHandler)
-	//
-	// 	// Move Immigrant From
-	// 	g.PUT(moveImmigrantFromPath, cl.moveImmigrantFromHandler)
-	//
-	// 	// Move Immigrant To
-	// 	g.PUT(moveImmigrantToPath, cl.moveImmigrantToHandler)
-	//
-	// 	// Lock Up
-	// 	g.PUT(lockUpPath, cl.lockUpHandler)
-	//
-	// 	// Slander Boss
-	// 	g.PUT(slanderPath, cl.slanderHandler)
-	//
-	// 	// Take Chip
-	// 	g.PUT(takeChipPath, cl.takeChipHandler)
-	//
-	// 	// Deputy Take Chip
-	// 	g.PUT(deputyTakeChipPath, cl.deputyTakeChipHandler)
-	//
-	// 	// Assign Offices
-	// 	g.PUT(assignOfficesPath, cl.assignOfficesHandler)
-	//
 
-	// 	// Actions Finish
-	// 	g.PUT(actionsFinishPath, cl.actionsFinishTurnHandler)
-	//
-	// 	// Take Chip Finish
-	// 	g.PUT(takeChipFinishPath, cl.takeChipFinishTurnHandler)
-	//
-	// 	// Elections Finish
-	// 	g.PUT(electionsFinishPath, cl.electionsFinishTurnHandler)
-	//
-	// 	// Place Immigrant Finish
-	// 	g.PUT(placeImmigrantFinishPath, cl.placeImmigrantFinishTurnHandler)
-	//
-	// 	// Assign Offices Finish
-	// 	g.PUT(assignOfficesFinishPath, cl.assignOfficesFinishTurnHandler)
-	//
-	// 	// Reset
-	// 	g.PUT(resetPath, cl.resetHandler)
-	//
-	// 	// Undo
-	// 	g.PUT(undoPath, cl.undoHandler)
-	//
-	// 	// Redo
-	// 	g.PUT(redoPath, cl.redoHandler)
-	//
-	// 	// Rollback
-	// 	g.PUT(rollbackPath, cl.rollbackHandler)
-	//
-	// 	// Rollforward
-	// 	g.PUT(rollforwardPath, cl.rollforwardHandler)
-	//
+	// Pass Bid
+	g.PUT("passBid/:id", cl.passBidHandler)
+
+	// Increase Objective
+	g.PUT("incObjective/:id", cl.incObjectiveHandler)
+
+	// Card Exchange
+	g.PUT("exchange/:id", cl.exchangeHandler)
+
+	// Play Card
+	g.PUT("play/:id", cl.playCardHandler)
+
+	// Actions Finish
+	g.PUT("finish/:id", cl.finishTurnHandler)
+
+	// Reset
+	g.PUT("reset/:id", cl.resetHandler)
+
+	// Undo
+	g.PUT("undo/:id", cl.undoHandler)
+
+	// Redo
+	g.PUT("redo/:id", cl.redoHandler)
+
+	// Rollback
+	g.PUT("rollback/:id", cl.rollbackHandler)
+
+	// Rollforward
+	g.PUT("rollforward/:id", cl.rollforwardHandler)
+
 	// 	// Sub
 	// 	g.PUT(subPath, cl.subHandler)
 	//

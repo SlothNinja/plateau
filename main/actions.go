@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/SlothNinja/sn/v2"
+	"github.com/SlothNinja/sn/v3"
 )
 
 func (g *game) validatePlayerAction(cu *sn.User) (*player, error) {

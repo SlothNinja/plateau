@@ -1,0 +1,19 @@
+import { unref } from 'vue'
+import _find from 'lodash/find'
+import _get from 'lodash/get'
+import { usePIDFor } from '@/composables/pidFor.js'
+
+export function useCP(game) {
+  const cpid = useCPID(game)
+  const players = _get(unref(game), 'state.players', [])
+  return _find(players, [ 'id', cpid ])
+}
+
+export function useCPID(game) {
+  const g = unref(game)
+  return _get(g, 'header.cpids[0]', -1)
+}
+
+export function useIsCP(game, cu) {
+  return usePIDFor(game, cu) == useCPID(game)
+}

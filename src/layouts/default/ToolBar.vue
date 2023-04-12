@@ -1,11 +1,10 @@
 <template>
   <v-app-bar color='green' class='d-flex' >
     <div class='d-flex w-100 justify-space-between'>
-      <v-tooltip bottom color='info' dark>
-        <template v-slot:activator='{ prop }'>
-          <v-app-bar-nav-icon v-bind='prop' @click.stop="value = !value" ></v-app-bar-nav-icon>
+      <v-tooltip location='bottom' text='Menu' color='info' >
+        <template v-slot:activator='{ props }'>
+          <v-app-bar-nav-icon v-bind='props' @click="$emit('toggleNav')" ></v-app-bar-nav-icon>
         </template>
-        <span>Menu</span>
       </v-tooltip>
       <slot></slot>
       <v-sheet color='white' min-width='100' class='mx-1' >
@@ -20,17 +19,18 @@
   import { computed } from 'vue'
   import logo100 from '@/assets/slothninja_logo_100.png'
 
-  const props = defineProps(['modelValue'])
-  const emit = defineEmits(['update:modelValue'])
+  // const props = defineProps(['modelValue'])
+  // const emit = defineEmits(['update:modelValue'])
+  defineEmits(['toggleNav'])
 
-  const value = computed({
-    get() {
-      return props.modelValue
-    },
-    set(value) {
-      emit('update:modelValue', value)
-    }
-  })
+  // const value = computed({
+  //   get() {
+  //     return props.modelValue
+  //   },
+  //   set(value) {
+  //     emit('update:modelValue', value)
+  //   }
+  // })
 </script>
 
 <!--

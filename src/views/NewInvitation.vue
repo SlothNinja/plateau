@@ -2,7 +2,7 @@
   <v-container fluid>
     <v-row>
       <v-col>
-        <InvitationForm />
+        <Form />
       </v-col>
       <v-col>
         <Permissions />
@@ -12,7 +12,7 @@
 </template>
 
 <script setup>
-import Permissions from '@/components/Permissions.vue'
-import InvitationForm from '@/components/InvitationForm.vue'
+import Permissions from '@/components/Invitation/Permissions.vue'
+import Form from '@/components/Invitation/Form.vue'
 
 </script>

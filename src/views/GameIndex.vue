@@ -20,7 +20,9 @@
             {{item.raw.numPlayers}} : {{item.raw.roundsPerPlayer}}
           </template>
           <template v-slot:item.players="{ item }">
-            <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item.raw)' :key='user.id' />
+            <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item.raw)' :key='user.id'>
+              <span :class='userClass(item, user)'>{{user.name}}</span>
+            </UserButton>
           </template>
         </v-data-table>
         <div v-else>No Invitations</div>
@@ -33,6 +35,11 @@
 // Assets
 import board36 from '@/assets/board36.png'
 
+// inject current user
+import { cuKey } from '@/composables/keys.js'
+const cu = inject(cuKey)
+const cuid = computed(() => (_get(cu, 'value.id', -1)))
+
 // Components
 import UserButton from '@/components/UserButton.vue'
 import CardStamp from '@/components/CardStamp.vue'
@@ -40,11 +47,10 @@ import { VDataTable } from 'vuetify/labs/VDataTable'
 
 // Composables
 import { useFetch } from '@/composables/fetch.js'
-import { useCreator } from '@/composables/creator.js'
-import { useUsers } from '@/composables/users.js'
+import { useCreator, useUsers } from '@/composables/user.js'
 
 // Vue
-import { computed, ref } from 'vue'
+import { computed, inject, ref, unref } from 'vue'
 
 // Lodash
 import _get from 'lodash/get'
@@ -52,6 +58,10 @@ import _findIndex from 'lodash/findIndex'
 import _filter from 'lodash/filter'
 import _size from 'lodash/size'
 import _capitalize from 'lodash/capitalize'
+import _indexOf from 'lodash/indexOf'
+import _includes from 'lodash/includes'
+import _nth from 'lodash/nth'
+import _isEmpty from 'lodash/isEmpty'
 
 // Vue router
 import { useRoute, useRouter } from 'vue-router'
@@ -93,6 +103,42 @@ function show(event, data) {
   if (id != -1) {
     router.push({ name: 'GameShow', params: { id: id } })
   }
+} 
+
+function userClass(item, user) {
+  const itm = _get(item, 'raw', {})
+  if (_isEmpty(itm)) {
+    return ''
+  }
+
+  const uid = _get(unref(user), 'id', -1)
+
+  if (itm.status == 'completed') {
+    return winnerClass(itm, uid)
+  } 
+  return cpClass(itm, uid)
+}
+
+function cpClass(itm, uid) {
+  const pid = _indexOf(_get(itm, 'userIds', []), uid) + 1
+
+  if (_includes(_get(itm, 'cpids', []), pid)) {
+    if (unref(cuid) == uid) {
+      return 'font-weight-black text-red-darken-4'
+    }
+    return 'font-weight-black'
+  }
+  return ''
+}
+
+function winnerClass(itm, uid) {
+  if (_includes(_get(itm, 'winnerIds', []), uid)) {
+    if (unref(cuid) == usid) {
+      return 'font-weight-black text-red-darken-4'
+    }
+    return 'font-weight-black'
+  }
+  return ''
 }
 
 </script>
