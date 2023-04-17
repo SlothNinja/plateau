@@ -17,7 +17,7 @@
               <UserButton
                   :user='useUserByIndex(game.header, p.id-1)'
                   :size='24'
-                  :color='colorFor(p.id)'
+                  :color='useColorFor(game, p.id)'
                   />
             </td>
             <td class='text-center'>{{bidLabel(p.id)}}</td>
@@ -37,6 +37,7 @@ import UserButton from '@/components/UserButton.vue'
 import { bidValue } from '@/composables/bid.js'
 import { useUserByIndex } from '@/composables/user.js'
 import { useIsCP, usePlayerByPID } from '@/composables/player.js'
+import { useColorFor } from '@/composables/color.js'
 
 // import lodash
 import _find from 'lodash/find'
@@ -80,12 +81,5 @@ function cpClass(player) {
     return 'font-weight-black'
   }
   return ''
-}
-
-function colorFor(pid) {
-  if (_includes(_get(game, 'value.state.declarersTeam', []), pid)) {
-    return 'rgb(150 0 0)'
-  }
-  return 'rgb(0 0 150)'
 }
 </script>

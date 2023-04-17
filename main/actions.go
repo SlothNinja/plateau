@@ -8,7 +8,7 @@ import (
 	"github.com/SlothNinja/sn/v3"
 )
 
-func (g *game) validatePlayerAction(cu *sn.User) (*player, error) {
+func (g game) validatePlayerAction(cu sn.User) (*player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -23,41 +23,20 @@ func (g *game) validatePlayerAction(cu *sn.User) (*player, error) {
 	}
 }
 
-func (g *game) validateCurrentPlayer(cu *sn.User) (*player, error) {
+func (g game) validateCurrentPlayer(cu sn.User) (*player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	cp := g.currentPlayerFor(cu)
-	switch {
-	case cu == nil:
-		return nil, sn.ErrNotFound
-	case cp == nil:
+	if cp == nil {
 		return nil, sn.ErrPlayerNotFound
-	default:
-		return cp, nil
-	}
-}
-
-func (g *game) validateCPorAdmin(cu *sn.User) (*player, error) {
-	cp, err := g.validateCurrentPlayer(cu)
-	if err == nil {
-		return cp, nil
-	}
-
-	err = validateAdmin(cu)
-	if err != nil {
-		return nil, err
 	}
 	return cp, nil
 }
 
-func validateAdmin(cu *sn.User) error {
-	switch {
-	case cu == nil:
-		return sn.ErrNotFound
-	case !cu.Admin:
-		return errors.New("not admin")
-	default:
+func validateAdmin(cu sn.User) error {
+	if cu.IsAdmin() {
 		return nil
 	}
+	return errors.New("not admin")
 }

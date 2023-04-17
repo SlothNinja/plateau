@@ -8,7 +8,6 @@ import (
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
-	"github.com/gin-gonic/gin"
 )
 
 // Player represents a player of the game.
@@ -93,11 +92,11 @@ func (p *player) bidReset() {
 
 // type slanderChips map[int]bool
 
-// func sortedByAll(ps []*player, c comparison) {
+// func sortedByAll(ps []player, c comparison) {
 // 	sort.SliceStable(ps, func(i, j int) bool { return ps[i].compare(ps[j]) == c })
 // }
 
-// func sortedByChipsAndMayor(ps []*player, c comparison) {
+// func sortedByChipsAndMayor(ps []player, c comparison) {
 // 	sort.SliceStable(ps, func(i, j int) bool { return ps[i].compareWithoutScore(ps[j]) == c })
 // }
 
@@ -125,7 +124,7 @@ const (
 	descending             = greaterThan
 )
 
-// func (p *player) compare(p2 *player) comparison {
+// func (p player) compare(p2 player) comparison {
 // 	c := p.compareByScore(p2)
 // 	if c == equalTo {
 // 		return p.compareWithoutScore(p2)
@@ -133,7 +132,7 @@ const (
 // 	return c
 // }
 
-// func (p *player) compareWithoutScore(p2 *player) comparison {
+// func (p player) compareWithoutScore(p2 player) comparison {
 // 	c := p.compareByTotalChips(p2)
 // 	if c != equalTo {
 // 		return c
@@ -145,7 +144,7 @@ const (
 // 	return p.compareByMayor(p2)
 // }
 
-// func (p *player) compareByTotalChips(p2 *player) comparison {
+// func (p player) compareByTotalChips(p2 player) comparison {
 // 	switch {
 // 	case p.Chips.count() < p2.Chips.count():
 // 		return lessThan
@@ -156,7 +155,7 @@ const (
 // 	}
 // }
 
-// func (p *player) compareByFavors(p2 *player) comparison {
+// func (p player) compareByFavors(p2 player) comparison {
 // 	for _, n := range nationalities() {
 // 		switch {
 // 		case p.Chips[n] < p2.Chips[n]:
@@ -168,7 +167,7 @@ const (
 // 	return equalTo
 // }
 //
-// func (p *player) compareByMayor(p2 *player) comparison {
+// func (p player) compareByMayor(p2 player) comparison {
 // 	m1, m2 := p.Office == mayor, p2.Office == mayor
 // 	switch {
 // 	case !m1 && m2:
@@ -182,10 +181,10 @@ const (
 
 // equal returns true if players equal, false otherwise.
 func (p *player) equal(op *player) bool {
-	return p != nil && op != nil && p.id == op.id
+	return p == op
 }
 
-func (client *Client) determinePlaces(c *gin.Context, g *game) (sn.Results, error) {
+func (client Client) determinePlaces(g *game) (sn.Results, error) {
 	rs := make(sn.Results)
 	sortedByScore(g.players, descending)
 	ps := make([]*player, len(g.players))
@@ -232,16 +231,16 @@ func (client *Client) determinePlaces(c *gin.Context, g *game) (sn.Results, erro
 // }
 
 // // maxInfluenceIn returns the maximal amount of influence a player has in a ward w if bid all relevant favor chips.
-// func (p *player) maxInfluenceIn(w *ward) int {
+// func (p player) maxInfluenceIn(w *ward) int {
 // 	return w.bossesFor(p) + w.playableChipsFor(p)
 // }
 //
-// func (p *player) electionCountIn(w *ward) int {
+// func (p player) electionCountIn(w *ward) int {
 // 	return p.PlayedChips.count() + w.bossesFor(p)
 // }
 //
 // // chipsFor returns the number of favor chips a player has for a given nationality.
-// func (p *player) chipsFor(n nationality) int {
+// func (p player) chipsFor(n nationality) int {
 // 	return p.Chips[n]
 // }
 
@@ -252,7 +251,7 @@ func (g *game) addNewPlayers() {
 	}
 }
 
-func (g *game) newPlayer(i int) *player {
+func (g game) newPlayer(i int) *player {
 	return &player{
 		id:     sn.PID(i + 1),
 		colors: defaultColors(),
@@ -260,7 +259,7 @@ func (g *game) newPlayer(i int) *player {
 }
 
 // Controlled provides a count of the immigrants of the given nationality in the wards having a boss of the player.
-// func (g *game) controlledBy(p *player, n nationality) int {
+// func (g *game) controlledBy(p player, n nationality) int {
 // 	var cnt int
 // 	for _, w := range g.activeWards() {
 // 		if w.bossesFor(p) > 0 {
@@ -270,17 +269,17 @@ func (g *game) newPlayer(i int) *player {
 // 	return cnt
 // }
 //
-// func (p *player) placedPieces() int {
+// func (p player) placedPieces() int {
 // 	return p.PlacedBosses + p.PlacedImmigrants
 // }
 
 // IndexFor returns the index for the player and bool indicating whether player found.
 // if not found, returns -1
-func (g *game) indexFor(p1 *player) int {
+func (g game) indexFor(p1 *player) int {
 	return pie.FindFirstUsing(g.players, func(p2 *player) bool { return p1.equal(p2) })
 }
 
-func (g *game) playerByPID(pid sn.PID) *player {
+func (g game) playerByPID(pid sn.PID) *player {
 	const notFound = -1
 	index := pie.FindFirstUsing(g.players, func(p *player) bool { return p.id == pid })
 	if index == notFound {
@@ -289,7 +288,7 @@ func (g *game) playerByPID(pid sn.PID) *player {
 	return g.players[index]
 }
 
-func (g *game) playerByUID(uid sn.UID) *player {
+func (g game) playerByUID(uid sn.UID) *player {
 	const notFound = -1
 	index := pie.FindFirstUsing(g.UserIDS, func(id sn.UID) bool { return id == uid })
 	if index == notFound {
@@ -299,7 +298,7 @@ func (g *game) playerByUID(uid sn.UID) *player {
 }
 
 // treats players as a circular buffer, thus permitting indices larger than length and indices less than 0
-func (g *game) playerByIndex(i int) *player {
+func (g game) playerByIndex(i int) *player {
 	l := len(g.players)
 	if l < 1 {
 		return nil
@@ -312,7 +311,7 @@ func (g *game) playerByIndex(i int) *player {
 	return g.players[r]
 }
 
-func (g *game) playerByUserKey(key *datastore.Key) *player {
+func (g game) playerByUserKey(key *datastore.Key) *player {
 	const notFound = -1
 	i := pie.FindFirstUsing(g.UserKeys, func(k *datastore.Key) bool { return key.Equal(k) })
 	if i == notFound {
@@ -325,21 +324,21 @@ func pidsFor(ps []*player) []sn.PID {
 	return pie.Map(ps, func(p *player) sn.PID { return p.id })
 }
 
-func (g *game) uidForPID(pid sn.PID) sn.UID {
+func (g game) uidForPID(pid sn.PID) sn.UID {
 	return g.UserIDS[pid.ToIndex()]
 }
 
-func (g *game) uidsForPIDS(pids []sn.PID) []sn.UID {
+func (g game) uidsForPIDS(pids []sn.PID) []sn.UID {
 	return pie.Map(pids, func(pid sn.PID) sn.UID { return g.uidForPID(pid) })
 }
 
-func (g *game) userKeyFor(pid sn.PID) *datastore.Key {
+func (g game) userKeyFor(pid sn.PID) *datastore.Key {
 	return g.UserKeys[pid.ToIndex()]
 }
 
 // // ps is an optional parameter.
 // // If no player is provided, assume current player.
-// func (g *game) nextPlayer(ps ...*player) *player {
+// func (g *game) nextPlayer(ps ...player) player {
 // 	if len(ps) == 1 {
 // 		i, _ := g.indexFor(ps[0])
 // 		return g.playerByIndex(i + 1)
@@ -359,7 +358,7 @@ type test func(*player) bool
 // cp specifies the current
 // return player after cp that satisfies all tests ts
 // if tests ts is empty, return player after cp
-func (g game) nextPlayer(cp *player, ts ...test) (np *player) {
+func (g game) nextPlayer(cp *player, ts ...test) *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 

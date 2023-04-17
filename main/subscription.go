@@ -112,7 +112,7 @@ func (cl *Client) getSubsFor(c *gin.Context, gid int64, cuid sn.UID) ([]*Sub, er
 	return subs, err
 }
 
-func (cl *Client) sendNotifications(c *gin.Context, g *game) error {
+func (cl *Client) sendNotifications(c *gin.Context, g game) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 

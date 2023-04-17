@@ -12,7 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (cl *Client) newInvitationHandler(c *gin.Context) {
+func (cl Client) newInvitationHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -25,7 +25,7 @@ func (cl *Client) newInvitationHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"invitation": inv})
 }
 
-func (cl *Client) createHandler(c *gin.Context) {
+func (cl Client) createHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -47,15 +47,17 @@ func (cl *Client) createHandler(c *gin.Context) {
 		sn.JErr(c, err)
 		return
 	}
-	t := time.Now()
-	inv.Key = newInvitationKey(ks[0].ID)
-	inv.CreatedAt, inv.UpdatedAt = t, t
 
 	_, err = cl.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
+		t := time.Now()
+		inv.Key = newInvitationKey(ks[0].ID)
+		inv.CreatedAt, inv.UpdatedAt = t, t
+
 		m := sn.NewMLog(inv.Key.ID)
 		m.UpdatedAt, m.CreatedAt = t, t
+
 		ks := []*datastore.Key{inv.Key, m.Key}
-		es := []interface{}{inv, m}
+		es := []interface{}{&inv, &m}
 
 		_, err := tx.PutMulti(ks, es)
 		return err
@@ -86,7 +88,7 @@ const (
 	maxRounds     = 5
 )
 
-func (inv *invitation) fromForm(c *gin.Context, cu *sn.User) error {
+func (inv *invitation) fromForm(c *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -116,7 +118,7 @@ func (inv *invitation) fromForm(c *gin.Context, cu *sn.User) error {
 	if obj.RoundsPerPlayer >= minRounds && obj.RoundsPerPlayer <= maxRounds {
 		rounds = obj.RoundsPerPlayer
 	}
-	inv.OptString, err = options(rounds)
+	inv.OptString, err = encodeOptions(rounds)
 	if err != nil {
 		return err
 	}
@@ -135,38 +137,12 @@ func (inv *invitation) fromForm(c *gin.Context, cu *sn.User) error {
 	return nil
 }
 
-func (cl *Client) invitationsIndexHandler(c *gin.Context) {
+func (cl Client) invitationsIndexHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	// obj := struct {
-	// 	Options struct {
-	// 		ItemsPerPage int `json:"itemsPerPage"`
-	// 	} `json:"options"`
-	// 	Forward string `json:"forward"`
-	// }{}
-
-	// err := c.ShouldBind(&obj)
-	// if err != nil {
-	// 	sn.JErr(c, err)
-	// 	return
-	// }
-
-	// cu, err := cl.User.Current(c)
-	// if err != nil {
-	// 	sn.JErr(c, err)
-	// 	return
-	// }
-
-	// forward, err := datastore.DecodeCursor(obj.Forward)
-	// if err != nil {
-	// 	sn.JErr(c, err)
-	// 	return
-	// }
-
 	q := datastore.
 		NewQuery(invitationKind).
-		// FilterField("Status", "=", sn.Recruiting.String()).
 		FilterField("Status", "=", sn.Recruiting.String()).
 		Order("-UpdatedAt")
 
@@ -177,50 +153,7 @@ func (cl *Client) invitationsIndexHandler(c *gin.Context) {
 		return
 	}
 
-	for _, inv := range es {
-		cl.Log.Debugf("inv: %#v", inv)
-	}
-
-	// cnt, err := cl.DS.Count(c, q)
-	// if err != nil {
-	// 	sn.JErr(c, err)
-	// 	return
-	// }
-
-	// cl.Log.Debugf("cnt: %d", cnt)
-
-	// items := obj.Options.ItemsPerPage
-	// if obj.Options.ItemsPerPage == -1 {
-	// 	items = cnt
-	// }
-
-	// var es []*invitation
-	// it := cl.DS.Run(c, q.Start(forward))
-	// for i := 0; i < items; i++ {
-	// 	var inv invitation
-	// 	_, err := it.Next(&inv)
-	// 	if err == iterator.Done {
-	// 		break
-	// 	}
-	// 	if err != nil {
-	// 		sn.JErr(c, err)
-	// 		return
-	// 	}
-	// 	es = append(es, &inv)
-	// }
-
-	// forward, err = it.Cursor()
-	// if err != nil {
-	// 	sn.JErr(c, err)
-	// 	return
-	// }
-
-	c.JSON(http.StatusOK, gin.H{
-		"invitations": es,
-		// "totalItems":  cnt,
-		// "forward":     forward.String(),
-		// "cu":          cu,
-	})
+	c.JSON(http.StatusOK, gin.H{"invitations": es})
 }
 
 type detail struct {
@@ -231,7 +164,7 @@ type detail struct {
 	WP     float32 `json:"wp"`
 }
 
-func (cl *Client) detailsHandler(c *gin.Context) {
+func (cl Client) detailsHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -278,14 +211,10 @@ func (cl *Client) detailsHandler(c *gin.Context) {
 		}
 	}
 
-	for i, d := range details {
-		cl.Log.Debugf("details[%d]: %#v", i, d)
-	}
-
 	c.JSON(http.StatusOK, gin.H{"details": details})
 }
 
-func (cl *Client) acceptHandler(c *gin.Context) {
+func (cl Client) acceptHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -313,13 +242,13 @@ func (cl *Client) acceptHandler(c *gin.Context) {
 
 	start, err := inv.AcceptWith(cu, []byte(obj.Password))
 	if err != nil {
-		cl.Log.Debugf("accept err: %v", err)
 		sn.JErr(c, err)
 		return
 	}
 
 	if !start {
-		_, err = cl.DS.Put(c, inv.Key, inv)
+		inv.UpdatedAt = time.Now()
+		_, err = cl.DS.Put(c, inv.Key, &inv)
 		if err != nil {
 			sn.JErr(c, err)
 			return
@@ -331,22 +260,25 @@ func (cl *Client) acceptHandler(c *gin.Context) {
 		return
 	}
 
+	// start game
 	g := newGame(inv.Key.ID, 0)
 	g.Header = inv.Header.Header
-	cp := g.start()
+	g.start()
+	g.startHand()
+	cp := g.startBidPhase()
 	g.setCurrentPlayers(cp)
 
 	_, err = cl.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
-		cl.Log.Debugf("inv.Key: %s", inv.Key)
 		err = tx.Delete(inv.Key)
 		if err != nil {
 			return err
 		}
 
-		g.StartedAt = time.Now()
+		t := time.Now()
+		g.StartedAt, g.UpdatedAt = t, t
 		h := g.Header
 		_, err = tx.PutMulti([]*datastore.Key{g.headerKey(), committedKey(g.id()), g.Key},
-			[]interface{}{&h, g, g})
+			[]interface{}{&h, &g, &g})
 		return err
 	})
 	if err != nil {
@@ -370,7 +302,7 @@ func (cl *Client) acceptHandler(c *gin.Context) {
 	})
 }
 
-func (cl *Client) dropHandler(c *gin.Context) {
+func (cl Client) dropHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -396,7 +328,8 @@ func (cl *Client) dropHandler(c *gin.Context) {
 		inv.Status = sn.Aborted
 	}
 
-	_, err = cl.DS.Put(c, inv.Key, inv)
+	inv.UpdatedAt = time.Now()
+	_, err = cl.DS.Put(c, inv.Key, &inv)
 	if err != nil {
 		sn.JErr(c, err)
 		return

@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (cl *Client) finishTurnHandler(c *gin.Context) {
+func (cl Client) finishTurnHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -39,13 +39,13 @@ func (cl *Client) finishTurnHandler(c *gin.Context) {
 
 	switch g.Phase {
 	case bidPhase:
-		cp, np, err = g.bidFinishTurn(c, cu)
+		cp, np, err = g.bidFinishTurn(cu)
 	case exchangePhase:
-		cp, np, err = g.exchangeFinishTurn(c, cu)
+		cp, np, err = g.exchangeFinishTurn(cu)
 	case incObjectivePhase:
-		cp, np, err = g.incObjectiveFinishTurn(c, cu)
+		cp, np, err = g.incObjectiveFinishTurn(cu)
 	case cardPlayPhase:
-		cp, np, err = g.playCardFinishTurn(c, cu)
+		cp, np, err = g.playCardFinishTurn(cu)
 	default:
 		err = fmt.Errorf("cannot finish turn during %q phase: %w", g.Phase, sn.ErrValidation)
 
@@ -59,7 +59,7 @@ func (cl *Client) finishTurnHandler(c *gin.Context) {
 	cp.stats.Moves++
 	cp.stats.Think += time.Since(gc.UpdatedAt)
 
-	if np != nil {
+	if np.id != sn.NoPID {
 		np.reset()
 		// g.beginningOfTurnReset()
 		g.setCurrentPlayers(np)
@@ -80,7 +80,7 @@ func (cl *Client) finishTurnHandler(c *gin.Context) {
 
 }
 
-func (g *game) validateFinishTurn(c *gin.Context, cu *sn.User) (*player, error) {
+func (g game) validateFinishTurn(cu sn.User) (*player, error) {
 	cp, err := g.validateCurrentPlayer(cu)
 	switch {
 	case err != nil:

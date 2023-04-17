@@ -81,7 +81,7 @@ func (g *game) appendEntry(m ...message) {
 	e.rev = g.rev()
 }
 
-func (g *game) lastEntry() *entry {
+func (g game) lastEntry() *entry {
 	l := len(g.glog)
 	if l == 0 {
 		return nil

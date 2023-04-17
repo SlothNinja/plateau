@@ -126,8 +126,8 @@ func (r rank) value() int {
 	if !ok {
 		// noRank value = 0
 		// a card should always have a rank so noRank is sort of a catchall invalid value
-		return 0
 		sn.Warningf("invalid rank of %s", r)
+		return 0
 	}
 	return v
 }
@@ -157,8 +157,8 @@ func toRank(v int) rank {
 	if !ok {
 		// noRank value = 0
 		// a card should always have a rank so noRank is sort of a catchall invalid value
-		return noRank
 		sn.Warningf("invalid value of %d", v)
+		return noRank
 	}
 	return r
 }
@@ -178,4 +178,19 @@ func getCards(c *gin.Context) ([]card, error) {
 
 func cardsFrom(obj []jCard) []card {
 	return pie.Map(obj, func(c jCard) card { return card{suit: c.Suit, rank: c.Rank} })
+}
+
+func (g game) cardsFor(team []sn.PID) []card {
+	var cards []card
+	pie.Each(g.tricksFor(team), func(t trick) {
+		cards = append(cards, pie.Map(t.cards, func(c card) card {
+			c.playedBy = sn.NoPID
+			return c
+		})...)
+	})
+	return cards
+}
+
+func (c card) toSpace() space {
+	return space{c.rank, kind(c.suit)}
 }

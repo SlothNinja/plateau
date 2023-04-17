@@ -57,11 +57,11 @@ func getBid(c *gin.Context) (bid, error) {
 	return bidFrom(obj), nil
 }
 
-func (g *game) currentBid() bid {
+func (g game) currentBid() bid {
 	return pie.Last(g.bids)
 }
 
-func (g *game) currentBidValue() int {
+func (g game) currentBidValue() int {
 	if len(g.bids) == 0 {
 		return 0
 	}
@@ -208,6 +208,10 @@ func (t teams) value(numPlayers int) int {
 	}
 }
 
-func (g *game) lastBid() bid {
+func (g game) lastBid() bid {
 	return pie.Last(g.bids)
+}
+
+func (b bid) includesPartner() bool {
+	return b.teams == duoBid || b.teams == trioBid
 }

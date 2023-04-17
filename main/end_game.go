@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"net/http"
 	"text/template"
@@ -18,7 +17,7 @@ import (
 // type endGameVPs map[sn.PID]chips
 // type crmap map[*datastore.Key]*sn.CurrentRating
 
-func (cl *Client) endGame(c *gin.Context, g *game, uid sn.UID) {
+func (cl Client) endGame(c *gin.Context, g game, uid sn.UID) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -63,7 +62,7 @@ func (cl *Client) endGame(c *gin.Context, g *game, uid sn.UID) {
 	_, err = cl.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
 		h := g.Header
 		ks := []*datastore.Key{g.headerKey(), g.gameKey(), g.committedKey()}
-		es := []interface{}{&h, g, g}
+		es := []interface{}{&h, &g, &g}
 
 		for _, stat := range stats {
 			ks = append(ks, stat.Key)
@@ -182,13 +181,9 @@ type result struct {
 
 type results []result
 
-func (cl *Client) sendEndGameNotifications(c *gin.Context, g *game, oldElos, newElos []*sn.Elo) error {
+func (cl Client) sendEndGameNotifications(c *gin.Context, g game, oldElos, newElos []*sn.Elo) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
-
-	if g == nil {
-		return errors.New("cl.g was nil")
-	}
 
 	g.Status = sn.Completed
 	rs := make(results, g.NumPlayers)
@@ -258,6 +253,6 @@ func (cl *Client) sendEndGameNotifications(c *gin.Context, g *game, oldElos, new
 	return err
 }
 
-func (g *game) winnerNames() []string {
+func (g game) winnerNames() []string {
 	return pie.Map(g.WinnerIDS, func(uid sn.UID) string { return g.NameFor(g.playerByUID(uid).id) })
 }

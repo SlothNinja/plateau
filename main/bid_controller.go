@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (cl *Client) bidHandler(c *gin.Context) {
+func (cl Client) bidHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -35,13 +35,10 @@ func (cl *Client) bidHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"game": g,
-		"cu":   cu,
-	})
+	c.JSON(http.StatusOK, gin.H{"game": g})
 }
 
-func (g *game) placeBid(c *gin.Context, cu *sn.User) error {
+func (g *game) placeBid(c *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -64,7 +61,7 @@ func (g *game) placeBid(c *gin.Context, cu *sn.User) error {
 	return nil
 }
 
-func (g *game) validatePlaceBid(c *gin.Context, cu *sn.User) (*player, bid, error) {
+func (g game) validatePlaceBid(c *gin.Context, cu sn.User) (*player, bid, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -76,7 +73,7 @@ func (g *game) validatePlaceBid(c *gin.Context, cu *sn.User) (*player, bid, erro
 		return nil, noBid, err
 	}
 
-	bid, err := g.validateBid(c, cu)
+	bid, err := g.validateBid(c)
 	if err != nil {
 		return nil, noBid, err
 	}
@@ -96,7 +93,7 @@ func (g *game) validatePlaceBid(c *gin.Context, cu *sn.User) (*player, bid, erro
 	}
 }
 
-func (g *game) validateBid(c *gin.Context, cu *sn.User) (bid, error) {
+func (g game) validateBid(c *gin.Context) (bid, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -119,7 +116,7 @@ func (g *game) validateBid(c *gin.Context, cu *sn.User) (bid, error) {
 	return bid, nil
 }
 
-func (cl *Client) passBidHandler(c *gin.Context) {
+func (cl Client) passBidHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -134,7 +131,7 @@ func (cl *Client) passBidHandler(c *gin.Context) {
 		return
 	}
 
-	err = g.passBid(c, cu)
+	err = g.passBid(cu)
 	if err != nil {
 		sn.JErr(c, err)
 		return
@@ -149,11 +146,11 @@ func (cl *Client) passBidHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"game": g})
 }
 
-func (g *game) passBid(c *gin.Context, cu *sn.User) error {
+func (g *game) passBid(cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	cp, err := g.validatePassBid(c, cu)
+	cp, err := g.validatePassBid(cu)
 	if err != nil {
 		return err
 	}
@@ -168,18 +165,18 @@ func (g *game) passBid(c *gin.Context, cu *sn.User) error {
 	return nil
 }
 
-func (g *game) validatePassBid(c *gin.Context, cu *sn.User) (*player, error) {
+func (g game) validatePassBid(cu sn.User) (*player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	return g.validatePlayerAction(cu)
 }
 
-func (g *game) bidFinishTurn(c *gin.Context, cu *sn.User) (*player, *player, error) {
+func (g *game) bidFinishTurn(cu sn.User) (*player, *player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	cp, err := g.validateBidFinishTurn(c, cu)
+	cp, err := g.validateBidFinishTurn(cu)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -187,19 +184,38 @@ func (g *game) bidFinishTurn(c *gin.Context, cu *sn.User) (*player, *player, err
 	np := g.nextPlayer(cp, func(p *player) bool {
 		return !p.passed && p.id != g.lastBid().pid
 	})
-	if np == nil {
-		lastBid := g.lastBid()
-		g.newEntryFor(lastBid.pid, message{
-			"template": "won-bid",
-			"bid":      lastBid,
-		})
-		np = g.startExchange()
+
+	if np.id != sn.NoPID {
+		// Proceed to next bidder
+		return cp, np, nil
 	}
+
+	// Log winning bid
+	lastBid := g.lastBid()
+	g.newEntryFor(lastBid.pid, message{
+		"template": "won-bid",
+		"bid":      lastBid,
+	})
+
+	// Proceed to next phase
+	if lastBid.exchange == exchangeBid {
+		np = g.startExchange()
+		return cp, np, nil
+	}
+
+	if lastBid.includesPartner() {
+		np = g.startPickPartner()
+		return cp, np, nil
+	}
+
+	g.startIncObjective()
+	np = g.selectIncrementer(nil)
 	return cp, np, nil
+
 }
 
-func (g *game) validateBidFinishTurn(c *gin.Context, cu *sn.User) (*player, error) {
-	cp, err := g.validateFinishTurn(c, cu)
+func (g game) validateBidFinishTurn(cu sn.User) (*player, error) {
+	cp, err := g.validateFinishTurn(cu)
 	switch {
 	case err != nil:
 		return nil, err
@@ -211,15 +227,3 @@ func (g *game) validateBidFinishTurn(c *gin.Context, cu *sn.User) (*player, erro
 		return cp, nil
 	}
 }
-
-// func (g *game) validateFinishTurn(c *gin.Context, cu *sn.User) (*player, error) {
-// 	cp, err := g.validateCurrentPlayer(cu)
-// 	switch {
-// 	case err != nil:
-// 		return nil, err
-// 	case !cp.performedAction:
-// 		return nil, fmt.Errorf("%s has yet to perform an action: %w", cu.Name, sn.ErrValidation)
-// 	default:
-// 		return cp, nil
-// 	}
-// }

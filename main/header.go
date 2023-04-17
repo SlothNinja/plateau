@@ -15,24 +15,8 @@ type Header struct {
 	sn.Header
 }
 
-// sn.Header.Turn used to track card played in current hand
-// zero based to align with indices of trick slice
-func (g *game) trickNumber() int {
-	return g.Turn
-}
-
-func (g *game) incTrickNumber() int {
-	g.Turn++
-	return g.Turn
-}
-
-func (g *game) resetTrickNumber() int {
-	g.Turn = 0
-	return g.Turn
-}
-
 // sn.Header.Round used to track # of hands
-func (g *game) handNumber() int {
+func (g game) handNumber() int {
 	return g.Round
 }
 
@@ -126,7 +110,7 @@ func (h Header) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (g *game) headerKey() *datastore.Key {
+func (g game) headerKey() *datastore.Key {
 	return datastore.IDKey(headerKind, g.id(), rootKey(g.id()))
 }
 

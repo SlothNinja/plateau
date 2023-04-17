@@ -17,7 +17,7 @@ func (g *game) startCardPlay() *player {
 	return g.forehand()
 }
 
-func (cl *Client) playCardHandler(c *gin.Context) {
+func (cl Client) playCardHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -47,7 +47,7 @@ func (cl *Client) playCardHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"game": g})
 }
 
-func (g *game) playCard(c *gin.Context, cu *sn.User) error {
+func (g *game) playCard(c *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -62,7 +62,7 @@ func (g *game) playCard(c *gin.Context, cu *sn.User) error {
 	cp.hand = removeCards(cp.hand, card)
 
 	card.playedBy = cp.id
-	g.tricks[g.trickNumber()].cards = append(g.tricks[g.trickNumber()].cards, card)
+	g.tricks[g.trickNumber()].cards = append(g.currentTrick().cards, card)
 
 	cp.performedAction = true
 
@@ -77,7 +77,7 @@ func removeCards(cards []card, remove ...card) []card {
 	return remainingCards
 }
 
-func (g *game) validatePlayCard(c *gin.Context, cu *sn.User) (*player, card, error) {
+func (g game) validatePlayCard(c *gin.Context, cu sn.User) (*player, card, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -113,43 +113,53 @@ func (g *game) validatePlayCard(c *gin.Context, cu *sn.User) (*player, card, err
 	}
 }
 
-func (p *player) hasCards(cards ...card) bool {
+func (p player) hasCards(cards ...card) bool {
 	return pie.All(cards, func(c card) bool { return pie.Contains(p.hand, c) })
 }
 
-func (p *player) hasSuit(s suit) bool {
+func (p player) hasSuit(s suit) bool {
 	return pie.Any(p.hand, func(c card) bool { return c.suit == s })
 }
 
-func (g *game) ledSuit() suit {
-	return pie.First(g.tricks[g.trickNumber()].cards).suit
+func (g game) ledSuit() suit {
+	return pie.First(g.currentTrick().cards).suit
 }
 
-func (g *game) playCardFinishTurn(c *gin.Context, cu *sn.User) (*player, *player, error) {
+func (g *game) playCardFinishTurn(cu sn.User) (*player, *player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	cp, err := g.validatePlayCardFinishTurn(c, cu)
+	cp, err := g.validatePlayCardFinishTurn(cu)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	var np *player
-	if len(g.tricks[g.trickNumber()].cards) == g.NumPlayers {
-		np = g.endTrick()
-	} else {
+	if len(g.currentTrick().cards) != g.NumPlayers {
 		np = g.nextPlayer(cp)
+		return cp, np, nil
 	}
 
-	if g.allCardsPlayed() {
-		np = g.endHand()
+	np = g.endTrick()
+	endHand, success, _ := g.endHandWithReveal()
+	if !endHand {
+		return cp, np, nil
 	}
 
+	g.startEndHandPhase()
+	g.scoreHand(success)
+
+	sn.Warningf("Still need to check for end game")
+	endGame := false
+	if !endGame {
+		g.startHand()
+		np = g.startBidPhase()
+	}
 	return cp, np, nil
 }
 
-func (g *game) validatePlayCardFinishTurn(c *gin.Context, cu *sn.User) (*player, error) {
-	cp, err := g.validateFinishTurn(c, cu)
+func (g game) validatePlayCardFinishTurn(cu sn.User) (*player, error) {
+	cp, err := g.validateFinishTurn(cu)
 	switch {
 	case err != nil:
 		return nil, err

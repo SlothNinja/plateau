@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/sn/v3"
@@ -33,11 +32,11 @@ func rootKey(id int64) *datastore.Key {
 	return datastore.IDKey(rootKind, id, nil)
 }
 
-func newGame(id, rev int64) *game {
-	return &game{Key: newGameKey(id, rev)}
+func newGame(id, rev int64) game {
+	return game{Key: newGameKey(id, rev)}
 }
 
-func (g *game) gameKey() *datastore.Key {
+func (g game) gameKey() *datastore.Key {
 	return datastore.NameKey(gameKind, fmt.Sprintf("%d-%d", g.id(), g.Undo.Committed), rootKey(g.id()))
 }
 
@@ -49,14 +48,14 @@ func cachedKey(id, rev int64, uid sn.UID) *datastore.Key {
 	return datastore.IDKey(gameKind, rev, cachedRootKey(id, uid))
 }
 
-func (g *game) id() int64 {
+func (g game) id() int64 {
 	if g.Key == nil || g.Key.Parent == nil {
 		return 0
 	}
 	return g.Key.Parent.ID
 }
 
-func (g *game) rev() int64 {
+func (g game) rev() int64 {
 	if g.Key == nil {
 		return 0
 	}
@@ -97,7 +96,7 @@ func (g *game) Load(ps []datastore.Property) error {
 	return nil
 }
 
-func (g *game) Save() ([]datastore.Property, error) {
+func (g game) Save() ([]datastore.Property, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -114,13 +113,7 @@ func (g *game) Save() ([]datastore.Property, error) {
 	}
 	g.EncodedLog = string(encodedLog)
 
-	t := time.Now()
-	if g.CreatedAt.IsZero() {
-		g.CreatedAt = t
-	}
-	g.UpdatedAt = t
-
-	return datastore.SaveStruct(g)
+	return datastore.SaveStruct(&g)
 }
 
 type jGame struct {
@@ -132,7 +125,7 @@ type jGame struct {
 	GLog   glog      `json:"glog"`
 }
 
-func (g *game) MarshalJSON() ([]byte, error) {
+func (g game) MarshalJSON() ([]byte, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -154,7 +147,7 @@ func (g *game) MarshalJSON() ([]byte, error) {
 // Games provides a slice of Games.
 type Games []*game
 
-func (g *game) start() *player {
+func (g *game) start() {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -163,23 +156,15 @@ func (g *game) start() *player {
 
 	g.addNewPlayers()
 
-	g.newEntry(message{
-		"template": "start-game",
-		"pids":     pidsFor(g.players),
-	})
-
-	return g.startHand()
+	g.newEntry(message{"template": "start-game"})
 }
 
-func (g *game) dealer() *player {
+func (g game) dealer() *player {
 	return pie.First(g.players)
 }
 
-func (g *game) forehand() *player {
-	if len(g.players) < 2 {
-		return nil
-	}
-	return g.players[1]
+func (g game) forehand() *player {
+	return pie.First(pie.DropTop(g.players, 1))
 }
 
 func (g *game) startBidPhase() *player {
@@ -211,22 +196,18 @@ func (g *game) updateOrder() {
 }
 
 // currentPlayers returns the players whose turn it is.
-func (g *game) currentPlayers() []*player {
+func (g game) currentPlayers() []*player {
 	return pie.Map(g.CPIDS, func(pid sn.PID) *player { return g.playerByPID(pid) })
 }
 
 // currentPlayer returns the player whose turn it is.
-func (g *game) currentPlayer() *player {
+func (g game) currentPlayer() *player {
 	return pie.First(g.currentPlayers())
 }
 
 // Returns player asssociated with user if such player is current player
 // Otherwise, return nil
-func (g *game) currentPlayerFor(u *sn.User) *player {
-	if u == nil {
-		return nil
-	}
-
+func (g game) currentPlayerFor(u sn.User) *player {
 	i := g.IndexFor(u.ID())
 	if i == -1 {
 		return nil
@@ -239,24 +220,11 @@ func (g *game) setCurrentPlayers(ps ...*player) {
 	g.CPIDS = pie.Map(ps, func(p *player) sn.PID { return p.id })
 }
 
-// func (g *game) removeCurrentPlayer(p *player) {
-// 	if p == nil {
-// 		return
-// 	}
-//
-// 	for i, pid := range g.CPIDS {
-// 		if pid == p.id {
-// 			g.CPIDS = append(g.CPIDS[:i], g.CPIDS[i+1:]...)
-// 			return
-// 		}
-// 	}
-// }
-
-func (cl *Client) getGame(c *gin.Context, cu *sn.User, action stackFunc) (*game, error) {
+func (cl Client) getGame(c *gin.Context, cu sn.User, action stackFunc) (game, error) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	if cu == nil {
+	if cu.IsZero() {
 		return cl.getCommitted(c)
 	}
 
@@ -269,100 +237,100 @@ func (cl *Client) getGame(c *gin.Context, cu *sn.User, action stackFunc) (*game,
 			return g, nil
 		}
 		if err != nil {
-			return nil, err
+			return game{}, err
 		}
 		return g, nil
 	}
 
 	if err != nil {
-		return nil, err
+		return game{}, err
 	}
 
 	// if undo operation does not transistion to different state, pull current state of game
-	if !action(undo) {
+	if !action(&undo) {
 		if undo.Current == undo.Committed {
 			g, err := cl.getCommitted(c)
 			if err != nil {
-				return nil, err
+				return game{}, err
 			}
-			g.Undo = *undo
+			g.Undo = undo
 			return g, nil
 		}
 
 		g, err := cl.getCached(c, undo.Current, cu.ID())
 		if err != nil {
-			return nil, err
+			return game{}, err
 		}
-		g.Undo = *undo
+		g.Undo = undo
 		return g, nil
 	}
 
-	// Verify current user is current player or admin, which requires
+	// Verify current user is current player, which requires
 	// getting the commited game state
 	gc, err := cl.getCommitted(c)
 	if err != nil {
-		return nil, err
+		return game{}, err
 	}
 
-	_, err = gc.validateCPorAdmin(cu)
+	_, err = gc.validateCurrentPlayer(cu)
 	if err != nil {
-		return nil, err
+		return game{}, err
 	}
 
 	// undo.Current revised by above call of action[0](undo)
 	if undo.Current == undo.Committed {
 		g, err := cl.getCommitted(c)
 		if err != nil {
-			return nil, err
+			return game{}, err
 		}
-		g.Undo = *undo
+		g.Undo = undo
 		return g, nil
 	}
 
 	g, err := cl.getCached(c, undo.Current, cu.ID())
 	if err != nil {
-		return nil, err
+		return game{}, err
 	}
-	g.Undo = *undo
+	g.Undo = undo
 	return g, nil
 }
 
-func (cl *Client) getCached(c *gin.Context, rev int64, uid sn.UID) (*game, error) {
+func (cl Client) getCached(c *gin.Context, rev int64, uid sn.UID) (game, error) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
 	id, err := getID(c)
 	if err != nil {
-		return nil, err
+		return game{}, err
 	}
 
 	g := newGame(id, rev)
-	err = cl.DS.Get(c, cachedKey(id, rev, uid), g)
+	err = cl.DS.Get(c, cachedKey(id, rev, uid), &g)
 	return g, err
 }
 
-func (cl *Client) getRev(c *gin.Context, rev int64) (*game, error) {
+func (cl Client) getRev(c *gin.Context, rev int64) (game, error) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
 	id, err := getID(c)
 	if err != nil {
-		return nil, err
+		return game{}, err
 	}
 
 	g := newGame(id, rev)
-	err = cl.DS.Get(c, g.Key, g)
+	err = cl.DS.Get(c, g.Key, &g)
 	return g, err
 }
 
-func (cl *Client) save(c *gin.Context, g *game, uid sn.UID) error {
+func (cl Client) save(c *gin.Context, g game, uid sn.UID) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
 	_, err := cl.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
 		h := g.Header
 		_, err := tx.PutMulti([]*datastore.Key{g.headerKey(), g.gameKey(), g.committedKey()},
-			[]interface{}{&h, g, g})
+			[]interface{}{&h, &g, &g})
 		if err != nil {
 			return err
 		}
@@ -371,7 +339,7 @@ func (cl *Client) save(c *gin.Context, g *game, uid sn.UID) error {
 	return err
 }
 
-func (cl *Client) commit(c *gin.Context, g *game, uid sn.UID) error {
+func (cl Client) commit(c *gin.Context, g game, uid sn.UID) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -379,7 +347,7 @@ func (cl *Client) commit(c *gin.Context, g *game, uid sn.UID) error {
 	return cl.save(c, g, uid)
 }
 
-func (cl *Client) clearCached(c *gin.Context, g *game, cuid sn.UID) error {
+func (cl Client) clearCached(c *gin.Context, g game, cuid sn.UID) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -394,13 +362,13 @@ func (cl *Client) clearCached(c *gin.Context, g *game, cuid sn.UID) error {
 	return cl.DS.DeleteMulti(c, ks)
 }
 
-func (cl *Client) putCached(c *gin.Context, g *game, rev int64, uid sn.UID) error {
+func (cl Client) putCached(c *gin.Context, g game, rev int64, uid sn.UID) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
 	_, err := cl.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
 		undo, gid := g.Undo, g.id()
-		_, err := tx.PutMulti([]*datastore.Key{cachedKey(gid, rev, uid), stackKey(gid, uid)}, []interface{}{g, &undo})
+		_, err := tx.PutMulti([]*datastore.Key{cachedKey(gid, rev, uid), stackKey(gid, uid)}, []interface{}{&g, &undo})
 		return err
 	})
 	return err

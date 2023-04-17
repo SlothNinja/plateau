@@ -18,7 +18,7 @@
               <UserButton :user='useCreator(item.raw)' :size='size' />
             </template>
             <template v-slot:item.pRounds='{ item }'>
-              {{item.raw.numPlayers}} : {{item.raw.roundsPerPlayer}}
+              {{item.raw.numPlayers}} : {{item.raw.handsPerPlayer}}
             </template>
             <template v-slot:item.players="{ item }">
               <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item.raw)' :key='user.id' />
@@ -78,7 +78,7 @@ const headers = ref([
   { title: 'ID', key: 'id' },
   { title: 'Title', key: 'title' },
   { title: 'Creator', key: 'creator' },
-  { title: 'Players:Rounds Per', key: 'pRounds' },
+  { title: 'Players:Hands', key: 'pRounds' },
   { title: 'Players', key: 'players' },
   { title: 'Last Updated', key: 'lastUpdated' },
 ])

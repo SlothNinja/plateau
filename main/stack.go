@@ -12,16 +12,16 @@ func stackKey(id int64, uid sn.UID) *datastore.Key {
 	return datastore.NameKey(stackKind, "stack", cachedRootKey(id, uid))
 }
 
-func (cl *Client) getStack(c *gin.Context, uid sn.UID) (*sn.Stack, error) {
+func (cl *Client) getStack(c *gin.Context, uid sn.UID) (sn.Stack, error) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
 	gid, err := getID(c)
 	if err != nil {
-		return nil, err
+		return sn.Stack{}, err
 	}
 
-	s := new(sn.Stack)
-	err = cl.DS.Get(c, stackKey(gid, uid), s)
+	var s sn.Stack
+	err = cl.DS.Get(c, stackKey(gid, uid), &s)
 	return s, err
 }

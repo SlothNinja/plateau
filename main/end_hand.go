@@ -3,28 +3,53 @@ package main
 import (
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
+	"gonum.org/v1/gonum/graph"
 )
 
-func (g *game) endHand() *player {
+func (g *game) startEndHandPhase() {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	g.Phase = endHandPhase
-	if g.allCardsPlayed() {
-		g.revealTalon()
-	}
-	g.scoreHand()
-	return g.startHand()
+	// if g.allCardsPlayed() {
+	// 	g.revealTalon()
+	// }
+	// g.scoreHand()
 }
 
-func (g *game) scoreHand() {
+func (g *game) endHandWithReveal() (end bool, success bool, path []graph.Node) {
+	if g.allCardsPlayed() {
+		g.revealTalon()
+		_, success, path = g.endHand()
+		return true, success, path
+	}
+	return g.endHand()
+}
+
+func (g game) endHand() (end bool, success bool, path []graph.Node) {
+	path, success = g.madeObjective()
+	if success {
+		return true, true, path
+	}
+
+	_, blocked := g.objectiveBlocked()
+	if blocked {
+		return true, false, path
+	}
+	return false, false, nil
+}
+
+func (g *game) scoreHand(successful bool) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	dtbv := g.currentBidValue()
 	dl := len(g.declarersTeam)
 	ol := g.NumPlayers - dl
-	if !g.madeObjective() {
+	// if _, successful := g.madeObjective(); !successful {
+	// 	dtbv = -dtbv
+	// }
+	if !successful {
 		dtbv = -dtbv
 	}
 
@@ -42,7 +67,7 @@ func (g *game) scoreHand() {
 	}
 }
 
-func (g *game) startHand() *player {
+func (g *game) startHand() {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -69,7 +94,6 @@ func (g *game) startHand() *player {
 	g.declarersTeam = nil
 
 	g.deal()
-	return g.startBidPhase()
 }
 
 func (g *game) revealTalon() {

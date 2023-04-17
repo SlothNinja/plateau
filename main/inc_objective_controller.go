@@ -9,15 +9,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (g *game) startIncObjective() *player {
+func (g *game) startIncObjective() {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	g.Phase = incObjectivePhase
-	return g.selectIncrementer(nil)
 }
 
-func (g *game) selectIncrementer(inc *player) *player {
+func (g game) selectIncrementer(inc *player) *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -51,7 +50,7 @@ func (g game) partnerPIDS() []sn.PID {
 	return g.declarersTeam[1:]
 }
 
-func (cl *Client) incObjectiveHandler(c *gin.Context) {
+func (cl Client) incObjectiveHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -78,13 +77,10 @@ func (cl *Client) incObjectiveHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"game": g,
-		"cu":   cu,
-	})
+	c.JSON(http.StatusOK, gin.H{"game": g})
 }
 
-func (g *game) incObjective(c *gin.Context, cu *sn.User) error {
+func (g *game) incObjective(c *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -110,7 +106,7 @@ func (g *game) incObjective(c *gin.Context, cu *sn.User) error {
 	return nil
 }
 
-func (g *game) validateIncObjective(c *gin.Context, cu *sn.User) (*player, bid, error) {
+func (g game) validateIncObjective(c *gin.Context, cu sn.User) (*player, bid, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -122,7 +118,7 @@ func (g *game) validateIncObjective(c *gin.Context, cu *sn.User) (*player, bid, 
 		return nil, noBid, err
 	}
 
-	bid, err := g.validateBid(c, cu)
+	bid, err := g.validateBid(c)
 	if err != nil {
 		return nil, noBid, err
 	}
@@ -147,24 +143,24 @@ func (g *game) validateIncObjective(c *gin.Context, cu *sn.User) (*player, bid, 
 	}
 }
 
-func (g *game) incObjectiveFinishTurn(c *gin.Context, cu *sn.User) (*player, *player, error) {
+func (g *game) incObjectiveFinishTurn(cu sn.User) (*player, *player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	cp, err := g.validateIncObjectiveFinishTurn(c, cu)
+	cp, err := g.validateIncObjectiveFinishTurn(cu)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	np := g.selectIncrementer(cp)
-	if cp == np && err == nil {
+	if cp == np {
 		np = g.startCardPlay()
 	}
 	return cp, np, nil
 }
 
-func (g *game) validateIncObjectiveFinishTurn(c *gin.Context, cu *sn.User) (*player, error) {
-	cp, err := g.validateFinishTurn(c, cu)
+func (g game) validateIncObjectiveFinishTurn(cu sn.User) (*player, error) {
+	cp, err := g.validateFinishTurn(cu)
 	switch {
 	case err != nil:
 		return nil, err

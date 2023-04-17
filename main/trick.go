@@ -5,6 +5,7 @@ import (
 
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
+	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/path"
 )
 
@@ -37,6 +38,26 @@ func (t *trick) UnmarshalJSON(bs []byte) error {
 	return nil
 }
 
+// sn.Header.Turn used to track card played in current hand
+// zero based to align with indices of trick slice
+func (g game) trickNumber() int {
+	return g.Turn
+}
+
+func (g *game) incTrickNumber() int {
+	g.Turn++
+	return g.Turn
+}
+
+func (g *game) resetTrickNumber() int {
+	g.Turn = 0
+	return g.Turn
+}
+
+func (g game) currentTrick() trick {
+	return (g.tricks[g.trickNumber()])
+}
+
 func (g *game) endTrick() *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
@@ -45,7 +66,7 @@ func (g *game) endTrick() *player {
 	var winningCard card
 
 	// warning card variable shadows card type in for loop
-	for _, card := range g.tricks[g.trickNumber()].cards {
+	for _, card := range g.currentTrick().cards {
 		if ((card.suit == ledSuit) || (card.suit == trumps)) && card.value() > winningCard.value() {
 			winningCard = card
 		}
@@ -54,49 +75,68 @@ func (g *game) endTrick() *player {
 	g.tricks[g.trickNumber()].wonBy = winningCard.playedBy
 	g.incTrickNumber()
 
-	switch {
-	case g.madeObjective():
-		return g.endHand()
-	case g.objectiveBlocked():
-		return g.endHand()
-	default:
-		return g.playerByPID(winningCard.playedBy)
-	}
+	// if _, successful := g.madeObjective(); successful {
+	// 	g.startEndHandPhase()
+	// 	g.startHand()
+	// 	return g.startBidPhase()
+	// }
+
+	// if _, blocked := g.objectiveBlocked(); blocked {
+	// 	g.startEndHandPhase()
+	// 	g.startHand()
+	// 	return g.startBidPhase()
+	// }
+
+	return g.playerByPID(winningCard.playedBy)
 }
 
 func (g game) allCardsPlayed() bool {
 	return pie.All(g.players, func(p *player) bool { return len(p.hand) == 0 })
 }
 
-func (g game) madeObjective() bool {
+func (g game) madeObjective() ([]graph.Node, bool) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	return g.objectiveTest(own(g, g.declarersTeam))
+	return g.objectiveTest(g.spacesFor(g.declarersTeam))
 }
 
-func (g game) objectiveBlocked() bool {
+func (g game) objectiveBlocked() ([]graph.Node, bool) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	return !g.objectiveTest(mayOwn(g, g.declarersTeam))
+	return g.objectiveTest(g.spacesNotOwnedBy(g.opposersTeam()))
 }
 
-func (g game) objectiveTest(t spaceTest) bool {
+func (g game) objectiveTest(ss []space) ([]graph.Node, bool) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	graph := g.graphFor(t)
+	graph := g.graphFor(ss)
 	paths := path.DijkstraAllPaths(graph)
-	s1, s2, s3, s4, s5, s6 := side1(graph), side2(graph), side3(graph),
-		side4(graph), side5(graph), side6(graph)
 	switch g.currentBid().objective {
 	case bridgeBid:
-		return bridge(paths, s1, s2, s3, s4, s5, s6)
+		return bridge(graph, paths)
 	case yBid:
-		return y(paths, s1, s2, s3, s4, s5, s6)
+		return y(graph, paths)
 	case forkBid:
-		return fork(paths, s1, s2, s3, s4, s5, s6)
+		return fork(graph, paths)
+	case fiveSidesBid:
+		return fiveSides(graph, paths)
+	case sixSidesBid:
+		return sixSides(graph, paths)
+	default:
+		return nil, false
 	}
-	return false
+}
+
+func (g *game) tricksFor(team []sn.PID) []trick {
+	return pie.Filter(g.tricks, func(t trick) bool { return pie.Contains(team, t.wonBy) })
+}
+
+func (g *game) trickWonBy(team []sn.PID) (won []bool) {
+	pie.Each(g.tricks, func(t trick) {
+		won = append(won, pie.Contains(team, t.wonBy))
+	})
+	return won
 }

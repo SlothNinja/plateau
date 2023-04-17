@@ -14,22 +14,15 @@ func (g *game) startExchange() *player {
 	defer sn.Debugf(msgExit)
 
 	g.Phase = exchangePhase
-	lastBid := g.lastBid()
 
-	// If no card exchange, proceed to pick partner phase
-	if lastBid.exchange == noExchangeBid {
-		g.appendEntry(message{"template": "no-exchange"})
-		return g.startPickPartner()
-	}
-
-	// Otherwise, declarer needs to exchange cards with talon.
+	// Declarer exchanges cards with talon.
 	declarer := g.declarer()
 	declarer.hand = append(declarer.hand, g.deck...)
 	g.deck = nil
 	return declarer
 }
 
-func (cl *Client) exchangeHandler(c *gin.Context) {
+func (cl Client) exchangeHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -59,7 +52,7 @@ func (cl *Client) exchangeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"game": g})
 }
 
-func (g *game) exchange(c *gin.Context, cu *sn.User) error {
+func (g *game) exchange(c *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -79,7 +72,7 @@ func (g *game) exchange(c *gin.Context, cu *sn.User) error {
 	return nil
 }
 
-func (g *game) validateExchange(c *gin.Context, cu *sn.User) (*player, []card, error) {
+func (g game) validateExchange(c *gin.Context, cu sn.User) (*player, []card, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -111,20 +104,21 @@ func (g *game) validateExchange(c *gin.Context, cu *sn.User) (*player, []card, e
 	}
 }
 
-func (g *game) exchangeFinishTurn(c *gin.Context, cu *sn.User) (*player, *player, error) {
+func (g *game) exchangeFinishTurn(cu sn.User) (*player, *player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	cp, err := g.validateExchangeFinishTurn(c, cu)
+	cp, err := g.validateExchangeFinishTurn(cu)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return cp, g.startPickPartner(), nil
+	np := g.startPickPartner()
+	return cp, np, nil
 }
 
-func (g *game) validateExchangeFinishTurn(c *gin.Context, cu *sn.User) (*player, error) {
-	cp, err := g.validateFinishTurn(c, cu)
+func (g game) validateExchangeFinishTurn(cu sn.User) (*player, error) {
+	cp, err := g.validateFinishTurn(cu)
 	switch {
 	case err != nil:
 		return nil, err

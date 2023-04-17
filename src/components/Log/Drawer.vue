@@ -2,6 +2,7 @@
   <v-navigation-drawer
     v-model="drawer"
     location='right' 
+    width='500'
     >
     <!--
     <v-card class='d-flex flex-column' height='100%' >

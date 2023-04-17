@@ -18,15 +18,15 @@ const (
 	msgExit   = "Exiting"
 )
 
-func (cl *Client) requireLogin(c *gin.Context) (*sn.User, error) {
+func (cl Client) requireLogin(c *gin.Context) (sn.User, error) {
 	cu, err := cl.User.Current(c)
 	if err != nil {
-		return nil, fmt.Errorf("must login to access resource: %w", err)
+		return sn.User{}, fmt.Errorf("must login to access resource: %w", err)
 	}
 	return cu, nil
 }
 
-func (cl *Client) gamesIndex(c *gin.Context) {
+func (cl Client) gamesIndex(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -52,7 +52,7 @@ func (cl *Client) gamesIndex(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"gheaders": es})
 }
 
-func (cl *Client) showHandler(c *gin.Context) {
+func (cl Client) showHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -67,18 +67,14 @@ func (cl *Client) showHandler(c *gin.Context) {
 		return
 	}
 
-	subs, err := cl.getSubsFor(c, g.id(), cu.ID())
-	if err != nil {
-		sn.JErr(c, err)
+	if cu.IsZero() {
+		c.JSON(http.StatusOK, gin.H{"game": g, "unread": 0})
 		return
 	}
 
-	if cu == nil {
-		c.JSON(http.StatusOK, gin.H{
-			"game":   g,
-			"unread": 0,
-			"cu":     cu,
-		})
+	subs, err := cl.getSubsFor(c, g.id(), cu.ID())
+	if err != nil {
+		sn.JErr(c, err)
 		return
 	}
 
@@ -88,15 +84,10 @@ func (cl *Client) showHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"game":   g,
-		"unread": unread,
-		"subs":   subs,
-		"cu":     cu,
-	})
+	c.JSON(http.StatusOK, gin.H{"game": g, "unread": unread, "subs": subs})
 }
 
-func (cl *Client) cuHandler(c *gin.Context) {
+func (cl Client) cuHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -105,10 +96,14 @@ func (cl *Client) cuHandler(c *gin.Context) {
 		cl.Log.Warningf(err.Error())
 	}
 
+	if cu.IsZero() {
+		c.JSON(http.StatusOK, gin.H{"cu": nil})
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"cu": cu})
 }
 
-func (cl *Client) resetHandler(c *gin.Context) {
+func (cl Client) resetHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -139,7 +134,7 @@ var noUndo stackFunc = func(s *sn.Stack) bool { return false }
 var undo stackFunc = (*sn.Stack).Undo
 var redo stackFunc = (*sn.Stack).Redo
 
-func (cl *Client) undoHandler(c *gin.Context) {
+func (cl Client) undoHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -164,7 +159,7 @@ func (cl *Client) undoHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"game": g})
 }
 
-func (cl *Client) redoHandler(c *gin.Context) {
+func (cl Client) redoHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -189,7 +184,7 @@ func (cl *Client) redoHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"game": g})
 }
 
-func (cl *Client) rollbackHandler(c *gin.Context) {
+func (cl Client) rollbackHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -213,11 +208,9 @@ func (cl *Client) rollbackHandler(c *gin.Context) {
 		sn.JErr(c, err)
 		return
 	}
-	cl.Log.Debugf("obj.Rev: %v", obj.Rev)
 
-	var g *game
+	var g game
 	for rev := obj.Rev - 1; rev >= 0; rev-- {
-		cl.Log.Debugf("rev: %v", rev)
 		g, err = cl.getRev(c, rev)
 		if err == datastore.ErrNoSuchEntity {
 			continue
@@ -238,7 +231,7 @@ func (cl *Client) rollbackHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"game": g})
 }
 
-func (cl *Client) rollforwardHandler(c *gin.Context) {
+func (cl Client) rollforwardHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -286,7 +279,7 @@ func (cl *Client) rollforwardHandler(c *gin.Context) {
 	})
 }
 
-func (cl *Client) mlogHandler(c *gin.Context) {
+func (cl Client) mlogHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -319,7 +312,7 @@ func (cl *Client) mlogHandler(c *gin.Context) {
 	})
 }
 
-func (cl *Client) mlogAddHandler(c *gin.Context) {
+func (cl Client) mlogAddHandler(c *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -336,8 +329,8 @@ func (cl *Client) mlogAddHandler(c *gin.Context) {
 	}
 
 	obj := struct {
-		Message string   `json:"message"`
-		Creator *sn.User `json:"creator"`
+		Message string  `json:"message"`
+		Creator sn.User `json:"creator"`
 	}{}
 
 	err = c.ShouldBind(&obj)
