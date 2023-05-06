@@ -11,17 +11,17 @@
             @click:row='show'
             >
             <template v-slot:item.title='{ item }'>
-              {{item.title}}
+              {{item.raw.Title}}
             </template>
           <template v-slot:item.creator='{ item }'>
             <UserButton :user='useCreator(item.raw)' :size='size' />
           </template>
           <template v-slot:item.pRounds='{ item }'>
-            {{item.raw.numPlayers}} : {{item.raw.roundsPerPlayer}}
+            {{item.raw.NumPlayers}} : {{handsPerPlayer(item)}}
           </template>
           <template v-slot:item.players="{ item }">
-            <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item.raw)' :key='user.id'>
-              <span :class='userClass(item, user)'>{{user.name}}</span>
+            <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item.raw)' :key='user.ID'>
+              <span :class='userClass(item, user)'>{{user.Name}}</span>
             </UserButton>
           </template>
         </v-data-table>
@@ -35,22 +35,19 @@
 // Assets
 import board36 from '@/assets/board36.png'
 
-// inject current user
-import { cuKey } from '@/composables/keys.js'
-const cu = inject(cuKey)
-const cuid = computed(() => (_get(cu, 'value.id', -1)))
-
 // Components
-import UserButton from '@/components/UserButton.vue'
-import CardStamp from '@/components/CardStamp.vue'
+import UserButton from '@/components/Common/UserButton.vue'
+import CardStamp from '@/components/Common/CardStamp.vue'
 import { VDataTable } from 'vuetify/labs/VDataTable'
 
 // Composables
-import { useFetch } from '@/composables/fetch.js'
 import { useCreator, useUsers } from '@/composables/user.js'
 
 // Vue
 import { computed, inject, ref, unref } from 'vue'
+import { useCollection, useFirestore } from 'vuefire'
+import { collection, query, where } from 'firebase/firestore'
+import { db } from '@/composables/firebase'
 
 // Lodash
 import _get from 'lodash/get'
@@ -63,26 +60,24 @@ import _includes from 'lodash/includes'
 import _nth from 'lodash/nth'
 import _isEmpty from 'lodash/isEmpty'
 
+// inject current user
+import { cuKey } from '@/composables/keys.js'
+const cu = inject(cuKey)
+const cuid = computed(() => (_get(unref(cu), 'ID', -1)))
+
 // Vue router
 import { useRoute, useRouter } from 'vue-router'
 const route = useRoute()
 const router = useRouter()
 
-
-// fetch game headers from server
 const status = computed(() => _get(route, 'params.status', ''))
-const url = computed(() => `/sn/games/${status.value}`)
-const { data, error } = useFetch(url.value)
 
-// defines items in table
-const items = computed({
-  get() {
-    return _get(data, 'value.gheaders', [])
-  },
-  set(newValue) {
-    data.value.invitations = newValue
-  }
-})
+const items = useCollection(query(collection(db, 'Committed'), where('Status', '==', unref(status))))
+
+function handsPerPlayer(item) {
+  const opt = JSON.parse(_get(unref(item), 'raw.OptString', {}))
+  return _get(opt, 'HandsPerPlayer', 0)
+}
 
 // defines table headings
 const headers = ref([
@@ -111,7 +106,7 @@ function userClass(item, user) {
     return ''
   }
 
-  const uid = _get(unref(user), 'id', -1)
+  const uid = _get(unref(user), 'ID', -1)
 
   if (itm.status == 'completed') {
     return winnerClass(itm, uid)
@@ -120,9 +115,9 @@ function userClass(item, user) {
 }
 
 function cpClass(itm, uid) {
-  const pid = _indexOf(_get(itm, 'userIds', []), uid) + 1
+  const pid = _indexOf(_get(itm, 'UserIDS', []), uid) + 1
 
-  if (_includes(_get(itm, 'cpids', []), pid)) {
+  if (_includes(_get(itm, 'CPIDS', []), pid)) {
     if (unref(cuid) == uid) {
       return 'font-weight-black text-red-darken-4'
     }
@@ -132,7 +127,7 @@ function cpClass(itm, uid) {
 }
 
 function winnerClass(itm, uid) {
-  if (_includes(_get(itm, 'winnerIds', []), uid)) {
+  if (_includes(_get(itm, 'WinnerIDS', []), uid)) {
     if (unref(cuid) == usid) {
       return 'font-weight-black text-red-darken-4'
     }

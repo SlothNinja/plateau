@@ -27,7 +27,12 @@ const snackbar = ref({
   open: false,
 })
 
-provide( snackKey, snackbar )
+function updateSnackbar(msg) {
+  snackbar.value.message = msg
+  snackbar.value.open = true
+}
+
+provide( snackKey, { snackbar, updateSnackbar } )
 
 function toggleNav() {
   nav.value = !nav.value

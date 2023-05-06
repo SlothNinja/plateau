@@ -38,7 +38,7 @@ import _get from 'lodash/get'
 import { cuKey, gameKey } from '@/composables/keys.js'
 import { useIsCP } from '@/composables/player.js'
 
-const { game, updateGame } = inject(gameKey)
+const game = inject(gameKey)
 const cu = inject(cuKey)
 
 const isCP = computed(() => (useIsCP(game, cu)))

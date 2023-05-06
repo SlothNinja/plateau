@@ -1,54 +1,48 @@
 package main
 
 import (
-	"encoding/json"
-
 	"github.com/SlothNinja/sn/v3"
 )
 
 // state stores the game state of a Tammany Hall game.
 type state struct {
-	players       []*player
-	deck          []card
-	declarersTeam []sn.PID
-	tricks        []trick
-	bids          []bid
+	Players       []*player
+	Deck          []card
+	DeclarersTeam []sn.PID
+	Tricks        []trick
+	Bids          []bid
+	LastResults   []lastResult
 }
 
-type jState struct {
-	Players       []*player `json:"players"`
-	Deck          []card    `json:"deck"`
-	DeclarersTeam []sn.PID  `json:"declarersTeam"`
-	Tricks        []trick   `json:"tricks"`
-	Bids          []bid     `json:"bids"`
-}
-
-func (s state) MarshalJSON() ([]byte, error) {
-	sn.Debugf(msgEnter)
-	defer sn.Debugf(msgExit)
-
-	return json.Marshal(jState{
-		Players:       s.players,
-		Deck:          s.deck,
-		DeclarersTeam: s.declarersTeam,
-		Tricks:        s.tricks,
-		Bids:          s.bids,
-	})
-}
-
-func (s *state) UnmarshalJSON(bs []byte) error {
-	sn.Debugf(msgEnter)
-	defer sn.Debugf(msgExit)
-
-	var obj jState
-	err := json.Unmarshal(bs, &obj)
-	if err != nil {
-		return err
+func (s state) copy() state {
+	ps := make([]*player, len(s.Players))
+	for i, p := range s.Players {
+		ps[i] = p.copy()
 	}
-	s.players = obj.Players
-	s.deck = obj.Deck
-	s.declarersTeam = obj.DeclarersTeam
-	s.tricks = obj.Tricks
-	s.bids = obj.Bids
-	return nil
+
+	d := make([]card, len(s.Deck))
+	copy(d, s.Deck)
+
+	dt := make([]sn.PID, len(s.DeclarersTeam))
+	copy(dt, s.DeclarersTeam)
+
+	ts := make([]trick, len(s.Tricks))
+	copy(ts, s.Tricks)
+
+	bs := make([]bid, len(s.Bids))
+	copy(bs, s.Bids)
+
+	lrs := make([]lastResult, len(s.LastResults))
+	for i, l := range s.LastResults {
+		lrs[i] = l.copy()
+	}
+
+	return state{
+		Players:       ps,
+		Deck:          d,
+		DeclarersTeam: dt,
+		Tricks:        ts,
+		Bids:          bs,
+		LastResults:   lrs,
+	}
 }

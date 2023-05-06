@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/path"
@@ -14,7 +15,7 @@ func (g game) graphFor(ss []space) boardGraph {
 	for _, s := range ss {
 		u := graph.UndirectedGraph.NewNode()
 		uid := u.ID()
-		u = node{space: s, id: uid}
+		u = node{Space: s, UID: uid}
 		graph.UndirectedGraph.AddNode(u)
 		graph.ids[s] = uid
 
@@ -57,14 +58,14 @@ func newBoardGraph() boardGraph {
 }
 
 type node struct {
-	space space
-	id    int64
+	Space space
+	UID   int64
 }
 
 // implement graph.Node interface
-func (n node) ID() int64 { return n.id }
+func (n node) ID() int64 { return n.UID }
 
-func bridge(graph boardGraph, paths path.AllShortest) (path []graph.Node, found bool) {
+func bridge(graph boardGraph, paths path.AllShortest) (path []node, found bool) {
 	path, found = connected(paths, graph.side(1), graph.side(4))
 	if found {
 		return path, found
@@ -76,7 +77,10 @@ func bridge(graph boardGraph, paths path.AllShortest) (path []graph.Node, found 
 	return connected(paths, graph.side(3), graph.side(6))
 }
 
-func y(graph boardGraph, paths path.AllShortest) (path []graph.Node, found bool) {
+func y(graph boardGraph, paths path.AllShortest) (path []node, found bool) {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
 	path, found = connected(paths, graph.side(1), graph.side(3), graph.side(5))
 	if found {
 		return path, true
@@ -84,7 +88,7 @@ func y(graph boardGraph, paths path.AllShortest) (path []graph.Node, found bool)
 	return connected(paths, graph.side(2), graph.side(4), graph.side(6))
 }
 
-func fork(graph boardGraph, paths path.AllShortest) (path []graph.Node, found bool) {
+func fork(graph boardGraph, paths path.AllShortest) (path []node, found bool) {
 	path1, found1 := bridge(graph, paths)
 	if !found1 {
 		return nil, false
@@ -96,7 +100,7 @@ func fork(graph boardGraph, paths path.AllShortest) (path []graph.Node, found bo
 	return append(path1, path2...), true
 }
 
-func fiveSides(graph boardGraph, paths path.AllShortest) ([]graph.Node, bool) {
+func fiveSides(graph boardGraph, paths path.AllShortest) ([]node, bool) {
 	s1, s2, s3, s4, s5, s6 := graph.side(1), graph.side(2), graph.side(3), graph.side(4), graph.side(5), graph.side(6)
 	path, found := connected(paths, s1, s2, s3, s4, s5)
 	if found {
@@ -125,18 +129,18 @@ func fiveSides(graph boardGraph, paths path.AllShortest) ([]graph.Node, bool) {
 	return nil, false
 }
 
-func sixSides(graph boardGraph, paths path.AllShortest) ([]graph.Node, bool) {
+func sixSides(graph boardGraph, paths path.AllShortest) ([]node, bool) {
 	s1, s2, s3, s4, s5, s6 := graph.side(1), graph.side(2), graph.side(3), graph.side(4), graph.side(5), graph.side(6)
 	return connected(paths, s1, s2, s3, s4, s5, s6)
 }
 
-func connected(paths path.AllShortest, ss ...[]graph.Node) (path []graph.Node, found bool) {
-	found = pie.Any(pie.First(ss), func(n0 graph.Node) bool {
-		return pie.All(pie.DropTop(ss, 1), func(ss1 []graph.Node) bool {
-			return pie.Any(ss1, func(n1 graph.Node) bool {
+func connected(paths path.AllShortest, ss ...[]node) (path []node, found bool) {
+	found = pie.Any(pie.First(ss), func(n0 node) bool {
+		return pie.All(pie.DropTop(ss, 1), func(ss1 []node) bool {
+			return pie.Any(ss1, func(n1 node) bool {
 				p, _, _ := paths.Between(n0.ID(), n1.ID())
 				if p != nil {
-					path = append(path, p...)
+					path = append(path, toNodes(p)...)
 					return true
 				}
 				return false
@@ -149,7 +153,7 @@ func connected(paths path.AllShortest, ss ...[]graph.Node) (path []graph.Node, f
 	return nil, false
 }
 
-func (graph boardGraph) side(s int) (nodes []graph.Node) {
+func (graph boardGraph) side(s int) (nodes []node) {
 	pie.Each(map[int][]space{
 		1: []space{
 			space{oneRank, trumpKind},
@@ -189,8 +193,16 @@ func (graph boardGraph) side(s int) (nodes []graph.Node) {
 		},
 	}[s], func(s space) {
 		if nid, exists := graph.ids[s]; exists {
-			nodes = append(nodes, graph.Node(nid))
+			nodes = append(nodes, graph.Node(nid).(node))
 		}
 	})
+	return nodes
+}
+
+func toNodes(path []graph.Node) []node {
+	nodes := make([]node, len(path))
+	for i := range path {
+		nodes[i] = path[i].(node)
+	}
 	return nodes
 }

@@ -96,7 +96,7 @@ import twentytrumps from '@/assets/card_78.png'
 import twentyonetrumps from '@/assets/card_69.png'
 import excusetrumps from '@/assets/card_24.png'
 
-import { computed, ref } from 'vue'
+import { computed, ref, unref } from 'vue'
 import _lowerCase from 'lodash/lowerCase'
 
 const props = defineProps([ 'suit', 'rank', 'width', 'text' ])
@@ -106,7 +106,7 @@ const style = computed(() => (`width:${props.width}px`))
 const key = computed(() => _lowerCase(`${props.rank}${props.suit}`))
 
 const src = computed(() => {
-  switch (key.value) {
+  switch (unref(key)) {
       // clubs
     case 'oneclubs':
       return oneclubs

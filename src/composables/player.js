@@ -9,28 +9,28 @@ export function usePlayerByUser(game, user) {
 }
 
 export function usePlayerByPID(game, pid) {
-  const players = _get(unref(game), 'state.players', [])
-  return _find(players, [ 'id', pid ])
+  const players = _get(unref(game), 'Players', [])
+  return _find(players, [ 'ID', pid ])
 }
 
 export function usePIDForUser(game, user) {
   const g = unref(game)
   const u = unref(user)
-  const uid = _get(u, 'id', -1)
-  const uids = _get(g, 'header.userIds', []) 
+  const uid = _get(u, 'ID', -1)
+  const uids = _get(g, 'UserIDS', []) 
   const index = _findIndex(uids, id => id == uid)
   return index + 1
 }
 
 export function useCP(game) {
   const cpid = useCPID(game)
-  const players = _get(unref(game), 'state.players', [])
-  return _find(players, [ 'id', cpid ])
+  const players = _get(unref(game), 'Players', [])
+  return _find(players, [ 'ID', cpid ])
 }
 
 export function useCPID(game) {
   const g = unref(game)
-  return _get(g, 'header.cpids[0]', -1)
+  return _get(g, 'CPIDS[0]', -1)
 }
 
 export function useIsCP(game, cu) {

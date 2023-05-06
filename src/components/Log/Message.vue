@@ -16,7 +16,7 @@ import { computed, inject } from 'vue'
 
 const props = defineProps([ 'is', 'message', 'pid' ])
 
-const { game, updateGame } = inject(gameKey)
+const game = inject(gameKey)
 
 const component = computed(() => {
   switch (props.message.template) {

@@ -5,76 +5,56 @@ import (
 	"net/http"
 	"time"
 
-	"cloud.google.com/go/datastore"
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (cl Client) newInvitationHandler(c *gin.Context) {
+func (cl Client) newInvitationHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
 	inv, err := defaultInvitation()
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"invitation": inv})
+	ctx.JSON(http.StatusOK, gin.H{"Invitation": inv})
 }
 
-func (cl Client) createHandler(c *gin.Context) {
+func (cl Client) createHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	cu, err := cl.requireLogin(c)
+	cu, err := cl.requireLogin(ctx)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	inv := newInvitation(0)
-	err = inv.fromForm(c, cu)
+	var inv invitation
+	hash, err := inv.fromForm(ctx, cu)
+	sn.Debugf("hash: %v", hash)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	ks, err := cl.DS.AllocateIDs(c, []*datastore.Key{rootKey(0)})
-	if err != nil {
-		sn.JErr(c, err)
-		return
-	}
-
-	_, err = cl.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
-		t := time.Now()
-		inv.Key = newInvitationKey(ks[0].ID)
-		inv.CreatedAt, inv.UpdatedAt = t, t
-
-		m := sn.NewMLog(inv.Key.ID)
-		m.UpdatedAt, m.CreatedAt = t, t
-
-		ks := []*datastore.Key{inv.Key, m.Key}
-		es := []interface{}{&inv, &m}
-
-		_, err := tx.PutMulti(ks, es)
-		return err
-	})
-	if err != nil {
-		sn.JErr(c, err)
+	if _, _, err := invitationCollectionRef(cl.FS).Add(ctx, &inv); err != nil {
+		sn.JErr(ctx, err)
 		return
 	}
 
 	inv2, err := defaultInvitation()
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"invitation": inv2,
-		"message":    fmt.Sprintf("%s created game %q", cu.Name, inv.Title),
+	ctx.JSON(http.StatusOK, gin.H{
+		"Invitation": inv2,
+		"Message":    fmt.Sprintf("%s created game %q", cu.Name, inv.Title),
 	})
 }
 
@@ -88,20 +68,20 @@ const (
 	maxRounds     = 5
 )
 
-func (inv *invitation) fromForm(c *gin.Context, cu sn.User) error {
+func (inv *invitation) fromForm(ctx *gin.Context, cu sn.User) ([]byte, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	obj := struct {
-		Title           string `json:"title"`
-		NumPlayers      int    `json:"numPlayers"`
-		RoundsPerPlayer int    `json:"roundsPerPlayer"`
-		Password        string `json:"password"`
+		Title           string
+		NumPlayers      int
+		RoundsPerPlayer int
+		Password        string
 	}{}
 
-	err := c.ShouldBind(&obj)
+	err := ctx.ShouldBind(&obj)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	inv.Title = cu.Name + "'s Game"
@@ -120,63 +100,45 @@ func (inv *invitation) fromForm(c *gin.Context, cu sn.User) error {
 	}
 	inv.OptString, err = encodeOptions(rounds)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	var hash []byte
 	if len(obj.Password) > 0 {
-		hashed, err := bcrypt.GenerateFromPassword([]byte(obj.Password), bcrypt.DefaultCost)
+		hash, err = bcrypt.GenerateFromPassword([]byte(obj.Password), bcrypt.DefaultCost)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		inv.PasswordHash = hashed
+		inv.Private = true
 	}
 	inv.AddCreator(cu)
 	inv.AddUser(cu)
 	inv.Status = sn.Recruiting
 	inv.Type = sn.Plateau
-	return nil
-}
-
-func (cl Client) invitationsIndexHandler(c *gin.Context) {
-	cl.Log.Debugf(msgEnter)
-	defer cl.Log.Debugf(msgExit)
-
-	q := datastore.
-		NewQuery(invitationKind).
-		FilterField("Status", "=", sn.Recruiting.String()).
-		Order("-UpdatedAt")
-
-	var es []*invitation
-	_, err := cl.DS.GetAll(c, q, &es)
-	if err != nil {
-		sn.JErr(c, err)
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"invitations": es})
+	return hash, nil
 }
 
 type detail struct {
-	ID     int64   `json:"id"`
-	ELO    int     `json:"elo"`
-	Played int64   `json:"played"`
-	Won    int64   `json:"won"`
-	WP     float32 `json:"wp"`
+	ID     int64
+	ELO    int
+	Played int64
+	Won    int64
+	WP     float32
 }
 
-func (cl Client) detailsHandler(c *gin.Context) {
+func (cl Client) detailsHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	inv, err := cl.getInvitation(c)
+	inv, err := cl.getInvitation(ctx, getID(ctx))
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	cu, err := cl.requireLogin(c)
+	cu, err := cl.requireLogin(ctx)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
@@ -187,155 +149,142 @@ func (cl Client) detailsHandler(c *gin.Context) {
 		uids = append(uids, cu.ID())
 	}
 
-	elos, err := cl.Elo.GetMulti(c, uids)
-	if err != nil {
-		sn.JErr(c, err)
-		return
-	}
+	// elos, err := cl.Elo.GetMulti(c, uids)
+	// if err != nil {
+	// 	sn.JErr(c, err)
+	// 	return
+	// }
 
-	ustats, err := cl.getUStats(c, uids...)
-	if err != nil {
-		sn.JErr(c, err)
-		return
-	}
+	// ustats, err := cl.getUStats(c, uids...)
+	// if err != nil {
+	// 	sn.JErr(c, err)
+	// 	return
+	// }
 
-	details := make([]detail, len(elos))
-	for i := range elos {
-		played, won, wp := ustats[i].Played, ustats[i].Won, ustats[i].WinPercentage
-		details[i] = detail{
-			ID:     elos[i].Key.Parent.ID,
-			ELO:    elos[i].Rating,
-			Played: played[0],
-			Won:    won[0],
-			WP:     wp[0],
-		}
-	}
+	// details := make([]detail, len(elos))
+	// for i := range elos {
+	// 	played, won, wp := ustats[i].Played, ustats[i].Won, ustats[i].WinPercentage
+	// 	details[i] = detail{
+	// 		ID:     elos[i].ID,
+	// 		ELO:    elos[i].Rating,
+	// 		Played: played[0],
+	// 		Won:    won[0],
+	// 		WP:     wp[0],
+	// 	}
+	// }
 
-	c.JSON(http.StatusOK, gin.H{"details": details})
+	// c.JSON(http.StatusOK, gin.H{"details": details})
 }
 
-func (cl Client) acceptHandler(c *gin.Context) {
+func (cl Client) acceptHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	inv, err := cl.getInvitation(c)
+	id := getID(ctx)
+	inv, err := cl.getInvitation(ctx, id)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	cu, err := cl.requireLogin(c)
+	cu, err := cl.requireLogin(ctx)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
 	obj := struct {
-		Password string `json:"password"`
+		Password string
 	}{}
 
-	err = c.ShouldBind(&obj)
+	err = ctx.ShouldBind(&obj)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	start, err := inv.AcceptWith(cu, []byte(obj.Password))
+	start, err := inv.AcceptWith(cu, []byte(obj.Password), nil)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
 	if !start {
 		inv.UpdatedAt = time.Now()
-		_, err = cl.DS.Put(c, inv.Key, &inv)
+		_, err = invitationDocRef(cl.FS, id).Set(ctx, &inv)
 		if err != nil {
-			sn.JErr(c, err)
+			sn.JErr(ctx, err)
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{
-			"invitation": inv,
-			"message":    fmt.Sprintf("%s joined game: %d", cu.Name, inv.Key.ID),
-		})
+		ctx.JSON(http.StatusOK, gin.H{"Message": fmt.Sprintf("%s joined game: %s", cu.Name, inv.Title)})
 		return
 	}
 
-	// start game
-	g := newGame(inv.Key.ID, 0)
-	g.Header = inv.Header.Header
+	var g game
+	g.Header = inv.Header
 	g.start()
 	g.startHand()
 	cp := g.startBidPhase()
 	g.setCurrentPlayers(cp)
 
-	_, err = cl.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
-		err = tx.Delete(inv.Key)
-		if err != nil {
-			return err
-		}
-
-		t := time.Now()
-		g.StartedAt, g.UpdatedAt = t, t
-		h := g.Header
-		_, err = tx.PutMulti([]*datastore.Key{g.headerKey(), committedKey(g.id()), g.Key},
-			[]interface{}{&h, &g, &g})
-		return err
-	})
+	err = cl.save(ctx, g, cu)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
+		return
+	}
+
+	_, err = invitationDocRef(cl.FS, id).Delete(ctx)
+	if err != nil {
+		sn.JErr(ctx, err)
 		return
 	}
 
 	// cl.sendTurnNotificationsTo(c, g, cp)
-	err = cl.sendNotifications(c, g)
-	if err != nil {
-		cl.Log.Warningf(err.Error())
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"invitation": g.Header,
-		"message": fmt.Sprintf(
-			`<div>Game: %d has started.</div>
-			<div></div>
-			<div><strong>%s</strong> is start player.</div>`,
-			g.id(), g.NameFor(cp.id)),
-	})
+	// 	err = cl.sendNotifications(c, g)
+	// 	if err != nil {
+	// 		cl.Log.Warningf(err.Error())
+	// 	}
+	//
+	ctx.JSON(http.StatusOK, gin.H{"Message": g.startGameMessage(cp.ID)})
 }
 
-func (cl Client) dropHandler(c *gin.Context) {
+func (g game) startGameMessage(pid sn.PID) string {
+	return fmt.Sprintf("<div>Game: %s has started.</div><div></div><div><strong>%s</strong> is start player.</div>",
+		g.Title, g.NameFor(pid))
+}
+
+func (cl Client) dropHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	inv, err := cl.getInvitation(c)
+	id := getID(ctx)
+	inv, err := cl.getInvitation(ctx, id)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	cu, err := cl.requireLogin(c)
+	cu, err := cl.requireLogin(ctx)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
 	err = inv.Drop(cu)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	if len(inv.UserKeys) == 0 {
+	if len(inv.UserIDS) == 0 {
 		inv.Status = sn.Aborted
 	}
 
 	inv.UpdatedAt = time.Now()
-	_, err = cl.DS.Put(c, inv.Key, &inv)
+	_, err = invitationDocRef(cl.FS, id).Set(ctx, &inv)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"invitation": inv,
-		"message":    fmt.Sprintf("%s dropped from game invitation: %d", cu.Name, inv.Key.ID),
-	})
+	ctx.JSON(http.StatusOK, gin.H{"Message": fmt.Sprintf("%s dropped from game invitation: %s", cu.Name, inv.Title)})
 }

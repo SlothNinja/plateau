@@ -17,17 +17,18 @@
 
 <script setup>
 import _get from 'lodash/get'
-import { computed, inject } from 'vue'
+import _isEmpty from 'lodash/isEmpty'
+import { computed, inject, unref } from 'vue'
+import { useHands } from '@/composables/hands'
 
 // inject game and current user
-import { gameKey } from '@/composables/keys.js'
-const { game, update } = inject(gameKey)
+import { gameKey } from '@/composables/keys'
+const game = inject(gameKey)
 
-const header = computed(() => _get(game, 'value.header', {}))
-const title = computed(() => _get(header, 'value.title', ''))
-const id = computed(() => _get(game, 'value.id', ''))
-const hand = computed(() => _get(header, 'value.round', 0))
-const hands = computed(() => _get(game, 'value.hands', 0))
-const phase = computed(() => _get(header, 'value.phase', ''))
+const title = computed(() => _get(unref(game), 'Title', ''))
+const id = computed(() => _get(unref(game), 'id', ''))
+const hand = computed(() => _get(unref(game), 'Round', 0))
+const hands = computed(() => (useHands(game)))
+const phase = computed(() => _get(unref(game), 'Phase', ''))
 
 </script>

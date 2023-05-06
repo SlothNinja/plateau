@@ -29,7 +29,7 @@
     </td>
   </tr>
   <tr>
-    <td v-if='notJoined && publick' :colspan='length'>
+    <td v-if='notJoined && !privat' :colspan='length'>
       <v-btn 
            size='small'
            rounded
@@ -40,7 +40,7 @@
            Accept
       </v-btn>
     </td>
-    <td v-if='notJoined && ! publick' :colspan='length'>
+    <td v-if='notJoined && privat' :colspan='length'>
       <div class='d-flex align-center ma-4'>
          <v-btn 
              size='small'
@@ -99,7 +99,7 @@ import _includes from 'lodash/includes'
 import _isEmpty from 'lodash/isEmpty'
 
 // Vue
-import { computed, ref, inject, watch } from 'vue'
+import { computed, ref, unref, inject, watch } from 'vue'
 
 // composables
 import { useFetch, usePut } from '@/composables/fetch.js'
@@ -113,12 +113,12 @@ const props = defineProps({
 })
 
 // Emit
-const emit = defineEmits(['update:item'])
+// const emit = defineEmits(['update:item'])
 
 ///////////////////////////////////////
 // Current User
 const cu = inject(cuKey)
-const cuid = computed(() => _get(cu, 'value.id', 0))
+const cuid = computed(() => _get(unref(cu), 'ID', 0))
 
 // Password related values
 const password = ref('')
@@ -129,12 +129,12 @@ const length = computed(() => _get(props, 'columns.length', 1))
 
 // Fetch player details for item
 const id = ref(_get(props, 'item.raw.id', false))
-const { data, error } = useFetch(`/sn/invitation/details/${id.value}`)
-const details = computed(() => _get(data, 'value.details', []))
+const { data, error } = useFetch(`/sn/invitation/details/${unref(id)}`)
+const details = computed(() => _get(unref(data), 'details', []))
 
 // Pull details for specific user from the fetched details
 function detailsFor (uid) {
-  return _find(details.value, { 'id': uid })
+  return _find(unref(details), { 'id': uid })
 }
 
 // Create creator and user objects from item
@@ -142,36 +142,30 @@ const creator = computed(() => useCreator(_get(props, 'item.raw', {})))
 const users = computed(() => useUsers(_get(props, 'item.raw', [])))
 
 // Indicates whether the current user has joined the item
-const notJoined = computed(() => !_includes(_get(props, 'item.raw.userIds', []), cuid.value))
+const notJoined = computed(() => !_includes(_get(props, 'item.raw.UserIDS', []), unref(cuid)))
 
 // Indicates whether the item is public or password protected
-const publick = computed(() => _get(props, 'item.raw.public', false))
+// const publick = computed(() => _get(props, 'item.raw.public', false))
+const privat = computed(() => _get(props, 'item.raw.Private', false))
 
+
+// Inject snackbar
+const { snackbar, updateSnackbar } = inject(snackKey)
 
 // Accept or drop from invitation
 function action(obj) {
-  let action = _get(obj, 'action', '')
-  let id = _get(obj, 'item.raw.id', 0)
-  let pword = _get(obj, 'password', '')
+  const action = _get(obj, 'action', '')
+  const id = _get(obj, 'item.raw.id', 0)
+  const pword = _get(obj, 'password', '')
   const { response, error } = usePut(`/sn/invitation/${action}/${id}`, { password: pword })
 
-  // Wait for response data from server and update invitation and snackbar
-  // Clear password
+  // Wait for response data from server and update snackbar and clear password
   watch(response, () => {
-    let invitation = _get(response, 'value.invitation', {})
-    if (!_isEmpty(invitation)) {
-      emit('update:item', invitation)
-    }
-    let message = _get(response, 'value.message', '')
+    const message = _get(unref(response), 'Message', '')
     if (!_isEmpty(message)) {
-      snackbar.value.message = message
-      snackbar.value.open = true
+      updateSnackbar(message)
     }
     password.value = ''
   })
 }
-
-// Inject snackbar
-const snackbar = inject(snackKey)
-
 </script>

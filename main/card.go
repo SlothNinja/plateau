@@ -1,52 +1,23 @@
 package main
 
 import (
-	"encoding/json"
-
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 	"github.com/gin-gonic/gin"
 )
 
 type card struct {
-	rank     rank
-	suit     suit
-	playedBy sn.PID
+	Rank     rank
+	Suit     suit
+	PlayedBy sn.PID
 }
 
 func (c card) value() int {
-	v := c.rank.value()
-	if c.suit == trumps && v != noRank.value() {
+	v := c.Rank.value()
+	if c.Suit == trumps && v != noRank.value() {
 		v += 100
 	}
 	return v
-}
-
-type jCard struct {
-	Suit     suit   `json:"suit"`
-	Rank     rank   `json:"rank"`
-	PlayedBy sn.PID `json:"playedBy"`
-}
-
-func (c card) MarshalJSON() ([]byte, error) {
-	return json.Marshal(jCard{
-		Suit:     c.suit,
-		Rank:     c.rank,
-		PlayedBy: c.playedBy,
-	})
-}
-
-func (c *card) UnmarshalJSON(bs []byte) error {
-	obj := new(jCard)
-	err := json.Unmarshal(bs, obj)
-	if err != nil {
-		return err
-	}
-
-	c.suit = obj.Suit
-	c.rank = obj.Rank
-	c.playedBy = obj.PlayedBy
-	return nil
 }
 
 type suit string
@@ -163,28 +134,23 @@ func toRank(v int) rank {
 	return r
 }
 
-func getCards(c *gin.Context) ([]card, error) {
+func getCards(ctx *gin.Context) ([]card, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	var obj []jCard
-	err := c.ShouldBind(&obj)
+	var obj []card
+	err := ctx.ShouldBind(&obj)
 	if err != nil {
 		return nil, err
 	}
-	sn.Debugf("obj: %#v", obj)
-	return cardsFrom(obj), nil
-}
-
-func cardsFrom(obj []jCard) []card {
-	return pie.Map(obj, func(c jCard) card { return card{suit: c.Suit, rank: c.Rank} })
+	return obj, nil
 }
 
 func (g game) cardsFor(team []sn.PID) []card {
 	var cards []card
 	pie.Each(g.tricksFor(team), func(t trick) {
-		cards = append(cards, pie.Map(t.cards, func(c card) card {
-			c.playedBy = sn.NoPID
+		cards = append(cards, pie.Map(t.Cards, func(c card) card {
+			c.PlayedBy = sn.NoPID
 			return c
 		})...)
 	})
@@ -192,5 +158,5 @@ func (g game) cardsFor(team []sn.PID) []card {
 }
 
 func (c card) toSpace() space {
-	return space{c.rank, kind(c.suit)}
+	return space{c.Rank, kind(c.Suit)}
 }

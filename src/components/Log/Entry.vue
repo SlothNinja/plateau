@@ -32,7 +32,7 @@
 <script setup>
 // components
 import Message from '@/components/Log/Message'
-import UserButton from '@/components/UserButton.vue'
+import UserButton from '@/components/Common/UserButton.vue'
 
 //composables
 import { useUserByIndex } from '@/composables/user.js'
@@ -46,7 +46,7 @@ import _get from 'lodash/get'
 
 const props = defineProps(['entry'])
 
-const { game, updateGame } = inject(gameKey)
+const game = inject(gameKey)
 
 const updatedAt = computed(() => {
   var d = _get(props.entry, 'updatedAt', false)

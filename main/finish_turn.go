@@ -9,29 +9,29 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (cl Client) finishTurnHandler(c *gin.Context) {
+func (cl Client) finishTurnHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	cu, err := cl.User.Current(c)
+	cu, err := cl.User.Current(ctx)
 	if err != nil {
 		cl.Log.Warningf(err.Error())
 	}
 
-	g, err := cl.getGame(c, cu, noUndo)
+	g, err := cl.getGame(ctx, cu, noUndo)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	gc, err := cl.getCommitted(c)
+	gc, err := cl.getCommitted(ctx)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
 	if gc.Undo.Committed != g.Undo.Committed {
-		sn.JErr(c, fmt.Errorf("invalid commit: %w", sn.ErrValidation))
+		sn.JErr(ctx, fmt.Errorf("invalid commit: %w", sn.ErrValidation))
 		return
 	}
 
@@ -52,32 +52,34 @@ func (cl Client) finishTurnHandler(c *gin.Context) {
 	}
 
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	cp.stats.Moves++
-	cp.stats.Think += time.Since(gc.UpdatedAt)
+	sn.Debugf("cp: %#v", cp)
+	sn.Debugf("np: %#v", np)
+	cp.Stats.Moves++
+	cp.Stats.Think += time.Since(gc.UpdatedAt)
 
-	if np.id != sn.NoPID {
-		np.reset()
-		// g.beginningOfTurnReset()
-		g.setCurrentPlayers(np)
+	if np == nil {
+		cl.endGame(ctx, g, cu)
+		return
 	}
 
-	err = cl.commit(c, g, cu.ID())
+	np.reset()
+	g.setCurrentPlayers(np)
+	err = cl.commit(ctx, g, cu)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
 	// err = cl.sendTurnNotificationsTo(c, g, g.otherCurrentPlayers(cp)...)
-	err = cl.sendNotifications(c, g)
-	if err != nil {
-		cl.Log.Warningf(err.Error())
-	}
-	c.JSON(http.StatusOK, gin.H{"game": g})
-
+	// err = cl.sendNotifications(c, g)
+	// if err != nil {
+	// 	cl.Log.Warningf(err.Error())
+	// }
+	ctx.JSON(http.StatusOK, nil)
 }
 
 func (g game) validateFinishTurn(cu sn.User) (*player, error) {
@@ -85,7 +87,7 @@ func (g game) validateFinishTurn(cu sn.User) (*player, error) {
 	switch {
 	case err != nil:
 		return nil, err
-	case !cp.performedAction:
+	case !cp.PerformedAction:
 		return nil, fmt.Errorf("%s has yet to perform an action: %w", cu.Name, sn.ErrValidation)
 	default:
 		return cp, nil

@@ -1,18 +1,16 @@
 package main
 
 import (
-	"encoding/json"
-
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 	"github.com/gin-gonic/gin"
 )
 
 type bid struct {
-	exchange  exchange
-	objective objective
-	teams     teams
-	pid       sn.PID
+	Exchange  exchange
+	Objective objective
+	Teams     teams
+	PID       sn.PID
 }
 
 type exchange string
@@ -23,52 +21,51 @@ const (
 	exchangeBid     exchange = "exchange"
 )
 
-func (b bid) value(numPlayers int) int {
-	return b.exchange.value(numPlayers) + b.objective.value() + b.teams.value(numPlayers)
+func (b bid) value(numPlayers int) int64 {
+	return b.Exchange.value(numPlayers) + b.Objective.value() + b.Teams.value(numPlayers)
 }
 
 func minBid(numPlayers int) bid {
 	switch numPlayers {
 	case 2:
-		return bid{exchange: exchangeBid, objective: yBid}
+		return bid{Exchange: exchangeBid, Objective: yBid}
 	case 3:
-		return bid{exchange: exchangeBid, objective: bridgeBid}
+		return bid{Exchange: exchangeBid, Objective: bridgeBid}
 	case 4:
-		return bid{exchange: exchangeBid, objective: yBid, teams: duoBid}
+		return bid{Exchange: exchangeBid, Objective: yBid, Teams: duoBid}
 	case 5:
-		return bid{exchange: exchangeBid, objective: bridgeBid, teams: duoBid}
+		return bid{Exchange: exchangeBid, Objective: bridgeBid, Teams: duoBid}
 	case 6:
-		return bid{exchange: noExchangeBid, objective: yBid, teams: trioBid}
+		return bid{Exchange: noExchangeBid, Objective: yBid, Teams: trioBid}
 	default:
 		return bid{}
 	}
 }
 
-func getBid(c *gin.Context) (bid, error) {
+func getBid(ctx *gin.Context) (bid, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	obj := jBid{}
-	err := c.ShouldBind(&obj)
+	var obj bid
+	err := ctx.ShouldBind(&obj)
 	if err != nil {
 		return bid{}, err
 	}
-	sn.Debugf("obj: %#v", obj)
-	return bidFrom(obj), nil
+	return obj, nil
 }
 
 func (g game) currentBid() bid {
-	return pie.Last(g.bids)
+	return pie.Last(g.Bids)
 }
 
-func (g game) currentBidValue() int {
-	if len(g.bids) == 0 {
+func (g game) currentBidValue() int64 {
+	if len(g.Bids) == 0 {
 		return 0
 	}
 	return g.currentBid().value(g.NumPlayers)
 }
 
-func (e exchange) value(numPlayers int) int {
+func (e exchange) value(numPlayers int) int64 {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -97,41 +94,6 @@ func (e exchange) value(numPlayers int) int {
 	}
 }
 
-type jBid struct {
-	Exchange  exchange  `json:"exchange"`
-	Objective objective `json:"objective"`
-	Teams     teams     `json:"teams"`
-	PID       sn.PID    `json:"pid"`
-}
-
-func (b bid) MarshalJSON() ([]byte, error) {
-	return json.Marshal(jBid{
-		Exchange:  b.exchange,
-		Objective: b.objective,
-		Teams:     b.teams,
-		PID:       b.pid,
-	})
-}
-
-func (b *bid) UnmarshalJSON(bs []byte) error {
-	obj := new(jBid)
-	err := json.Unmarshal(bs, obj)
-	if err != nil {
-		return err
-	}
-	*b = bidFrom(*obj)
-	return nil
-}
-
-func bidFrom(obj jBid) bid {
-	return bid{
-		exchange:  obj.Exchange,
-		objective: obj.Objective,
-		teams:     obj.Teams,
-		pid:       obj.PID,
-	}
-}
-
 type objective string
 
 const (
@@ -143,7 +105,7 @@ const (
 	sixSidesBid    objective = "six sides"
 )
 
-func (o objective) value() int {
+func (o objective) value() int64 {
 	switch o {
 	case "bridge":
 		return 0
@@ -170,7 +132,7 @@ const (
 	trioBid   teams = "trio"
 )
 
-func (t teams) value(numPlayers int) int {
+func (t teams) value(numPlayers int) int64 {
 	switch numPlayers {
 	case 2, 3:
 		switch t {
@@ -209,9 +171,9 @@ func (t teams) value(numPlayers int) int {
 }
 
 func (g game) lastBid() bid {
-	return pie.Last(g.bids)
+	return pie.Last(g.Bids)
 }
 
 func (b bid) includesPartner() bool {
-	return b.teams == duoBid || b.teams == trioBid
+	return b.Teams == duoBid || b.Teams == trioBid
 }

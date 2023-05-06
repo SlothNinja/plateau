@@ -10,9 +10,16 @@
       </v-tooltip>
 
       <!-- Rollback control -->
-      <v-tooltip location='bottom' text='Rollback' color="info" :disabled='!canRollback' v-if='cu.admin' >
+      <v-tooltip location='bottom' text='Rollback' color="info" :disabled='!canRollback' v-if='cu.Admin' >
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" icon='mdi-step-backward' :disabled='!canRollback' @click="action('rollback', { rev: game.rev })" />
+            <v-btn v-bind="props" icon='mdi-step-backward' :disabled='!canRollback' @click="action('rollback', { rev: stack.Committed })" />
+        </template>
+      </v-tooltip>
+
+      <!-- Rollforward control -->
+      <v-tooltip location='bottom' text='Rollforward' color="info" :disabled='!canRollforward' v-if='cu.Admin'>
+        <template v-slot:activator="{ props }">
+            <v-btn v-bind="props" icon='mdi-step-forward' @click="action('rollforward', { rev: stack.Committed })" />
         </template>
       </v-tooltip>
 
@@ -30,24 +37,10 @@
         </template>
       </v-tooltip>
 
-      <!-- Rollforward control -->
-      <v-tooltip location='bottom' text='Rollforward' color="info" :disabled='!canRollforward' v-if='cu.admin'>
-        <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" icon='mdi-step-forward' @click="action('rollforward', { rev: game.rev })" />
-        </template>
-      </v-tooltip>
-
       <!-- Finish control -->
       <v-tooltip location='bottom' text='Finish' color="info" :disabled='!canFinish' >
         <template v-slot:activator="{ props }">
           <v-btn v-bind="props" icon='mdi-check' :disabled='!canFinish' @click="action('finish')" />
-        </template>
-      </v-tooltip>
-
-      <!-- Refresh control -->
-      <v-tooltip location='bottom' text='Refresh' color="info">
-        <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" icon='mdi-refresh' @click='refresh' />
         </template>
       </v-tooltip>
 
@@ -56,61 +49,52 @@
 </template>
 
 <script setup>
-import { computed, inject, watch } from 'vue'
-import { useFetch, usePut } from '@/composables/fetch.js'
-import { useCP, useIsCP } from '@/composables/player.js'
+import { computed, inject, watch, unref } from 'vue'
+
+// lodash
 import _get from 'lodash/get'
 import _isEmpty from 'lodash/isEmpty'
 
-// inject game and current user
-import { cuKey, gameKey, snackKey } from '@/composables/keys.js'
+// useRoute
+import { useRoute } from 'vue-router'
+const route = useRoute()
+
+// inject current user
+import { cuKey, stackKey } from '@/composables/keys.js'
 const cu = inject(cuKey)
 
 //////////////////////////////////////
 // Snackbar
+import { snackKey } from '@/composables/keys.js'
 const { snackbar, updateSnackbar } = inject(snackKey)
+const stack = inject(stackKey)
 
-const { game, updateGame } = inject(gameKey)
+// Inject game
+import { gameKey } from '@/composables/keys'
+const game = inject(gameKey)
 
-const running = computed(() => (_get(game, 'value.header.status', '') == 'running'))
-
-const cp = computed(() => useCP(game))
+import { useCP, useIsCP } from '@/composables/player.js'
 const isCP = computed(() => useIsCP(game, cu))
-const performedAction = computed(() => _get(cp, 'value.performedAction', false))
+const performedAction = computed(() => _get(unref(useCP(game)), 'PerformedAction', false))
+const running = computed(() => (_get(unref(game), 'Status', '') == 'running'))
 
-const undoCurrent = computed(() => _get(game, 'value.header.undo.current', 0))
-const undoCommitted = computed(() => _get(game, 'value.header.undo.committed', 0))
-const undoUpdated = computed(() => _get(game, 'value.header.undo.updated', 0))
+const canFinish = computed(() => (unref(running) && unref(isCP) && unref(performedAction)))
+const canUndo = computed(() => (unref(running) && unref(isCP) && (unref(stack).Current > unref(stack).Committed)))
+const canRedo = computed(() => (unref(running) && unref(isCP) && (unref(stack).Current < unref(stack).Updated)))
+const canReset = computed(() => (unref(running) && unref(isCP)))
 
-const canFinish = computed(() => (running.value && isCP.value && performedAction.value))
+const canRollback = computed(() => (unref(cu).Admin && (unref(stack).Current == unref(stack).Committed) && (unref(stack).Committed) > 0))
+const canRollforward = computed(() => (unref(cu).Admin && (unref(stack).Current == unref(stack).Committed)))
 
-const canUndo = computed(() => (running.value && isCP.value && (undoCurrent.value > undoCommitted.value)))
-const canRedo = computed(() => (running.value && isCP.value && (undoCurrent.value < undoUpdated.value)))
-const canReset = computed(() => (running.value && isCP.value))
-
-const canRollback = computed(() => (cu.value.admin && (undoCurrent.value == undoCommitted.value) && (undoCommitted.value > 0)))
-const canRollforward = computed(() => (cu.value.admin && (undoCurrent.value == undoCommitted.value)))
-
+import { usePut } from '@/composables/fetch.js'
 function action(path, data) {
-  const { response, error } = usePut(`/sn/game/${path}/${game.value.id}`, data)
+  const { response, error } = usePut(`/sn/game/${path}/${route.params.id}`, data)
 
   watch( response, () => {
-    const g = _get(response, 'value.game', {})
-    if (!_isEmpty(g)) {
-      updateGame(g)
-    }
-    const msg = _get(response, 'value.message', '')
+    const msg = _get(unref(response), 'Message', '')
     if (!_isEmpty(msg)) {
       updateSnackbar(msg)
     }
-  })
-}
-
-function refresh() {
-  const { data, error } = useFetch(`/sn/game/show/${game.value.id}`)
-
-  watch(data, () => {
-    updateGame(_get(data, 'value.game', {}))
   })
 }
 </script>

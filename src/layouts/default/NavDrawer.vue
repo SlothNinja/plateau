@@ -20,7 +20,7 @@
 
 <script setup>
 import { computed, ref, onMounted, inject } from 'vue'
-import UserButton from '@/components/UserButton.vue'
+import UserButton from '@/components/Common/UserButton.vue'
 import { cuKey } from '@/composables/keys.js'
 import { get } from 'lodash'
 

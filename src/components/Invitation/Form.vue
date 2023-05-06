@@ -11,27 +11,28 @@
 
         <v-text-field
             label="Title"
-            v-model="invitation.title"
+            v-model="invitation.Title"
             >
         </v-text-field>
 
           <v-select
               label="Number of Players"
-              :items="[ 2, 3, 4, 5, 6 ]"
-              v-model="invitation.numPlayers"
+              :items="[ 3, 4 ]"
+              v-model="invitation.NumPlayers"
               >
           </v-select> 
 
             <v-select
                 label="Hands per Player"
                 :items="[ 1, 2, 3, 4, 5 ]"
-                v-model="invitation.handsPerPlayer"
+                v-model="invitation.HandsPerPlayer"
                 >
             </v-select> 
 
               <v-text-field
+                  disabled
                   label='Password'
-                  v-model='invitation.password'
+                  v-model='invitation.Password'
                   :append-icon="show ? 'mdi-eye' : 'mdi-eye-off'"
                   :type="show ? 'text' : 'password'"
                   :placeholder="passwordMessage"
@@ -52,7 +53,7 @@
 <script setup>
 ////////////////////////////////////////////////////
 // Vue
-import { ref, watch, inject } from 'vue'
+import { ref, unref, watch, inject } from 'vue'
 
 /////////////////////////////////////////////////////
 // Composables
@@ -79,32 +80,27 @@ const { data, error } = useFetch('/sn/invitation/new')
 // Watch for data promise to resolve from useFetch
 // update invitation to received default values
 // update snackbar message based on any received message
-watch( data, () => {
-  invitation.value = _get(data, 'value.invitation', {})
-  message.value = _get(data, 'value.message', '')
-})
+watch(data, () => update(data))
 
 ///////////////////////////////////////////////////////
 // Put data of new invitation to server
 function putData () {
   const { response, error } = usePut('/sn/invitation/new', invitation)
+  watch(response, () => update(response))
+}
 
-  watch( response, () => {
-    invitation.value = _get(response, 'value.invitation', {})
-    message.value = _get(response, 'value.message', '')
-  })
+function update(data) {
+  invitation.value = _get(unref(data), 'Invitation', {})
+  const opt = JSON.parse(_get(unref(invitation), 'OptString', {}))
+  invitation.value.HandsPerPlayer = _get(opt, 'HandsPerPlayer', 0)
+  const message = _get(unref(data), 'Message', '')
+  if (!_isEmpty(message)) {
+    updateSnackbar(message)
+  }
 }
 
 //////////////////////////////////////
 // Snackbar
-const message = ref()
-const snackbar = inject(snackKey)
-
-watch(message, (newMessage) => {
-  if (!_isEmpty(newMessage)) {
-    snackbar.value.message = newMessage
-    snackbar.value.open = true
-  }
-})
+const { snackbar, updateSnackbar } = inject(snackKey)
 
 </script>

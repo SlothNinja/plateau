@@ -9,11 +9,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (g *game) startIncObjective() {
+func (g *game) startIncObjective() *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	g.Phase = incObjectivePhase
+	return g.selectIncrementer(nil)
 }
 
 func (g game) selectIncrementer(inc *player) *player {
@@ -44,69 +45,69 @@ func (g game) selectIncrementer(inc *player) *player {
 }
 
 func (g game) partnerPIDS() []sn.PID {
-	if len(g.declarersTeam) < 2 {
+	if len(g.DeclarersTeam) < 2 {
 		return nil
 	}
-	return g.declarersTeam[1:]
+	return g.DeclarersTeam[1:]
 }
 
-func (cl Client) incObjectiveHandler(c *gin.Context) {
+func (cl Client) incObjectiveHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	cu, err := cl.User.Current(c)
+	cu, err := cl.User.Current(ctx)
 	if err != nil {
 		cl.Log.Warningf(err.Error())
 	}
 
-	g, err := cl.getGame(c, cu, noUndo)
+	g, err := cl.getGame(ctx, cu, noUndo)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	err = g.incObjective(c, cu)
+	err = g.incObjective(ctx, cu)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	err = cl.putCached(c, g, g.Undo.Current, cu.ID())
+	err = cl.putCached(ctx, g, g.Undo.Current, cu.ID())
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"game": g})
+	ctx.JSON(http.StatusOK, gin.H{"game": g})
 }
 
-func (g *game) incObjective(c *gin.Context, cu sn.User) error {
+func (g *game) incObjective(ctx *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	cp, bid, err := g.validateIncObjective(c, cu)
+	cp, bid, err := g.validateIncObjective(ctx, cu)
 	if err != nil {
 		return err
 	}
 
-	cp.performedAction = true
-	if g.lastBid().objective == bid.objective {
-		g.newEntryFor(cp.id, message{
-			"template": "no-increased-objective",
-		})
+	cp.PerformedAction = true
+	if g.lastBid().Objective == bid.Objective {
+		// g.newEntryFor(cp.ID, message{
+		// 	"template": "no-increased-objective",
+		// })
 	}
 
-	g.bids = append(g.bids, bid)
-	g.newEntryFor(cp.id, message{
-		"template": "increased-objective",
-		"bid":      bid,
-	})
+	g.Bids = append(g.Bids, bid)
+	// g.newEntryFor(cp.ID, message{
+	// 	"template": "increased-objective",
+	// 	"bid":      bid,
+	// })
 
 	g.Undo.Update()
 	return nil
 }
 
-func (g game) validateIncObjective(c *gin.Context, cu sn.User) (*player, bid, error) {
+func (g game) validateIncObjective(ctx *gin.Context, cu sn.User) (*player, bid, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -118,23 +119,23 @@ func (g game) validateIncObjective(c *gin.Context, cu sn.User) (*player, bid, er
 		return nil, noBid, err
 	}
 
-	bid, err := g.validateBid(c)
+	bid, err := g.validateBid(ctx)
 	if err != nil {
 		return nil, noBid, err
 	}
 
-	objValue1 := bid.objective.value()
+	objValue1 := bid.Objective.value()
 
-	objValue2 := g.lastBid().objective.value()
+	objValue2 := g.lastBid().Objective.value()
 
 	switch {
 	case g.Phase != incObjectivePhase:
 		return nil, noBid, fmt.Errorf("expected %q phase but have %q phase: %w", incObjectivePhase, g.Phase, sn.ErrValidation)
-	case bid.exchange != g.lastBid().exchange:
+	case bid.Exchange != g.lastBid().Exchange:
 		return nil, noBid, fmt.Errorf("you cannot change the exchange characteristic of the bid: %w", sn.ErrValidation)
-	case bid.teams != g.lastBid().teams:
+	case bid.Teams != g.lastBid().Teams:
 		return nil, noBid, fmt.Errorf("you cannot change the teams characteristic of the bid: %w", sn.ErrValidation)
-	case bid.pid != g.lastBid().pid:
+	case bid.PID != g.lastBid().PID:
 		return nil, noBid, fmt.Errorf("you cannot change the declarer of the bid: %w", sn.ErrValidation)
 	case objValue1 < objValue2:
 		return nil, noBid, fmt.Errorf("you cannot decrease the objective of the bid: %w", sn.ErrValidation)

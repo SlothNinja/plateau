@@ -14,10 +14,10 @@
 </template>
 
 <script setup>
-import UserButton from '@/components/UserButton.vue'
+import UserButton from '@/components/Common/UserButton.vue'
 import { gameKey } from '@/composables/keys.js'
 import { inject } from 'vue'
 import { useUserByIndex } from '@/composables/user.js'
 
-const { game, updateGame } = inject(gameKey)
+const game = inject(gameKey)
 </script>

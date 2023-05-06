@@ -6,24 +6,24 @@ export function useUserByIndex(header, index) {
   const h = unref(header)
   const i = unref(index)
   return {
-    id: _get(h, `userIds[${i}]`, 0),
-    name: _get(h, `userNames[${i}]`, ''),
-    emailHash: _get(h, `userEmailHashes[${i}]`, ''),
-    gravType: _get(h, `userGravTypes[${i}]`, ''),
+    ID: _get(h, `UserIDS[${i}]`, 0),
+    Name: _get(h, `UserNames[${i}]`, ''),
+    EmailHash: _get(h, `UserEmailHashes[${i}]`, ''),
+    GravType: _get(h, `UserGravTypes[${i}]`, ''),
   }
 }
 
 export function useUsers(header) {
   const h = unref(header)
-  return _map(_get(h, 'userIds', []), (id, i) => useUserByIndex(h, i))
+  return _map(_get(h, 'UserIDS', []), (id, i) => useUserByIndex(h, i))
 }
 
 export function useCreator(header) {
   const h = unref(header)
   return {
-    id: h.creatorId,
-    name: h.creatorName,
-    emailHash: h.creatorEmailHash,
-    gravType: h.creatorGravType
+    ID: h.CreatorId,
+    Name: h.CreatorName,
+    EmailHash: h.CreatorEmailHash,
+    GravType: h.CreatorGravType
   }
 }

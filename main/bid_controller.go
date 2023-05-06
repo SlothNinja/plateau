@@ -8,60 +8,60 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (cl Client) bidHandler(c *gin.Context) {
+func (cl Client) bidHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	cu, err := cl.User.Current(c)
+	cu, err := cl.User.Current(ctx)
 	if err != nil {
 		cl.Log.Warningf(err.Error())
 	}
 
-	g, err := cl.getGame(c, cu, noUndo)
+	g, err := cl.getGame(ctx, cu, noUndo)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	err = g.placeBid(c, cu)
+	err = g.placeBid(ctx, cu)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	err = cl.putCached(c, g, g.Undo.Current, cu.ID())
+	err = cl.putCached(ctx, g, g.Undo.Current, cu.ID())
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"game": g})
+	ctx.JSON(http.StatusOK, nil)
 }
 
-func (g *game) placeBid(c *gin.Context, cu sn.User) error {
+func (g *game) placeBid(ctx *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	cp, bid, err := g.validatePlaceBid(c, cu)
+	cp, bid, err := g.validatePlaceBid(ctx, cu)
 	if err != nil {
 		return err
 	}
 
-	cp.performedAction = true
-	cp.bid = true
-	g.bids = append(g.bids, bid)
-	g.declarersTeam = []sn.PID{cp.id}
+	cp.PerformedAction = true
+	cp.Bid = true
+	g.Bids = append(g.Bids, bid)
+	g.DeclarersTeam = []sn.PID{cp.ID}
 
-	g.newEntryFor(cp.id, message{
-		"template": "placed-bid",
-		"bid":      bid,
-	})
+	// g.newEntryFor(cp.ID, message{
+	// 	"Template": "placed-bid",
+	// 	"Bid":      bid,
+	// })
 
 	g.Undo.Update()
 	return nil
 }
 
-func (g game) validatePlaceBid(c *gin.Context, cu sn.User) (*player, bid, error) {
+func (g game) validatePlaceBid(ctx *gin.Context, cu sn.User) (*player, bid, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -73,7 +73,7 @@ func (g game) validatePlaceBid(c *gin.Context, cu sn.User) (*player, bid, error)
 		return nil, noBid, err
 	}
 
-	bid, err := g.validateBid(c)
+	bid, err := g.validateBid(ctx)
 	if err != nil {
 		return nil, noBid, err
 	}
@@ -93,14 +93,14 @@ func (g game) validatePlaceBid(c *gin.Context, cu sn.User) (*player, bid, error)
 	}
 }
 
-func (g game) validateBid(c *gin.Context) (bid, error) {
+func (g game) validateBid(ctx *gin.Context) (bid, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	// define noBid here, as bid type shadowed by bid variable after getBid call
 	noBid := bid{}
 
-	bid, err := getBid(c)
+	bid, err := getBid(ctx)
 	if err != nil {
 		return noBid, err
 	}
@@ -116,34 +116,34 @@ func (g game) validateBid(c *gin.Context) (bid, error) {
 	return bid, nil
 }
 
-func (cl Client) passBidHandler(c *gin.Context) {
+func (cl Client) passBidHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	cu, err := cl.User.Current(c)
+	cu, err := cl.User.Current(ctx)
 	if err != nil {
 		cl.Log.Warningf(err.Error())
 	}
 
-	g, err := cl.getGame(c, cu, noUndo)
+	g, err := cl.getGame(ctx, cu, noUndo)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
 	err = g.passBid(cu)
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	err = cl.putCached(c, g, g.Undo.Current, cu.ID())
+	err = cl.putCached(ctx, g, g.Undo.Current, cu.ID())
 	if err != nil {
-		sn.JErr(c, err)
+		sn.JErr(ctx, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"game": g})
+	ctx.JSON(http.StatusOK, gin.H{"game": g})
 }
 
 func (g *game) passBid(cu sn.User) error {
@@ -155,11 +155,11 @@ func (g *game) passBid(cu sn.User) error {
 		return err
 	}
 
-	cp.performedAction = true
-	cp.bid = true
-	cp.passed = true
+	cp.PerformedAction = true
+	cp.Bid = true
+	cp.Passed = true
 
-	g.newEntryFor(cp.id, message{"template": "pass-bid"})
+	// g.newEntryFor(cp.ID, message{"template": "pass-bid"})
 
 	g.Undo.Update()
 	return nil
@@ -182,23 +182,23 @@ func (g *game) bidFinishTurn(cu sn.User) (*player, *player, error) {
 	}
 
 	np := g.nextPlayer(cp, func(p *player) bool {
-		return !p.passed && p.id != g.lastBid().pid
+		return !p.Passed && p.ID != g.lastBid().PID
 	})
 
-	if np.id != sn.NoPID {
+	if np != nil {
 		// Proceed to next bidder
 		return cp, np, nil
 	}
 
 	// Log winning bid
 	lastBid := g.lastBid()
-	g.newEntryFor(lastBid.pid, message{
-		"template": "won-bid",
-		"bid":      lastBid,
-	})
+	// g.newEntryFor(lastBid.PID, message{
+	// 	"template": "won-bid",
+	// 	"bid":      lastBid,
+	// })
 
 	// Proceed to next phase
-	if lastBid.exchange == exchangeBid {
+	if lastBid.Exchange == exchangeBid {
 		np = g.startExchange()
 		return cp, np, nil
 	}
@@ -221,7 +221,7 @@ func (g game) validateBidFinishTurn(cu sn.User) (*player, error) {
 		return nil, err
 	case g.Phase != bidPhase:
 		return nil, fmt.Errorf("expected %q phase but have %q phase: %w", bidPhase, g.Phase, sn.ErrValidation)
-	case !cp.bid:
+	case !cp.Bid:
 		return nil, fmt.Errorf("you must bid or pass before finishing turn: %w", sn.ErrValidation)
 	default:
 		return cp, nil

@@ -11,8 +11,8 @@
           >
           <Card 
           @click='select(card)'
-          :rank='card.rank'
-          :suit='card.suit'
+          :rank='card.Rank'
+          :suit='card.Suit'
           :width='height / 2.0'
           :text='nameFor(card)'
           />
@@ -35,7 +35,7 @@ import _remove from 'lodash/remove'
 import _get from 'lodash/get'
 
 // vue
-import { computed, ref, inject, watch } from 'vue'
+import { computed, ref, inject, unref, watch } from 'vue'
 
 // composables
 import { useCardValue } from '@/composables/cardValue.js'
@@ -64,24 +64,24 @@ const hand = computed({
 
 
 function nameFor(card) {
-  const pid = _get(card, 'playedBy', 0)
+  const pid = _get(card, 'PlayedBy', 0)
   if (pid <= 0) {
     return ''
   }
-  const user = useUserByIndex(_get(game, 'value.header', {}), pid - 1)
-  return _get(user, 'name', '')
+  const user = useUserByIndex(game, pid - 1)
+  return _get(user, 'Name', '')
 }
 
 const hover = ref([])
 
 const cu = inject(cuKey)
-const { game, updateGame } = inject(gameKey)
+const game = inject(gameKey)
 
 
 const isCP = computed(() => useIsCP(game, cu))
 
 function hovered(index, state) {
-  const lastIndex = _size(sorted.value) - 1
+  const lastIndex = _size(unref(sorted)) - 1
   if (index != lastIndex && state == true) {
     hover.value[index] = true
     hover.value[lastIndex] = false
@@ -94,8 +94,8 @@ function hovered(index, state) {
 }
 
 function initHover() {
-  const lastIndex = _size(sorted.value) - 1
-  hover.value = _map(sorted.value, () => false)
+  const lastIndex = _size(unref(sorted)) - 1
+  hover.value = _map(unref(sorted), () => false)
   hover.value[lastIndex] = true
 }
 
@@ -104,12 +104,12 @@ const nohoverstyle = 'overflow:hidden'
 
 const sorted = computed(() => {
   if (props.sort) {
-    return _sortBy(hand.value, [ card => card.suit, useCardValue ])
+    return _sortBy(hand.value, [ card => card.Suit, useCardValue ])
   }
   return hand.value
 })
 
-const handSize = computed(() => _size(sorted.value))
+const handSize = computed(() => _size(unref(sorted)))
 const selection = computed({
   get() {
     return _get(props, 'selected', [])
@@ -121,12 +121,16 @@ const selection = computed({
 
 watch( handSize, () => { initHover() } )
 
+const disableSelect = computed(() => {
+  return (unref(game).Phase == 'bid') || (!unref(isCP)) || (unref(player).PerformedAction)
+})
+
 function select(card) {
-  if (!isCP.value || player.value.performedAction) {
+  if (unref(disableSelect)) {
     return
   }
 
-  if (_includes(selection.value, card)) {
+  if (_includes(unref(selection), card)) {
     _remove(selection.value, card)
   } else {
     selection.value.push(card)
@@ -135,7 +139,7 @@ function select(card) {
 }
 
 function isSelected(card) {
-  if (_includes(selection.value, card)) {
+  if (_includes(unref(selection), card)) {
     return 'selected'
   }
 }

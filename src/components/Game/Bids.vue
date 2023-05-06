@@ -15,13 +15,13 @@
             <td class='text-center'>{{(index == 0) ? 'X' : ''}}</td>
             <td class='text-center'>
               <UserButton
-                  :user='useUserByIndex(game.header, p.id-1)'
+                  :user='useUserByIndex(game, p.ID-1)'
                   :size='24'
-                  :color='useColorFor(game, p.id)'
+                  :color='useColorFor(dTeam, p.ID)'
                   />
             </td>
-            <td class='text-center'>{{bidLabel(p.id)}}</td>
-            <td class='text-center'>{{p.score}}</td>
+            <td class='text-center'>{{bidLabel(p.ID)}}</td>
+            <td class='text-center'>{{p.Score}}</td>
           </tr>
         </tbody>
       </v-table>
@@ -31,7 +31,7 @@
 
 <script setup>
 // import components
-import UserButton from '@/components/UserButton.vue'
+import UserButton from '@/components/Common/UserButton.vue'
 
 // import composables
 import { bidValue } from '@/composables/bid.js'
@@ -44,24 +44,27 @@ import _find from 'lodash/find'
 import _get from 'lodash/get'
 import _isEmpty from 'lodash/isEmpty'
 import _includes from 'lodash/includes'
+import _map from 'lodash/map'
 
 // import vue
-import { computed, inject } from 'vue'
+import { computed, inject, unref } from 'vue'
 
-const players = computed(() => _get(game, 'value.state.players', []))
+const props = defineProps(['bids', 'order', 'dTeam'])
+
+const players = computed(() => _map(_get(props, 'order', []), (pid) => usePlayerByPID(game, pid)))
 
 function bidLabel(pid) {
   const p = usePlayerByPID(game, pid)
-  if (p.passed) {
+  if (p.Passed) {
     return 'passed'
   }
-  const bid = _find(_get(game, 'value.state.bids', []), [ 'pid', pid ])
+  const bid = _find(_get(props, 'bids', []), [ 'PID', pid ])
   if (_isEmpty(bid)) {
     return 'no bid'
   }
-  const exchange = _get(bid, 'exchange', '')
-  const objective = _get(bid, 'objective', '')
-  const teams = _get(bid, 'teams', '')
+  const exchange = _get(bid, 'Exchange', '')
+  const objective = _get(bid, 'Objective', '')
+  const teams = _get(bid, 'Teams', '')
   const bValue = bidValue(game, bid)
   return `${exchange} ${objective} ${teams} (${bValue})`
 }
@@ -69,12 +72,12 @@ function bidLabel(pid) {
 // inject game and current user
 import { cuKey, gameKey } from '@/composables/keys.js'
 const cu = inject(cuKey)
-const { game, updateGame } = inject(gameKey)
+const game = inject(gameKey)
 
 function cpClass(player) {
   const pid = player.id
 
-  if (_includes(_get(game, 'value.header.cpids', []), pid)) {
+  if (_includes(_get(unref(game), 'CPIDS', []), pid)) {
     if (useIsCP(game, cu)) {
       return 'font-weight-black text-red-darken-4'
     }

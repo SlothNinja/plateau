@@ -86,7 +86,6 @@ type Client struct {
 	*sn.Client
 	User      *sn.UserClient
 	MLog      *sn.MLogClient
-	Elo       *sn.EloClient
 	Messaging *messaging.Client
 	Rand      rand.Source
 }
@@ -127,11 +126,11 @@ func NewClient(ctx context.Context) *Client {
 	}
 
 	nClient := &Client{
-		Client:    snClient,
-		User:      uClient,
-		MLog:      sn.NewMLogClient(snClient, uClient),
-		Elo:       sn.NewEloClient(snClient, "elo"),
-		Messaging: newMsgClient(ctx),
+		Client: snClient,
+		User:   uClient,
+		// MLog:      sn.NewMLogClient(snClient, uClient),
+		// Elo: sn.NewEloClient(snClient, "elo"),
+		// Messaging: newMsgClient(ctx),
 	}
 	return nClient.addRoutes("sn")
 }
@@ -147,7 +146,7 @@ func (ce CloseErrors) Error() string {
 	return fmt.Sprintf("error closing clients: client: %q userClient: %q", ce.Client, ce.UserClient)
 }
 
-// Close closes tammany service Client
+// Close closes plateau service Client
 func (cl *Client) Close() error {
 	var ce CloseErrors
 
@@ -202,25 +201,25 @@ func newLogClient() *sn.LogClient {
 	return client
 }
 
-func (cl *Client) loginHandler(c *gin.Context) {
+func (cl *Client) loginHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	referer := c.Request.Referer()
+	referer := ctx.Request.Referer()
 	encodedReferer := base64.StdEncoding.EncodeToString([]byte(referer))
 
 	path := getUserHostURL() + "/login?redirect=" + encodedReferer
 	cl.Log.Debugf("path: %q", path)
-	c.Redirect(http.StatusSeeOther, path)
+	ctx.Redirect(http.StatusSeeOther, path)
 }
 
-func (cl *Client) logoutHandler(c *gin.Context) {
+func (cl *Client) logoutHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	referer := c.Request.Referer()
-	sn.Logout(c)
-	c.Redirect(http.StatusSeeOther, referer)
+	referer := ctx.Request.Referer()
+	sn.Logout(ctx)
+	ctx.Redirect(http.StatusSeeOther, referer)
 }
 
 // AddRoutes addes routing for game.
@@ -252,23 +251,23 @@ func (cl *Client) addRoutes(prefix string) *Client {
 	// Invitations Group
 	// invs := cl.Router.Group(invitationsPath)
 
-	// Index
-	// invs.POST("", cl.invitationsIndexHandler)
-	cl.Router.GET(prefix+"/invitations", cl.invitationsIndexHandler)
+	// // Index
+	// // invs.POST("", cl.invitationsIndexHandler)
+	// cl.Router.GET(prefix+"/invitations", cl.invitationsIndexHandler)
 
-	/////////////////////////////////////////////
-	// Games Group
-	gs := cl.Router.Group(prefix + "/games")
+	// /////////////////////////////////////////////
+	// // Games Group
+	// gs := cl.Router.Group(prefix + "/games")
 
-	// JSON Data for Index
-	gs.GET("/:status", cl.gamesIndex)
+	// // JSON Data for Index
+	// gs.GET("/:status", cl.gamesIndex)
 
 	/////////////////////////////////////////////
 	// Game Group
 	g := cl.Router.Group(prefix + "/game")
 
-	// Show
-	g.GET("/show/:id", cl.showHandler)
+	// // Show
+	// g.GET("/show/:id", cl.showHandler)
 
 	// Place Bid
 	g.PUT("bid/:id", cl.bidHandler)

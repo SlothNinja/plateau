@@ -4,14 +4,14 @@
         v-for='(card, index) in declarersCards'
         :key='index'
         class='dot dot-red'
-        :class="`${card.rank}-${card.suit}`"
+        :class="`${card.Rank}-${card.Suit}`"
         >
     </div>
     <div
         v-for='(card, index) in opposersCards'
         :key='index'
         class='dot dot-blue'
-        :class="`${card.rank}-${card.suit}`"
+        :class="`${card.Rank}-${card.Suit}`"
         >
     </div>
     <div
@@ -26,7 +26,7 @@
 
 <script setup>
 import board36 from '@/assets/board36.png'
-import { computed } from 'vue'
+import { computed, unref } from 'vue'
 import _includes from 'lodash/includes'
 import _map from 'lodash/map'
 import _filter from 'lodash/filter'
@@ -34,16 +34,16 @@ import _flatMap from 'lodash/flatMap'
 
 const props = defineProps(['tricks', 'declarersTeam'])
 
-const declarersCards = computed(() => (_flatMap(filtered.value, (trick) => (isDeclarers(trick) ? trick.cards : [] ))))
+const declarersCards = computed(() => (_flatMap(unref(filtered), (trick) => (isDeclarers(trick) ? trick.Cards : [] ))))
 
-const opposersCards = computed(() => (_flatMap(filtered.value, (trick) => (isDeclarers(trick) ? [] : trick.cards ))))
+const opposersCards = computed(() => (_flatMap(unref(filtered), (trick) => (isDeclarers(trick) ? [] : trick.Cards ))))
 
-const filtered = computed(() => _filter(props.tricks, (trick) => (trick.wonBy != 0)))
+const filtered = computed(() => _filter(props.tricks, (trick) => (trick.WonBy != 0)))
 
-const wonTricks = computed(() => _map(filtered.value, (trick) => (isDeclarers(trick))))
+const wonTricks = computed(() => _map(unref(filtered), (trick) => (isDeclarers(trick))))
 
 function isDeclarers(trick) {
-  return _includes(props.declarersTeam, trick.wonBy)
+  return _includes(props.declarersTeam, trick.WonBy)
 }
 
 </script>

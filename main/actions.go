@@ -16,7 +16,7 @@ func (g game) validatePlayerAction(cu sn.User) (*player, error) {
 	switch {
 	case err != nil:
 		return nil, err
-	case cp.performedAction:
+	case cp.PerformedAction:
 		return nil, fmt.Errorf("current player already performed action: %w", sn.ErrValidation)
 	default:
 		return cp, nil

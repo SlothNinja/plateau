@@ -61,7 +61,7 @@
         </v-col>
       </v-row>
 
-      <v-row v-if='!cp.performedAction'>
+      <v-row>
         <v-col cols='6' class='d-flex justify-center'>
           <v-btn v-if="phase == 'bid'" color='green' size='small' @click='pass'>Pass</v-btn>
         </v-col>
@@ -75,10 +75,10 @@
 
 <script setup>
 // components
-import UserButton from '@/components/UserButton'
+import UserButton from '@/components/Common/UserButton'
 
 // vue
-import { computed, inject, ref, watch, onMounted } from 'vue'
+import { computed, inject, ref, unref, watch, onMounted } from 'vue'
 
 // lodash
 import _get from 'lodash/get'
@@ -91,10 +91,13 @@ import { usePut } from '@/composables/fetch.js'
 import { cuKey, gameKey, snackKey } from '@/composables/keys.js'
 import { useCP, useCPID } from '@/composables/player.js'
 import { exchangeValue, objectiveValue, teamsValue, bidValue, minBid } from '@/composables/bid.js'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
 
 // inject game and current user
 const cu = inject(cuKey)
-const { game, updateGame } = inject(gameKey)
+const game = inject(gameKey)
 
 const cp = computed(() => useCP(game))
 const cpid = computed(() => useCPID(game))
@@ -102,37 +105,37 @@ const cpid = computed(() => useCPID(game))
 const bvalue = ref({})
 
 const minObjective = ref('')
-const minObjectiveValue = computed(() => obValue(minObjective.value))
-const bids = computed(() => _get(game, 'value.state.bids', []))
+const minObjectiveValue = computed(() => obValue(unref(minObjective)))
+const bids = computed(() => _get(unref(game), 'Bids', []))
 const lastBid = computed(() => {
-  if (!_isEmpty(bids.value)) {
-    return _last(bids.value)
+  if (!_isEmpty(unref(bids))) {
+    return _last(unref(bids))
   }
   return {}
 })
 
 const bid = computed({
   get() {
-    switch (phase.value) {
+    switch (unref(phase)) {
       case 'bid':
-        if (_isEmpty(bvalue.value)) {
-          if (_isEmpty(lastBid.value)) {
-            bvalue.value = minBid(numPlayers.value)
+        if (_isEmpty(unref(bvalue))) {
+          if (_isEmpty(unref(lastBid))) {
+            bvalue.value = minBid(unref(numPlayers))
           } else {
-            bvalue.value = lastBid.value
+            bvalue.value = { ...unref(lastBid) }
           }
-          bvalue.value.pid = cpid.value
+          bvalue.value.PID = unref(cpid)
         }
-        return bvalue.value
+        return unref(bvalue)
       case 'increase objective':
-        if (_isEmpty(bvalue.value)) {
-          bvalue.value = lastBid.value
-          minObjective.value = _get(lastBid, 'value.objective', '')
+        if (_isEmpty(unref(bvalue))) {
+          bvalue.value = unref(lastBid)
+          minObjective.value = _get(unref(lastBid), 'Objective', '')
         }
-        return bvalue.value
+        return unref(bvalue)
       default:
         bvalue.value = {}
-        return bvalue.value
+        return unrefi(bvalue)
     }
   },
   set(value) {
@@ -141,54 +144,54 @@ const bid = computed({
 })
 
 function exValue(exchange) {
-  return exchangeValue({exchange: exchange})
+  return exchangeValue({'Exchange': exchange})
 }
 
 const exchange = computed({
   get() {
-    return _get(bid, 'value.exchange', '')
+    return _get(unref(bid), 'Exchange', '')
   },
   set(value) {
-    bid.value.exchange = value
+    bid.value.Exchange = value
   }
 })
 
 function  obValue(objective) {
-  return objectiveValue({objective: objective})
+  return objectiveValue({'Objective': objective})
 }
 
 const objective = computed({
   get() {
-    return _get(bid, 'value.objective', '')
+    return _get(unref(bid), 'Objective', '')
   },
   set(value) {
-    bid.value.objective = value
+    bid.value.Objective = value
   }
 })
 
-const phase = computed(() => _get(game, 'value.header.phase', ''))
-const numPlayers = computed(() => _get(game, 'value.header.numPlayers', 0))
+const phase = computed(() => _get(unref(game), 'Phase', ''))
+const numPlayers = computed(() => _get(unref(game), 'NumPlayers', 0))
 
-const showExchange = computed(() => (numPlayers.value < 6))
-const showTeams = computed(() => (numPlayers.value >= 4))
-const showTrio = computed(() => (numPlayers.value == 6))
+const showExchange = computed(() => (unref(numPlayers) < 6))
+const showTeams = computed(() => (unref(numPlayers) >= 4))
+const showTrio = computed(() => (unref(numPlayers) == 6))
 
 function tValue(teams) {
-  return teamsValue({teams: teams})
+  return teamsValue({'Teams': teams})
 }
 
 const teams = computed({
   get() {
-    return _get(bid, 'value.teams', '')
+    return _get(unref(bid), 'Teams', '')
   },
   set(value) {
-    bid.value.teams = value
+    bid.value.Teams = value
   }
 })
 
 const canSubmit = computed(() => {
-  return phase.value == 'increase objective' ||
-    bidValue(game.value, bid.value) > bidValue(game.value, lastBid.value)
+  return unref(phase) == 'increase objective' ||
+    bidValue(game, bid) > bidValue(game, lastBid)
 })
 
 
@@ -200,10 +203,10 @@ const { snackbar, updateSnackbar } = inject(snackKey)
 // Submit bid to server
 function submit() {
   let action = 'bid'
-  if (phase.value == 'increase objective') {
+  if (unref(phase) == 'increase objective') {
     action = 'incObjective'
   }
-  const { response, error } = usePut(`/sn/game/${action}/${game.value.id}`, bid)
+  const { response, error } = usePut(`/sn/game/${action}/${route.params.id}`, bid)
 
   watch(response, () => update(response))
 }
@@ -211,24 +214,24 @@ function submit() {
 /////////////////////////////////////
 // Send pass action to server
 function pass() {
-  const { response, error } = usePut(`/sn/game/passBid/${game.value.id}`)
+  const { response, error } = usePut(`/sn/game/passBid/${route.params.id}`)
 
   watch(response, () => update(response))
 }
 
 function update(response) {
-    const g = _get(response, 'value.game', {})
-    if (!_isEmpty(g)) {
-      updateGame(g)
-    }
-    const msg = _get(response, 'value.message', '')
+    // const g = _get(unref(response), 'Game', {})
+    // if (!_isEmpty(g)) {
+    //   updateGame(g)
+    // }
+    const msg = _get(unref(response), 'Message', '')
     if (!_isEmpty(msg)) {
       updateSnackbar(msg)
     }
 }
 
 function disableObjective(obj) {
-  return obValue(obj) < minObjectiveValue.value
+  return obValue(obj) < unref(minObjectiveValue)
 }
 
 </script>

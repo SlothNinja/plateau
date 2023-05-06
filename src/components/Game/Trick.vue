@@ -12,19 +12,19 @@
 <script setup>
 import CardDisplay from '@/components/Game/CardDisplay.vue'
 import { gameKey } from '@/composables/keys.js'
-import { computed, inject } from 'vue'
+import { computed, inject, unref } from 'vue'
 import _get from 'lodash/get'
 
-const { game, updateGame } = inject(gameKey)
+const game = inject(gameKey)
 const props = defineProps(['height'])
-const cards = computed(() => _get(game, `value.state.tricks[${game.value.header.turn}].cards`, []))
-const trick = computed(() => (_get(game, 'value.header.turn', 0) + 1))
+const cards = computed(() => _get(unref(game), `Tricks[${unref(game).Turn}].Cards`, []))
+const trick = computed(() => (_get(unref(game), 'Turn', 0) + 1))
 
 const title = computed(() => {
-  if (trick.value == 14) {
+  if (unref(trick) == 14) {
     return 'Talon:'
   }
-  return `Trick: ${trick.value}`
+  return `Trick: ${unref(trick)}`
 })
 
 </script>

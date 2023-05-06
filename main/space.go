@@ -34,6 +34,7 @@ func (g *game) spacesFor(team []sn.PID) []space {
 
 func (g game) spacesNotOwnedBy(team []sn.PID) []space {
 	_, notOwnedBy := pie.Diff(allSpaces(), g.spacesFor(team))
+	sn.Debugf("notOwnedBy: %#v", notOwnedBy)
 	return notOwnedBy
 }
 

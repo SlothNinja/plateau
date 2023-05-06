@@ -2,7 +2,7 @@
   <tr>
     <td class='text-left'>
       <UserButton :user="user" :size='32' >
-      {{user.name}}
+      {{user.Name}}
       </UserButton>
     </td>
     <td class='text-center'>
@@ -21,10 +21,15 @@
 </template>
 
 <script setup>
+// components
+import UserButton from '@/components/Common/UserButton.vue'
+
+// vue
 import { computed } from 'vue'
+
+// lodash
 import _get from 'lodash/get'
 import _find from 'lodash/find'
-import UserButton from '@/components/UserButton.vue'
 
 const props = defineProps({
   details: { type: Object },

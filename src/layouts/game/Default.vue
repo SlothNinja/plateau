@@ -5,19 +5,19 @@
       <!-- History control -->
       <v-tooltip location='bottom' color='info' text='Game Log'  >
         <template v-slot:activator='{ props }' >
-          <v-btn v-bind='props' icon='mdi-history' @click='toggleLog' />
+          <v-btn disabled v-bind='props' icon='mdi-history' @click='toggleLog' />
         </template>
       </v-tooltip>
 
       <!-- Chat control -->
       <v-tooltip location='bottom' color='info' text='Chat' >
         <template v-slot:activator='{ props }' >
-          <v-btn v-if='show' density='compact' v-bind='props' @click='chat = !chat' stacked >
+          <v-btn disabled v-if='show' density='compact' v-bind='props' @click='chat = !chat' stacked >
             <v-badge :content='unread' >
               <v-icon>mdi-chat</v-icon>
             </v-badge>
           </v-btn>
-          <v-btn v-else icon='mdi-chat' v-bind='props' @click='chat = !chat' />
+          <v-btn v-else disabled icon='mdi-chat' v-bind='props' @click='chat = !chat' />
         </template>
       </v-tooltip>
 
@@ -44,14 +44,27 @@ import DefaultFooter from '@/layouts/default/Footer.vue'
 import DefaultSnack from '@/layouts/default/SnackBar.vue'
 import Controlbar from '@/components/Game/Controlbar.vue'
 import LogDrawer from '@/components/Log/Drawer.vue'
-import { computed, ref, provide } from 'vue'
-import { gameKey, snackKey } from '@/composables/keys.js'
+import { computed, ref, inject, provide, unref, watch } from 'vue'
+import { cuKey, gameKey, snackKey, stackKey } from '@/composables/keys.js'
+import { useDocument, useCollection } from 'vuefire'
+import { doc, collection } from 'firebase/firestore'
+import { db } from '@/composables/firebase'
+import { useRoute } from 'vue-router'
+// lodash
+import _get from 'lodash/get'
+import _size from 'lodash/size'
+import _find from 'lodash/find'
+import _isEmpty from 'lodash/isEmpty'
+
+const route = useRoute()
 
 const nav = ref(false)
 const snackbar = ref({
   message: '',
   open: false,
 })
+
+const cu = inject(cuKey)
 
 function updateSnackbar(msg) {
   snackbar.value.message = msg
@@ -60,17 +73,11 @@ function updateSnackbar(msg) {
 
 provide( snackKey, { snackbar, updateSnackbar } )
 
-const game = ref({})
 const chat = ref(false)
 const log = ref(false)
 const unread = ref(0)
 
 const show = computed(() => (unread > 0))
-
-function updateGame(value) {
-  game.value = value
-  game.selected = []
-}
 
 function toggleNav() {
   if (!nav.value) {
@@ -86,7 +93,27 @@ function toggleLog() {
   log.value = !log.value
 }
 
-provide(gameKey, { game, updateGame })
+const stackSource = computed(
+  () => doc(db, 'Stack', `${route.params.id}-${unref(cu).ID}`)
+)
+const dbStack = useDocument(stackSource)
+
+const viewSource = computed(
+  () => doc(db, 'Committed', route.params.id, 'View', `${unref(cu).ID}` )
+)
+const view = useDocument(viewSource)
+
+const current = computed(() => _get(unref(dbStack), 'Current', -1000))
+const cachedPath = computed(() => `${unref(current)}-${unref(cu).ID}`)
+const cachedSource = computed(
+  () => doc(db, 'Committed', route.params.id, 'Cached', unref(cachedPath))
+)
+const cached = useDocument(cachedSource)
+
+const game = computed(() => (unref((_isEmpty(unref(cached))) ? view : cached)))
+provide(gameKey, game)
+
+const stack = computed(() => (_isEmpty(unref(dbStack))) ? _get(unref(game), 'Undo', {}) : unref(dbStack))
+provide (stackKey, stack)
 
 </script>
-

@@ -16,7 +16,7 @@
         id='gamelog'
         style='overflow-y: auto'
         >
-        <Entry class='my-1' v-for="(entry, index) in game.glog" :key="index" :entry='entry' />
+        <Entry class='my-1' v-for='(entry, index) in log' :key="index" :entry='entry' />
         <div class='gamelog'></div>
       </v-container>
     </v-card>
@@ -25,11 +25,14 @@
 
 <script setup>
 import Entry from '@/components/Log/Entry'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, unref } from 'vue'
 import { gameKey } from '@/composables/keys.js'
+import _get from 'lodash/get'
 
 const props = defineProps(['modelValue'])
 const emit = defineEmits(['update:modelValue'])
+
+const log = computed(() => _get(unref(game), 'Log', []))
 
 const drawer = computed({
   get() {
@@ -40,7 +43,7 @@ const drawer = computed({
   }
 })
 
-const { game, updateGame } = inject(gameKey)
+const game = inject(gameKey)
 // import CurrentUser from '@/components/lib/mixins/CurrentUser'
 // import Entry from '@/components/Log/Entry'
 // 

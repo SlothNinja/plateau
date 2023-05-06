@@ -11,7 +11,7 @@
 </template>
 
 <script setup>
-import Avatar from '@/components/Avatar'
+import Avatar from '@/components/Common/Avatar'
 import { useRouter } from 'vue-router'
 import _get from 'lodash/get'
 
@@ -24,7 +24,7 @@ const props = defineProps({
 const router = useRouter()
 
 function toUser() {
-  let id = _get(props.user, 'id', -1)
+  let id = _get(props.user, 'ID', -1)
   if (id != -1) {
     router.push({ name: 'User', params: { id: id } })
   }

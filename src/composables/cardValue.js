@@ -1,6 +1,6 @@
 export function useCardValue(card) {
   let v = 0
-  switch (card.rank) {
+  switch (card.Rank) {
     case "one":
       v += 1
     case "two":

@@ -1,15 +1,19 @@
 package main
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"strconv"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/datastore"
+	"cloud.google.com/go/firestore"
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/api/iterator"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -18,134 +22,36 @@ const (
 	rootKind   = "Root"
 )
 
-// Game provides a Tammany Hall game.
+// Game provides a Le Plateau game.
 type game struct {
-	Key          *datastore.Key `datastore:"__key__"`
-	EncodedState string         `datastore:",noindex"`
-	EncodedLog   string         `datastore:",noindex"`
+	// Log glog
 	sn.Header
-	glog
 	state
 }
 
-func rootKey(id int64) *datastore.Key {
-	return datastore.IDKey(rootKind, id, nil)
+func gameDocRef(cl *firestore.Client, id string, rev int) *firestore.DocumentRef {
+	return gameCollectionRef(cl).Doc(fmt.Sprintf("%s-%d", id, rev))
 }
 
-func newGame(id, rev int64) game {
-	return game{Key: newGameKey(id, rev)}
+func gameCollectionRef(cl *firestore.Client) *firestore.CollectionRef {
+	return cl.Collection(gameKind)
 }
 
-func (g game) gameKey() *datastore.Key {
-	return datastore.NameKey(gameKind, fmt.Sprintf("%d-%d", g.id(), g.Undo.Committed), rootKey(g.id()))
+func cachedDocRef(cl *firestore.Client, id string, rev int, uid sn.UID) *firestore.DocumentRef {
+	return cachedCollectionRef(cl, id).Doc(fmt.Sprintf("%d-%d", rev, uid))
 }
 
-func newGameKey(id, rev int64) *datastore.Key {
-	return datastore.NameKey(gameKind, fmt.Sprintf("%d-%d", id, rev), rootKey(id))
+func fullyCachedDocRef(cl *firestore.Client, id string, rev int, uid sn.UID) *firestore.DocumentRef {
+	return cachedCollectionRef(cl, id).Doc(fmt.Sprintf("%d-%d-0", rev, uid))
 }
 
-func cachedKey(id, rev int64, uid sn.UID) *datastore.Key {
-	return datastore.IDKey(gameKind, rev, cachedRootKey(id, uid))
+func cachedCollectionRef(cl *firestore.Client, id string) *firestore.CollectionRef {
+	return committedDocRef(cl, id).Collection(cachedKind)
 }
 
-func (g game) id() int64 {
-	if g.Key == nil || g.Key.Parent == nil {
-		return 0
-	}
-	return g.Key.Parent.ID
+func (g game) rev() int {
+	return g.Undo.Current
 }
-
-func (g game) rev() int64 {
-	if g.Key == nil {
-		return 0
-	}
-	s := strings.Split(g.Key.Name, "-")
-	if len(s) != 2 {
-		return g.Undo.Current
-	}
-	rev, err := strconv.ParseInt(s[1], 10, 64)
-	if err != nil {
-		sn.Warningf(err.Error())
-		return 0
-	}
-	return rev
-}
-
-func (g *game) Load(ps []datastore.Property) error {
-	sn.Debugf(msgEnter)
-	defer sn.Debugf(msgExit)
-
-	err := datastore.LoadStruct(g, ps)
-	if err != nil {
-		return err
-	}
-
-	var s state
-	err = json.Unmarshal([]byte(g.EncodedState), &s)
-	if err != nil {
-		return err
-	}
-	g.state = s
-
-	var l glog
-	err = json.Unmarshal([]byte(g.EncodedLog), &l)
-	if err != nil {
-		return err
-	}
-	g.glog = l
-	return nil
-}
-
-func (g game) Save() ([]datastore.Property, error) {
-	sn.Debugf(msgEnter)
-	defer sn.Debugf(msgExit)
-
-	encodedState, err := json.Marshal(g.state)
-	if err != nil {
-		return nil, err
-	}
-
-	g.EncodedState = string(encodedState)
-
-	encodedLog, err := json.Marshal(g.glog)
-	if err != nil {
-		return nil, err
-	}
-	g.EncodedLog = string(encodedLog)
-
-	return datastore.SaveStruct(&g)
-}
-
-type jGame struct {
-	ID     int64     `json:"id"`
-	Rev    int64     `json:"rev"`
-	Hands  int       `json:"hands"`
-	Header sn.Header `json:"header"`
-	State  state     `json:"state"`
-	GLog   glog      `json:"glog"`
-}
-
-func (g game) MarshalJSON() ([]byte, error) {
-	sn.Debugf(msgEnter)
-	defer sn.Debugf(msgExit)
-
-	opt, err := getOptions(g.OptString)
-	if err != nil {
-		return nil, err
-	}
-
-	return json.Marshal(jGame{
-		ID:     g.id(),
-		Rev:    g.rev(),
-		Hands:  opt.HandsPerPlayer * g.NumPlayers,
-		Header: g.Header,
-		State:  g.state,
-		GLog:   g.glog,
-	})
-}
-
-// Games provides a slice of Games.
-type Games []*game
 
 func (g *game) start() {
 	sn.Debugf(msgEnter)
@@ -156,15 +62,15 @@ func (g *game) start() {
 
 	g.addNewPlayers()
 
-	g.newEntry(message{"template": "start-game"})
+	// g.newEntry(message{"template": "start-game"})
 }
 
 func (g game) dealer() *player {
-	return pie.First(g.players)
+	return pie.First(g.Players)
 }
 
 func (g game) forehand() *player {
-	return pie.First(pie.DropTop(g.players, 1))
+	return pie.First(pie.DropTop(g.Players, 1))
 }
 
 func (g *game) startBidPhase() *player {
@@ -172,27 +78,27 @@ func (g *game) startBidPhase() *player {
 	defer sn.Debugf(msgExit)
 
 	g.Phase = bidPhase
-	pie.Each(g.players, (*player).bidReset)
-	g.bids = nil
+	pie.Each(g.Players, (*player).bidReset)
+	g.Bids = nil
 	return g.forehand()
 }
 
 func (g *game) randomSeats() {
-	g.players = pie.Shuffle(g.players, myRandomSource)
+	g.Players = pie.Shuffle(g.Players, myRandomSource)
 	g.updateOrder()
 }
 
 // Basically a circular shift left of players so dealer is always first element in slice
 func (g *game) newDealer() {
 	oldDealer := g.dealer()
-	rest := g.players[1:]
-	g.players = append(rest, oldDealer)
+	rest := g.Players[1:]
+	g.Players = append(rest, oldDealer)
 	g.updateOrder()
 }
 
 // reflect player order game state to header
 func (g *game) updateOrder() {
-	g.OrderIDS = pie.Map(g.players, func(p *player) sn.PID { return p.id })
+	g.OrderIDS = pie.Map(g.Players, func(p *player) sn.PID { return p.ID })
 }
 
 // currentPlayers returns the players whose turn it is.
@@ -217,21 +123,23 @@ func (g game) currentPlayerFor(u sn.User) *player {
 }
 
 func (g *game) setCurrentPlayers(ps ...*player) {
-	g.CPIDS = pie.Map(ps, func(p *player) sn.PID { return p.id })
+	g.CPIDS = pie.Map(ps, func(p *player) sn.PID { return p.ID })
 }
 
-func (cl Client) getGame(c *gin.Context, cu sn.User, action stackFunc) (game, error) {
+func (cl Client) getGame(ctx *gin.Context, cu sn.User, action stackFunc) (game, error) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
 	if cu.IsZero() {
-		return cl.getCommitted(c)
+		return cl.getCommitted(ctx)
 	}
 
-	undo, err := cl.getStack(c, cu.ID())
+	undo, err := cl.getStack(ctx, cu.ID())
 
-	if err == datastore.ErrNoSuchEntity {
-		g, err := cl.getCommitted(c)
+	if status.Code(err) == codes.NotFound {
+
+		//	if err == datastore.ErrNoSuchEntity {
+		g, err := cl.getCommitted(ctx)
 		if _, ok := err.(*datastore.ErrFieldMismatch); ok {
 			cl.Log.Warningf("err: %v", err)
 			return g, nil
@@ -249,7 +157,7 @@ func (cl Client) getGame(c *gin.Context, cu sn.User, action stackFunc) (game, er
 	// if undo operation does not transistion to different state, pull current state of game
 	if !action(&undo) {
 		if undo.Current == undo.Committed {
-			g, err := cl.getCommitted(c)
+			g, err := cl.getCommitted(ctx)
 			if err != nil {
 				return game{}, err
 			}
@@ -257,7 +165,7 @@ func (cl Client) getGame(c *gin.Context, cu sn.User, action stackFunc) (game, er
 			return g, nil
 		}
 
-		g, err := cl.getCached(c, undo.Current, cu.ID())
+		g, err := cl.getCached(ctx, undo.Current, cu.ID())
 		if err != nil {
 			return game{}, err
 		}
@@ -267,7 +175,7 @@ func (cl Client) getGame(c *gin.Context, cu sn.User, action stackFunc) (game, er
 
 	// Verify current user is current player, which requires
 	// getting the commited game state
-	gc, err := cl.getCommitted(c)
+	gc, err := cl.getCommitted(ctx)
 	if err != nil {
 		return game{}, err
 	}
@@ -279,7 +187,7 @@ func (cl Client) getGame(c *gin.Context, cu sn.User, action stackFunc) (game, er
 
 	// undo.Current revised by above call of action[0](undo)
 	if undo.Current == undo.Committed {
-		g, err := cl.getCommitted(c)
+		g, err := cl.getCommitted(ctx)
 		if err != nil {
 			return game{}, err
 		}
@@ -287,7 +195,7 @@ func (cl Client) getGame(c *gin.Context, cu sn.User, action stackFunc) (game, er
 		return g, nil
 	}
 
-	g, err := cl.getCached(c, undo.Current, cu.ID())
+	g, err := cl.getCached(ctx, undo.Current, cu.ID())
 	if err != nil {
 		return game{}, err
 	}
@@ -295,81 +203,138 @@ func (cl Client) getGame(c *gin.Context, cu sn.User, action stackFunc) (game, er
 	return g, nil
 }
 
-func (cl Client) getCached(c *gin.Context, rev int64, uid sn.UID) (game, error) {
+func (cl Client) getCached(ctx *gin.Context, rev int, uid sn.UID) (game, error) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	id, err := getID(c)
-	if err != nil {
-		return game{}, err
-	}
-
-	g := newGame(id, rev)
-	err = cl.DS.Get(c, cachedKey(id, rev, uid), &g)
+	id := getID(ctx)
+	snap, err := fullyCachedDocRef(cl.FS, id, rev, uid).Get(ctx)
+	var g game
+	err = snap.DataTo(&g)
 	return g, err
 }
 
-func (cl Client) getRev(c *gin.Context, rev int64) (game, error) {
+func (cl Client) getRev(ctx *gin.Context, rev int) (game, error) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	id, err := getID(c)
-	if err != nil {
-		return game{}, err
-	}
-
-	g := newGame(id, rev)
-	err = cl.DS.Get(c, g.Key, &g)
+	id := getID(ctx)
+	snap, err := gameDocRef(cl.FS, id, rev).Get(ctx)
+	var g game
+	err = snap.DataTo(&g)
 	return g, err
 }
 
-func (cl Client) save(c *gin.Context, g game, uid sn.UID) error {
+func (cl Client) save(ctx *gin.Context, g game, cu sn.User) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	_, err := cl.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
-		h := g.Header
-		_, err := tx.PutMulti([]*datastore.Key{g.headerKey(), g.gameKey(), g.committedKey()},
-			[]interface{}{&h, &g, &g})
-		if err != nil {
+	return cl.FS.RunTransaction(ctx, func(c context.Context, tx *firestore.Transaction) error {
+		return cl.saveGameIn(ctx, tx, g, cu)
+	})
+}
+
+func (cl Client) saveGameIn(ctx *gin.Context, tx *firestore.Transaction, g game, cu sn.User) error {
+	g.UpdatedAt = time.Now()
+	id := getID(ctx)
+
+	if err := tx.Set(gameDocRef(cl.FS, id, g.rev()), g); err != nil {
+		return err
+	}
+
+	if err := tx.Set(committedDocRef(cl.FS, id), g); err != nil {
+		return err
+	}
+
+	for _, p := range g.Players {
+		if err := tx.Set(viewDocRef(cl.FS, id, g.uidForPID(p.ID)), g.viewFor(p)); err != nil {
 			return err
 		}
-		return cl.clearCached(c, g, uid)
-	})
-	return err
+	}
+	return cl.clearCached(ctx, g, id, cu)
 }
 
-func (cl Client) commit(c *gin.Context, g game, uid sn.UID) error {
+// remove hand of other players and deck from data viewed by player
+func (g game) viewFor(p *player) game {
+	g2 := g.copy()
+	for _, p2 := range g2.Players {
+		if p.ID != p2.ID {
+			p2.Hand = nil
+		}
+	}
+	g2.Deck = nil
+	return g2
+}
+
+// not truly a deep copy, though state is deeply copied.
+func (g game) copy() game {
+	return game{
+		// Log:    g.Log,
+		Header: g.Header,
+		state:  g.state.copy(),
+	}
+}
+
+func (cl Client) commit(ctx *gin.Context, g game, cu sn.User) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
 	g.Undo.Commit()
-	return cl.save(c, g, uid)
+	return cl.save(ctx, g, cu)
 }
 
-func (cl Client) clearCached(c *gin.Context, g game, cuid sn.UID) error {
+func (cl Client) clearCached(ctx context.Context, g game, id string, cu sn.User) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	ks, err := cl.DS.GetAll(c, datastore.NewQuery("").Ancestor(cachedRootKey(g.id(), cuid)).KeysOnly(), nil)
-	if err != nil {
-		return err
+	refs := cachedCollectionRef(cl.FS, id).DocumentRefs(ctx)
+	for {
+		ref, err := refs.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		// if current user is admin, clear all cached docs
+		// otherwise clear only if cached doc is for current user
+		if cu.Admin || docRefFor(ref, cu.ID()) {
+			_, err = ref.Delete(ctx)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
-	if len(ks) == 0 {
-		return nil
-	}
-	return cl.DS.DeleteMulti(c, ks)
-}
+	_, err := stackDocRef(cl.FS, id, cu.ID()).Delete(ctx)
 
-func (cl Client) putCached(c *gin.Context, g game, rev int64, uid sn.UID) error {
-	cl.Log.Debugf(msgEnter)
-	defer cl.Log.Debugf(msgExit)
-
-	_, err := cl.DS.RunInTransaction(c, func(tx *datastore.Transaction) error {
-		undo, gid := g.Undo, g.id()
-		_, err := tx.PutMulti([]*datastore.Key{cachedKey(gid, rev, uid), stackKey(gid, uid)}, []interface{}{&g, &undo})
-		return err
-	})
 	return err
+}
+
+func docRefFor(ref *firestore.DocumentRef, uid sn.UID) bool {
+	ss := pie.Reverse(strings.Split(ref.ID, "-"))
+	s := pie.Pop(&ss)
+	if *s == "0" {
+		s = pie.Pop(&ss)
+	}
+	return *s == fmt.Sprintf("%d", uid)
+}
+
+func (cl Client) putCached(ctx *gin.Context, g game, rev int, uid sn.UID) error {
+	cl.Log.Debugf(msgEnter)
+	defer cl.Log.Debugf(msgExit)
+
+	id := getID(ctx)
+	return cl.FS.RunTransaction(ctx, func(c context.Context, tx *firestore.Transaction) error {
+		if err := tx.Set(fullyCachedDocRef(cl.FS, id, rev, uid), g); err != nil {
+			return err
+		}
+
+		if err := tx.Set(cachedDocRef(cl.FS, id, rev, uid), g.viewFor(g.playerByUID(uid))); err != nil {
+			return err
+		}
+
+		return tx.Set(stackDocRef(cl.FS, id, uid), g.Undo)
+	})
 }

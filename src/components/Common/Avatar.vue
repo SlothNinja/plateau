@@ -6,7 +6,7 @@
       </v-avatar>
       <div class='ml-1'>
         <slot v-if='showSlot'></slot>
-        <div v-else>{{user.name}}</div>
+        <div v-else>{{user.Name}}</div>
       </div>
     </div>
   </div>
@@ -26,7 +26,7 @@ const props = defineProps({
   variant: { type: String, default: 'right' },
 })
 
-const path = computed( () => useGravatar(props.user.emailHash, props.size, props.user.gravType ))
+const path = computed( () => useGravatar(props.user.EmailHash, props.size, props.user.GravType ))
 const klass = computed( () => {
   switch (props.variant) {
     case 'bottom':

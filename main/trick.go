@@ -1,61 +1,37 @@
 package main
 
 import (
-	"encoding/json"
-
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
-	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/path"
 )
 
 type trick struct {
-	cards []card
-	wonBy sn.PID
+	Cards []card
+	WonBy sn.PID
 }
 
-type jTrick struct {
-	Cards []card `json:"cards"`
-	WonBy sn.PID `json:"wonBy"`
-}
-
-func (t trick) MarshalJSON() ([]byte, error) {
-	return json.Marshal(jTrick{
-		Cards: t.cards,
-		WonBy: t.wonBy,
-	})
-}
-
-func (t *trick) UnmarshalJSON(bs []byte) error {
-	obj := new(jTrick)
-	err := json.Unmarshal(bs, obj)
-	if err != nil {
-		return err
-	}
-
-	t.cards = obj.Cards
-	t.wonBy = obj.WonBy
-	return nil
-}
-
-// sn.Header.Turn used to track card played in current hand
-// zero based to align with indices of trick slice
-func (g game) trickNumber() int {
+// sn.Header.Turn used to track zero based index of trick slice
+func (g game) trickIndex() int {
 	return g.Turn
 }
 
-func (g *game) incTrickNumber() int {
+func (g *game) nextTrickIndex() int {
 	g.Turn++
 	return g.Turn
 }
 
-func (g *game) resetTrickNumber() int {
+func (g *game) resetTrickIndex() int {
 	g.Turn = 0
 	return g.Turn
 }
 
+func (g game) trickNumber() int {
+	return g.trickIndex() + 1
+}
+
 func (g game) currentTrick() trick {
-	return (g.tricks[g.trickNumber()])
+	return (g.Tricks[g.trickIndex()])
 }
 
 func (g *game) endTrick() *player {
@@ -65,56 +41,44 @@ func (g *game) endTrick() *player {
 	ledSuit := g.ledSuit()
 	var winningCard card
 
-	// warning card variable shadows card type in for loop
-	for _, card := range g.currentTrick().cards {
-		if ((card.suit == ledSuit) || (card.suit == trumps)) && card.value() > winningCard.value() {
-			winningCard = card
+	for _, c := range g.currentTrick().Cards {
+		if ((c.Suit == ledSuit) || (c.Suit == trumps)) && c.value() > winningCard.value() {
+			winningCard = c
 		}
 	}
 
-	g.tricks[g.trickNumber()].wonBy = winningCard.playedBy
-	g.incTrickNumber()
+	g.Tricks[g.trickIndex()].WonBy = winningCard.PlayedBy
+	g.nextTrickIndex()
 
-	// if _, successful := g.madeObjective(); successful {
-	// 	g.startEndHandPhase()
-	// 	g.startHand()
-	// 	return g.startBidPhase()
-	// }
-
-	// if _, blocked := g.objectiveBlocked(); blocked {
-	// 	g.startEndHandPhase()
-	// 	g.startHand()
-	// 	return g.startBidPhase()
-	// }
-
-	return g.playerByPID(winningCard.playedBy)
+	return g.playerByPID(winningCard.PlayedBy)
 }
 
 func (g game) allCardsPlayed() bool {
-	return pie.All(g.players, func(p *player) bool { return len(p.hand) == 0 })
+	return pie.All(g.Players, func(p *player) bool { return len(p.Hand) == 0 })
 }
 
-func (g game) madeObjective() ([]graph.Node, bool) {
+func (g game) objectiveMade() ([]node, bool) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	return g.objectiveTest(g.spacesFor(g.declarersTeam))
+	return g.objectiveTest(g.spacesFor(g.DeclarersTeam))
 }
 
-func (g game) objectiveBlocked() ([]graph.Node, bool) {
+func (g game) objectiveBlocked() ([]node, bool) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	return g.objectiveTest(g.spacesNotOwnedBy(g.opposersTeam()))
+	path, found := g.objectiveTest(g.spacesNotOwnedBy(g.opposersTeam()))
+	return path, !found
 }
 
-func (g game) objectiveTest(ss []space) ([]graph.Node, bool) {
+func (g game) objectiveTest(ss []space) ([]node, bool) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	graph := g.graphFor(ss)
 	paths := path.DijkstraAllPaths(graph)
-	switch g.currentBid().objective {
+	switch g.currentBid().Objective {
 	case bridgeBid:
 		return bridge(graph, paths)
 	case yBid:
@@ -131,12 +95,12 @@ func (g game) objectiveTest(ss []space) ([]graph.Node, bool) {
 }
 
 func (g *game) tricksFor(team []sn.PID) []trick {
-	return pie.Filter(g.tricks, func(t trick) bool { return pie.Contains(team, t.wonBy) })
+	return pie.Filter(g.Tricks, func(t trick) bool { return pie.Contains(team, t.WonBy) })
 }
 
 func (g *game) trickWonBy(team []sn.PID) (won []bool) {
-	pie.Each(g.tricks, func(t trick) {
-		won = append(won, pie.Contains(team, t.wonBy))
+	pie.Each(g.Tricks, func(t trick) {
+		won = append(won, pie.Contains(team, t.WonBy))
 	})
 	return won
 }
