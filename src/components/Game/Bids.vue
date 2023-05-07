@@ -1,5 +1,5 @@
 <template>
-  <v-card elevation='4'>
+  <v-card elevation='4' class='h-100'>
     <v-card-text>
       <v-table density='compact'>
         <thead>
@@ -45,6 +45,7 @@ import _get from 'lodash/get'
 import _isEmpty from 'lodash/isEmpty'
 import _includes from 'lodash/includes'
 import _map from 'lodash/map'
+import _reverse from 'lodash/reverse'
 
 // import vue
 import { computed, inject, unref } from 'vue'
@@ -58,7 +59,7 @@ function bidLabel(pid) {
   if (p.Passed) {
     return 'passed'
   }
-  const bid = _find(_get(props, 'bids', []), [ 'PID', pid ])
+  const bid = _find(_reverse(_get(props, 'bids', [])), [ 'PID', pid ])
   if (_isEmpty(bid)) {
     return 'no bid'
   }

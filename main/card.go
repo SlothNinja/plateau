@@ -160,3 +160,23 @@ func (g game) cardsFor(team []sn.PID) []card {
 func (c card) toSpace() space {
 	return space{c.Rank, kind(c.Suit)}
 }
+
+func cardsOfRank(r rank) []card {
+	return []card{
+		card{r, hearts, sn.NoPID},
+		card{r, diamonds, sn.NoPID},
+		card{r, clubs, sn.NoPID},
+		card{r, spades, sn.NoPID},
+	}
+}
+
+func (p player) hasCards(cards ...card) bool {
+	return pie.All(cards, func(c card) bool { return pie.Contains(p.Hand, c) })
+}
+
+func (p player) hasSuit(s suit) bool {
+	return pie.Any(p.Hand, func(c card) bool { return c.Suit == s })
+}
+func (p player) hasRank(r rank) bool {
+	return pie.Any(p.Hand, func(c card) bool { return c.Rank == r })
+}

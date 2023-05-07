@@ -1,5 +1,5 @@
 <template>
-  <v-card elevation='4'>
+  <v-card elevation='4' class='h-100'>
     <v-card-text>
       <v-row>
         <v-col cols='6'>

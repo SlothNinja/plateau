@@ -1,5 +1,5 @@
 <template>
-  <v-card elevation='4' class='d-flex justify-center align-center'>
+  <v-card elevation='4' class='h-100 d-flex justify-center align-center'>
     <div>{{message}}</div>
   </v-card>
 </template>
@@ -48,6 +48,16 @@ const message = computed(() => {
       }
 
       return 'Select three cards from your hand to return to talon.'
+    case 'pick partner':
+      if (!unref(isCP)) {
+        return unref(waitMessage)
+      }
+
+      if (unref(cp).PerformedAction) {
+        return 'Finish turn by selecting above check mark.'
+      }
+
+      return 'Select card to select partner.'
     case 'increase objective':
       if (!unref(isCP)) {
         return unref(waitMessage)

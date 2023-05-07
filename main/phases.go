@@ -8,7 +8,7 @@ const (
 	dealPhase         sn.Phase = "deal"
 	bidPhase          sn.Phase = "bid"
 	exchangePhase     sn.Phase = "card exchange"
-	pickPartnerPhase  sn.Phase = "pick parner"
+	pickPartnerPhase  sn.Phase = "pick partner"
 	incObjectivePhase sn.Phase = "increase objective"
 	cardPlayPhase     sn.Phase = "card play"
 	endHandPhase      sn.Phase = "end of hand"

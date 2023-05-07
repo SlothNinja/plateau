@@ -13,6 +13,10 @@ func (g *game) startExchange() *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
+	if g.lastBid().Exchange == noExchangeBid {
+		return nil
+	}
+
 	g.Phase = exchangePhase
 
 	// Declarer exchanges cards with talon.

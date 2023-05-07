@@ -2,48 +2,58 @@
   <v-container>
     <v-row dense>
       <v-col cols='6'>
-        <v-row dense>
+        <v-row dense class='h-50'>
           <v-col cols='12'>
             <Info />
           </v-col>
         </v-row>
-        <v-row dense>
+        <v-row dense class='h-50'>
           <v-col cols='12'>
             <MessageBar />
           </v-col>
         </v-row>
-        <v-row dense v-if='showTrick'>
+      </v-col>
+      <v-col cols='6'>
+        <v-row dense class='h-100'>
           <v-col cols='12'>
-            <Trick height='170' />
+            <Bids :bids='bids' :order='order' :dTeam='dTeam' />
           </v-col>
         </v-row>
-        <v-row dense>
+      </v-col>
+    </v-row>
+    <v-row dense>
+      <v-col cols='6'>
+        <v-row dense class='h-50' v-if='showTrick'>
           <v-col cols='12'>
-            <Hand class='pa-2' height='170' />
+            <Trick v-if='showTrick' height='170' />
+            <BidForm v-if='showForm'/>
           </v-col>
         </v-row>
-        <v-row dense v-if='showForm'>
+        <v-row dense class='h-50' >
           <v-col cols='12'>
-            <BidForm />
+            <v-card class='h-100'>
+              <Hand class='pa-2' height='170' />
+            </v-card>
           </v-col>
         </v-row>
       </v-col>
       <v-col cols='6'>
         <v-row dense>
           <v-col cols='12'>
-            <Bids :bids='bids' :order='order' :dTeam='dTeam' />
-          </v-col>
-        </v-row>
-        <v-row dense>
-          <v-col cols='12'>
-            <v-radio-group inline v-model='results' >
-              <v-radio v-for='hand in round' :label='label(hand)' :value='hand' :key='hand' />
-            </v-radio-group>
-          </v-col>
-        </v-row>
-        <v-row dense>
-          <v-col cols='12'>
+            <v-card>
             <Board :tricks='tricks' :declarersTeam='declarersTeam' />
+            </v-card>
+          </v-col>
+        </v-row>
+        <v-row dense>
+          <v-col cols='12'>
+            <v-card class='h-100'>
+              <v-card-text>
+                <v-radio-group hide-details inline v-model='results' >
+                  <v-radio v-for='hand in round' :label='label(hand)' :value='hand' :key='hand' />
+                </v-radio-group>
+              </v-card-text>
+            </v-card>
           </v-col>
         </v-row>
       </v-col>

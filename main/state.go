@@ -12,6 +12,7 @@ type state struct {
 	Tricks        []trick
 	Bids          []bid
 	LastResults   []lastResult
+	Pick          []card
 }
 
 func (s state) copy() state {
@@ -37,6 +38,9 @@ func (s state) copy() state {
 		lrs[i] = l.copy()
 	}
 
+	pc := make([]card, len(s.Pick))
+	copy(pc, s.Pick)
+
 	return state{
 		Players:       ps,
 		Deck:          d,
@@ -44,5 +48,6 @@ func (s state) copy() state {
 		Tricks:        ts,
 		Bids:          bs,
 		LastResults:   lrs,
+		Pick:          pc,
 	}
 }

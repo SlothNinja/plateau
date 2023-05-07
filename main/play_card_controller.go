@@ -113,14 +113,6 @@ func (g game) validatePlayCard(ctx *gin.Context, cu sn.User) (*player, card, err
 	}
 }
 
-func (p player) hasCards(cards ...card) bool {
-	return pie.All(cards, func(c card) bool { return pie.Contains(p.Hand, c) })
-}
-
-func (p player) hasSuit(s suit) bool {
-	return pie.Any(p.Hand, func(c card) bool { return c.Suit == s })
-}
-
 func (g game) ledSuit() suit {
 	return pie.First(g.currentTrick().Cards).Suit
 }

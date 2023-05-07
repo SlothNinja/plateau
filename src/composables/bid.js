@@ -1,10 +1,10 @@
 import { unref } from 'vue'
 import _get from 'lodash/get'
 
-export function bidValue(game, bid) {
-  const g = unref(game)
+export function bidValue(numPlayers, bid) {
+  const n = unref(numPlayers)
   const b = unref(bid)
-  return exchangeValue(b) + objectiveValue(b) + teamsValue(g, b)
+  return exchangeValue(b) + objectiveValue(b) + teamsValue(n, b)
 }
 
 export function exchangeValue(bid) {
@@ -36,8 +36,8 @@ export function  objectiveValue(bid) {
   }
 }
 
-export function teamsValue(game, bid) {
-  switch (_get(unref(game), 'NumPlayers', 0)) {
+export function teamsValue(numPlayers, bid) {
+  switch (unref(numPlayers)) {
     case 4:
       return team45(bid)
     case 5:

@@ -1,9 +1,9 @@
 <template>
-  <v-card>
+  <v-card class='h-100'>
     <v-card-title>
       {{title}}
     </v-card-title>
-    <v-card-text>
+    <v-card-text class='d-flex align-center justify-center'>
       <CardDisplay :height='height' v-model:cards='cards' />
     </v-card-text>
   </v-card>

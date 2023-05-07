@@ -284,6 +284,9 @@ func (cl *Client) addRoutes(prefix string) *Client {
 	// Play Card
 	g.PUT("play/:id", cl.playCardHandler)
 
+	// Pick Partner
+	g.PUT("pick/:id", cl.pickPartnerHandler)
+
 	// Actions Finish
 	g.PUT("finish/:id", cl.finishTurnHandler)
 

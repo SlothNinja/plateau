@@ -191,27 +191,23 @@ func (g *game) bidFinishTurn(cu sn.User) (*player, *player, error) {
 	}
 
 	// Log winning bid
-	lastBid := g.lastBid()
 	// g.newEntryFor(lastBid.PID, message{
 	// 	"template": "won-bid",
 	// 	"bid":      lastBid,
 	// })
 
-	// Proceed to next phase
-	if lastBid.Exchange == exchangeBid {
-		np = g.startExchange()
+	np = g.startExchange()
+	if np != nil {
 		return cp, np, nil
 	}
 
-	if lastBid.includesPartner() {
-		np = g.startPickPartner()
+	np = g.startPickPartner()
+	if np != nil {
 		return cp, np, nil
 	}
 
-	g.startIncObjective()
-	np = g.selectIncrementer(nil)
+	np = g.startIncObjective()
 	return cp, np, nil
-
 }
 
 func (g game) validateBidFinishTurn(cu sn.User) (*player, error) {

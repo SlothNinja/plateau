@@ -15,7 +15,7 @@
       </v-row>
       <v-row dense v-if='showExchange'>
         <v-col cols='9' >
-          <v-radio-group :disabled="phase != 'bid'" label='Card Exchange:' density='compact' inline v-model='exchange'>
+          <v-radio-group :disabled="phase != 'bid'" label='Card Exchange:' density='compact' v-model='exchange'>
             <v-radio :label="'Exchange (' + exValue('exchange') + ')'" value='exchange'/>
               <v-radio :label="'No Exchange (' + exValue('no exchange') + ')'" value='no exchange'/>
           </v-radio-group>
@@ -26,7 +26,7 @@
       </v-row>
       <v-row dense>
         <v-col cols='9'>
-          <v-radio-group label='Objective:' density='compact' inline v-model='objective'>
+          <v-radio-group label='Objective:' density='compact' v-model='objective'>
             <v-radio :disabled="disableObjective('bridge')" :label="'Bridge (' + obValue('bridge') + ')'" value='bridge'/>
               <v-radio :disabled="disableObjective('y')" :label="'Y (' + obValue('y') + ')'" value='y'/>
                 <v-radio :disabled="disableObjective('fork')" :label="'Fork (' + obValue('fork') + ')'" value='fork'/>
@@ -41,23 +41,23 @@
 
       <v-row dense v-if='showTeams'>
         <v-col cols='9'>
-          <v-radio-group label='Teams:' density='compact' inline hide-details v-model='teams'>
+          <v-radio-group :disabled="phase != 'bid'" label='Teams:' density='compact' v-model='teams'>
             <v-radio v-if='showTrio' :label="'Trio (' + tValue('trio') + ')'" value='trio'/>
               <v-radio :label="'Duo (' + tValue('duo') + ')'" value='duo'/>
                 <v-radio :label="'Solo (' + tValue('solo') + ')'" value='solo'/>
           </v-radio-group>
         </v-col>
-        <v-col cols='3' class='d-flex justify-center align-center'>
-          <div>{{tValue(teams)}}</div>
+        <v-col cols='3'>
+          <div class='text-center'>{{tValue(teams)}}</div>
         </v-col>
       </v-row>
 
-      <v-row style='margin-top:-20px'>
+      <v-row dense>
         <v-col cols='9'>
-          Total Bid Value:
+          <v-radio-group label='Total Bid:' density='compact'></v-radio-group>
         </v-col>
         <v-col cols='3'>
-          <div class='text-center'>{{bidValue(game, bid)}}</div>
+          <div class='text-center'>{{bidValue(numPlayers, bid)}}</div>
         </v-col>
       </v-row>
 
@@ -177,7 +177,7 @@ const showTeams = computed(() => (unref(numPlayers) >= 4))
 const showTrio = computed(() => (unref(numPlayers) == 6))
 
 function tValue(teams) {
-  return teamsValue({'Teams': teams})
+  return teamsValue(numPlayers, {'Teams': teams})
 }
 
 const teams = computed({
@@ -191,7 +191,7 @@ const teams = computed({
 
 const canSubmit = computed(() => {
   return unref(phase) == 'increase objective' ||
-    bidValue(game, bid) > bidValue(game, lastBid)
+    bidValue(numPlayers, bid) > bidValue(numPlayers, lastBid)
 })
 
 

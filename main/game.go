@@ -235,6 +235,9 @@ func (cl Client) save(ctx *gin.Context, g game, cu sn.User) error {
 }
 
 func (cl Client) saveGameIn(ctx *gin.Context, tx *firestore.Transaction, g game, cu sn.User) error {
+	cl.Log.Debugf(msgEnter)
+	defer cl.Log.Debugf(msgExit)
+
 	g.UpdatedAt = time.Now()
 	id := getID(ctx)
 
@@ -245,6 +248,8 @@ func (cl Client) saveGameIn(ctx *gin.Context, tx *firestore.Transaction, g game,
 	if err := tx.Set(committedDocRef(cl.FS, id), g); err != nil {
 		return err
 	}
+
+	cl.Log.Debugf("pick: %#v", g.Pick)
 
 	for _, p := range g.Players {
 		if err := tx.Set(viewDocRef(cl.FS, id, g.uidForPID(p.ID)), g.viewFor(p)); err != nil {

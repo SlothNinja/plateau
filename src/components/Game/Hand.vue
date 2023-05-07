@@ -2,6 +2,7 @@
   <div class='d-flex justify-center align-center ma-2' style='height:2em'>
     <v-btn v-if='canSubmit' @click='submit' size='small' color='green'>Submit</v-btn>
   </div>
+  <CardDisplay v-if='pickPartner' v-bind='$attrs' :height='height' :multi='multi' v-model:cards='pickPartnerCards' v-model:selected='selected' />
   <CardDisplay sort v-bind='$attrs' :height='height' :multi='multi' v-model:cards='hand' v-model:selected='selected' />
 </template>
 
@@ -13,6 +14,8 @@ import CardDisplay from '@/components/Game/CardDisplay.vue'
 import _size from 'lodash/size'
 import _get from 'lodash/get'
 import _isEmpty from 'lodash/isEmpty'
+import _difference from 'lodash/difference'
+import _differenceWith from 'lodash/differenceWith'
 
 // vue
 import { computed, ref, inject, unref, watch } from 'vue'
@@ -47,6 +50,10 @@ const isCP = computed(() => useIsCP(game, cu))
 const phase = computed(() => _get(unref(game), 'Phase', ''))
 const performedAction  = computed(() => _get(unref(player), 'PerformedAction', false))
 
+const pickPartner = computed(() => (unref(isCP) && (unref(phase) == 'pick partner')))
+
+const pickPartnerCards = computed(() => _get(unref(game), 'Pick', []))
+
 const selected = ref([])
 
 watch(
@@ -61,7 +68,7 @@ watch(
 const canSubmit = computed(() => (
   unref(isCP) &&
   !unref(performedAction) &&
-  ((unref(phase) == 'card exchange') || (unref(phase) == 'card play')) &&
+  ((unref(phase) == 'card exchange') || (unref(phase) == 'card play') || (unref(phase) == 'pick partner')) &&
   _size(unref(selected)) == unref(multi)
 ))
 
@@ -74,7 +81,17 @@ const { snackbar, updateSnackbar } = inject(snackKey)
 /////////////////////////////////////
 // Submit bid to server
 function submit() {
-  const action = unref(phase) == 'card exchange' ? 'exchange': 'play'
+  let action = ''
+  switch (unref(phase)) {
+    case 'card exchage':
+      action = 'exchage'
+      break
+    case 'pick partner':
+      action = 'pick'
+      break
+    default:
+      action = 'play'
+  }
   const { response, error } = usePut(`/sn/game/${action}/${route.params.id}`, unref(selected))
   selected.value = []
 
