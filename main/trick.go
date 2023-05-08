@@ -57,22 +57,32 @@ func (g game) allCardsPlayed() bool {
 	return pie.All(g.Players, func(p *player) bool { return len(p.Hand) == 0 })
 }
 
-func (g game) objectiveMade() ([]node, bool) {
+func (g game) allPassed() bool {
+	return pie.All(g.Players, func(p *player) bool { return p.Passed })
+}
+
+func (g game) objectiveMade() ([]node, handResult) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	return g.objectiveTest(g.spacesFor(g.DeclarersTeam))
 }
 
-func (g game) objectiveBlocked() ([]node, bool) {
+func (g game) objectiveBlocked() ([]node, handResult) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	path, found := g.objectiveTest(g.spacesNotOwnedBy(g.opposersTeam()))
-	return path, !found
+	switch path, result := g.objectiveTest(g.spacesNotOwnedBy(g.opposersTeam())); result {
+	case dSuccess:
+		return path, dFail
+	case dFail:
+		return path, dSuccess
+	default:
+		return path, dPush
+	}
 }
 
-func (g game) objectiveTest(ss []space) ([]node, bool) {
+func (g game) objectiveTest(ss []space) ([]node, handResult) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -90,7 +100,7 @@ func (g game) objectiveTest(ss []space) ([]node, bool) {
 	case sixSidesBid:
 		return sixSides(graph, paths)
 	default:
-		return nil, false
+		return nil, dFail
 	}
 }
 

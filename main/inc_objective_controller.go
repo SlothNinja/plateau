@@ -14,34 +14,15 @@ func (g *game) startIncObjective() *player {
 	defer sn.Debugf(msgExit)
 
 	g.Phase = incObjectivePhase
-	return g.selectIncrementer(nil)
+	pie.Each(g.Players, (*player).bidReset)
+	return g.selectIncrementer()
 }
 
-func (g game) selectIncrementer(inc *player) *player {
+func (g game) selectIncrementer() *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	switch len(g.partnerPIDS()) {
-	case 0:
-		return g.declarer()
-	case 1:
-		if inc == nil {
-			return g.partner()
-		}
-		return g.declarer()
-	case 2:
-		switch {
-		case inc == nil:
-			return g.nextPlayer(g.declarer(), func(p *player) bool { return pie.Contains(g.partners(), p) })
-		case inc == g.nextPlayer(g.declarer(), func(p *player) bool { return pie.Contains(g.partners(), p) }):
-			return g.nextPlayer(inc, func(p *player) bool { return pie.Contains(g.partners(), p) })
-		default:
-			return g.declarer()
-		}
-	default:
-		sn.Warningf("len(g.partnerPIDS): %d", len(g.partnerPIDS()))
-		return nil
-	}
+	return g.nextPlayer(g.declarer(), func(p *player) bool { return pie.Contains(g.declarers(), p) && !p.Bid })
 }
 
 func (g game) partnerPIDS() []sn.PID {
@@ -91,6 +72,7 @@ func (g *game) incObjective(ctx *gin.Context, cu sn.User) error {
 	}
 
 	cp.PerformedAction = true
+	cp.Bid = true
 	if g.lastBid().Objective == bid.Objective {
 		// g.newEntryFor(cp.ID, message{
 		// 	"template": "no-increased-objective",
@@ -135,7 +117,7 @@ func (g game) validateIncObjective(ctx *gin.Context, cu sn.User) (*player, bid, 
 		return nil, noBid, fmt.Errorf("you cannot change the exchange characteristic of the bid: %w", sn.ErrValidation)
 	case bid.Teams != g.lastBid().Teams:
 		return nil, noBid, fmt.Errorf("you cannot change the teams characteristic of the bid: %w", sn.ErrValidation)
-	case bid.PID != g.lastBid().PID:
+	case bid.PID != cp.ID:
 		return nil, noBid, fmt.Errorf("you cannot change the declarer of the bid: %w", sn.ErrValidation)
 	case objValue1 < objValue2:
 		return nil, noBid, fmt.Errorf("you cannot decrease the objective of the bid: %w", sn.ErrValidation)
@@ -153,8 +135,8 @@ func (g *game) incObjectiveFinishTurn(cu sn.User) (*player, *player, error) {
 		return nil, nil, err
 	}
 
-	np := g.selectIncrementer(cp)
-	if cp == np {
+	np := g.selectIncrementer()
+	if np == nil {
 		np = g.startCardPlay()
 	}
 	return cp, np, nil

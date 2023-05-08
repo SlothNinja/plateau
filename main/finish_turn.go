@@ -56,8 +56,6 @@ func (cl Client) finishTurnHandler(ctx *gin.Context) {
 		return
 	}
 
-	sn.Debugf("cp: %#v", cp)
-	sn.Debugf("np: %#v", np)
 	cp.Stats.Moves++
 	cp.Stats.Think += time.Since(gc.UpdatedAt)
 

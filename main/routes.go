@@ -278,6 +278,9 @@ func (cl *Client) addRoutes(prefix string) *Client {
 	// Increase Objective
 	g.PUT("incObjective/:id", cl.incObjectiveHandler)
 
+	// Abdicate
+	g.PUT("abdicate/:id", cl.abdicateHandler)
+
 	// Card Exchange
 	g.PUT("exchange/:id", cl.exchangeHandler)
 

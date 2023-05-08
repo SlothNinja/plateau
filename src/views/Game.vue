@@ -23,15 +23,15 @@
     </v-row>
     <v-row dense>
       <v-col cols='6'>
-        <v-row dense class='h-50' v-if='showTrick'>
+        <v-row dense>
           <v-col cols='12'>
-            <Trick v-if='showTrick' height='170' />
+            <Trick v-if='showTrick' />
             <BidForm v-if='showForm'/>
           </v-col>
         </v-row>
-        <v-row dense class='h-50' >
+        <v-row dense>
           <v-col cols='12'>
-            <v-card class='h-100'>
+            <v-card>
               <Hand class='pa-2' height='170' />
             </v-card>
           </v-col>
@@ -95,6 +95,8 @@ const round = computed(() => _get(unref(game), 'Round', 1))
 
 const results = ref(0)
 
+watch(round, () => (results.value = unref(round)))
+
 const index = computed(
   () => {
     if (unref(results) == 0) {
@@ -156,12 +158,9 @@ function label(hand) {
   return `Hand ${unref(hand)}`
 }
 
-const isCP = computed(() => (useIsCP(game, cu)))
-const cp = computed(() => (useCP(game)))
-
 const phase = computed(() => _get(unref(game), 'Phase', ''))
 const showForm = computed(() => {
-  return (unref(isCP) && !unref(cp).PerformedAction) && (unref(phase) == 'bid' || unref(phase) == 'increase objective')
+  return (unref(phase) == 'bid' || unref(phase) == 'increase objective')
 })
 
 const showTrick = computed(() => {

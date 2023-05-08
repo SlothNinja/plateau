@@ -83,4 +83,8 @@ const message = computed(() => {
   }
 })
 
+function declarer(player) {
+  return _first(_get(unref(game), 'DeclarersTeam', [])) == unref(player).ID
+}
+
 </script>

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/SlothNinja/sn/v3"
+	"github.com/elliotchance/pie/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -143,7 +144,7 @@ func (cl Client) passBidHandler(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"game": g})
+	ctx.JSON(http.StatusOK, nil)
 }
 
 func (g *game) passBid(cu sn.User) error {
@@ -169,7 +170,16 @@ func (g game) validatePassBid(cu sn.User) (*player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	return g.validatePlayerAction(cu)
+	cp, err := g.validatePlayerAction(cu)
+	switch {
+	case err != nil:
+		return nil, err
+	case g.Phase != bidPhase && g.Phase != incObjectivePhase:
+		return nil, fmt.Errorf("cannot pass during %q phase: %w", g.Phase, sn.ErrValidation)
+	default:
+		return cp, nil
+	}
+
 }
 
 func (g *game) bidFinishTurn(cu sn.User) (*player, *player, error) {
@@ -187,6 +197,12 @@ func (g *game) bidFinishTurn(cu sn.User) (*player, *player, error) {
 
 	if np != nil {
 		// Proceed to next bidder
+		return cp, np, nil
+	}
+
+	// all players passed, then next dealer deals new hand
+	if pie.All(g.Players, func(p *player) bool { return p.Passed }) {
+		np = g.startEndHandPhase(dPush, nil)
 		return cp, np, nil
 	}
 
@@ -219,6 +235,76 @@ func (g game) validateBidFinishTurn(cu sn.User) (*player, error) {
 		return nil, fmt.Errorf("expected %q phase but have %q phase: %w", bidPhase, g.Phase, sn.ErrValidation)
 	case !cp.Bid:
 		return nil, fmt.Errorf("you must bid or pass before finishing turn: %w", sn.ErrValidation)
+	default:
+		return cp, nil
+	}
+}
+
+func (cl Client) abdicateHandler(ctx *gin.Context) {
+	cl.Log.Debugf(msgEnter)
+	defer cl.Log.Debugf(msgExit)
+
+	cu, err := cl.User.Current(ctx)
+	if err != nil {
+		cl.Log.Warningf(err.Error())
+	}
+
+	g, err := cl.getGame(ctx, cu, noUndo)
+	if err != nil {
+		sn.JErr(ctx, err)
+		return
+	}
+
+	err = g.abdicate(cu)
+	if err != nil {
+		sn.JErr(ctx, err)
+		return
+	}
+
+	err = cl.putCached(ctx, g, g.Undo.Current, cu.ID())
+	if err != nil {
+		sn.JErr(ctx, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, nil)
+}
+
+func (g *game) abdicate(cu sn.User) error {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
+	cp, err := g.validateAbdicate(cu)
+	if err != nil {
+		return err
+	}
+
+	cp.PerformedAction = true
+	cp.Bid = true
+	g.DeclarersTeam[0], g.DeclarersTeam[1] = g.DeclarersTeam[1], g.DeclarersTeam[0]
+
+	g.Undo.Update()
+	return nil
+}
+
+func (g game) validateAbdicate(cu sn.User) (*player, error) {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
+	cp, err := g.validatePlayerAction(cu)
+	switch {
+	case err != nil:
+		return nil, err
+	case g.NumPlayers != 5:
+		return nil, fmt.Errorf("the declarer can only abdicate in a 5 player game: %w", sn.ErrValidation)
+	case !(pie.Contains(g.DeclarersTeam, g.lastBid().PID) && g.lastBid().PID != cp.ID):
+		return nil, fmt.Errorf("the declarer can only abdicate if partner increased objective: %w", sn.ErrValidation)
+	case len(g.DeclarersTeam) != 2:
+		return nil, fmt.Errorf("the declarer can only abdicate if there is a partner: %w", sn.ErrValidation)
+	case pie.First(g.DeclarersTeam) != cp.ID:
+		return nil, fmt.Errorf("only the declarer may abdicate: %w", sn.ErrValidation)
+	case g.Phase != incObjectivePhase:
+		return nil, fmt.Errorf("cannot abdicate during %q phase: %w", g.Phase, sn.ErrValidation)
 	default:
 		return cp, nil
 	}

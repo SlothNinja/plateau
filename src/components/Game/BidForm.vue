@@ -61,12 +61,11 @@
         </v-col>
       </v-row>
 
-      <v-row>
-        <v-col cols='6' class='d-flex justify-center'>
-          <v-btn v-if="phase == 'bid'" color='green' size='small' @click='pass'>Pass</v-btn>
-        </v-col>
-        <v-col cols='6' class='d-flex justify-center'>
-          <v-btn v-if="canSubmit" color='green' size='small' @click='submit'>Submit</v-btn>
+      <v-row> 
+        <v-col class='d-flex justify-space-around'>
+        <v-btn v-if='canPass' color='green' size='small' @click='pass'>Pass</v-btn>
+        <v-btn v-if='canAbdicate' color='green' size='small' @click='abdicate'>Abdicate</v-btn>
+        <v-btn v-if='canSubmit' color='green' size='small' @click='submit'>Bid</v-btn>
         </v-col>
       </v-row>
     </v-card-text>
@@ -84,12 +83,13 @@ import { computed, inject, ref, unref, watch, onMounted } from 'vue'
 import _get from 'lodash/get'
 import _find from 'lodash/find'
 import _last from 'lodash/last'
+import _first from 'lodash/first'
 import _isEmpty from 'lodash/isEmpty'
 
 // composables
 import { usePut } from '@/composables/fetch.js'
 import { cuKey, gameKey, snackKey } from '@/composables/keys.js'
-import { useCP, useCPID } from '@/composables/player.js'
+import { useCP, useCPID, useIsCP } from '@/composables/player.js'
 import { exchangeValue, objectiveValue, teamsValue, bidValue, minBid } from '@/composables/bid.js'
 import { useRoute } from 'vue-router'
 
@@ -101,18 +101,14 @@ const game = inject(gameKey)
 
 const cp = computed(() => useCP(game))
 const cpid = computed(() => useCPID(game))
+const isCP = computed(() => useIsCP(game, cu))
 
 const bvalue = ref({})
 
 const minObjective = ref('')
 const minObjectiveValue = computed(() => obValue(unref(minObjective)))
 const bids = computed(() => _get(unref(game), 'Bids', []))
-const lastBid = computed(() => {
-  if (!_isEmpty(unref(bids))) {
-    return _last(unref(bids))
-  }
-  return {}
-})
+const lastBid = computed(() => _last(unref(bids)))
 
 const bid = computed({
   get() {
@@ -128,10 +124,9 @@ const bid = computed({
         }
         return unref(bvalue)
       case 'increase objective':
-        if (_isEmpty(unref(bvalue))) {
-          bvalue.value = unref(lastBid)
-          minObjective.value = _get(unref(lastBid), 'Objective', '')
-        }
+        bvalue.value = { ...unref(lastBid) }
+        bvalue.value.PID = unref(cpid)
+        minObjective.value = _get(unref(lastBid), 'Objective', '')
         return unref(bvalue)
       default:
         bvalue.value = {}
@@ -189,11 +184,29 @@ const teams = computed({
   }
 })
 
-const canSubmit = computed(() => {
-  return unref(phase) == 'increase objective' ||
-    bidValue(numPlayers, bid) > bidValue(numPlayers, lastBid)
+const canPass = computed(() => {
+  return (unref(isCP) && !unref(cp).PerformedAction) &&
+    ((unref(phase) == 'bid') ||
+      (unref(phase) == 'increase objective'))
 })
 
+const canSubmit = computed(() => {
+  return (unref(isCP) && !unref(cp).PerformedAction) &&
+    (bidValue(numPlayers, bid) > bidValue(numPlayers, lastBid)) &&
+    ((unref(phase) == 'bid') ||
+      (unref(phase) == 'increase objective'))
+
+})
+
+const canAbdicate = computed(() => {
+  return (unref(isCP) && !unref(cp).PerformedAction) && declarer(cp) &&
+    (unref(lastBid).PID) != unref(cpid) &&
+    (unref(phase) == 'increase objective')
+})
+
+function declarer(player) {
+  return _first(_get(unref(game), 'DeclarersTeam', [])) == unref(player).ID
+}
 
 //////////////////////////////////////
 // Snackbar
@@ -219,11 +232,15 @@ function pass() {
   watch(response, () => update(response))
 }
 
+/////////////////////////////////////
+// Send pass action to server
+function abdicate() {
+  const { response, error } = usePut(`/sn/game/abdicate/${route.params.id}`)
+
+  watch(response, () => update(response))
+}
+
 function update(response) {
-    // const g = _get(unref(response), 'Game', {})
-    // if (!_isEmpty(g)) {
-    //   updateGame(g)
-    // }
     const msg = _get(unref(response), 'Message', '')
     if (!_isEmpty(msg)) {
       updateSnackbar(msg)

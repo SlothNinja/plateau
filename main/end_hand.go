@@ -5,52 +5,69 @@ import (
 	"github.com/elliotchance/pie/v2"
 )
 
-func (g *game) startEndHandPhase(success bool, path []node) {
+func (g *game) startEndHandPhase(result handResult, path []node) *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	g.Phase = endHandPhase
-	scored := g.scoreHand(success)
-	g.saveLastResult(success, path, scored)
+	scored := g.scoreHand(result)
+	g.saveLastResult(result, path, scored)
+
+	if end := g.endGameCheck(); end {
+		return nil
+	}
+	return g.startHand()
 }
 
-func (g *game) endHandCheck() (end bool, success bool, path []node) {
+func (g *game) endHandCheck() (end bool, result handResult, path []node) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	if g.allCardsPlayed() {
 		g.revealTalon()
-		_, success, path = g.objectiveCheck()
-		return true, success, path
+		_, result, path = g.objectiveCheck()
+		return true, result, path
 	}
 	return g.objectiveCheck()
 }
 
-func (g game) objectiveCheck() (end bool, success bool, path []node) {
+func (g game) objectiveCheck() (end bool, result handResult, path []node) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	path, success = g.objectiveMade()
-	if success {
-		return true, true, path
+	path, result = g.objectiveMade()
+	if result == dSuccess {
+		return true, result, path
 	}
 
-	_, blocked := g.objectiveBlocked()
-	if blocked {
-		return true, false, path
+	_, result = g.objectiveBlocked()
+	if result == dFail {
+		return true, result, path
 	}
-	return false, false, nil
+	return false, dPush, nil
 }
 
-func (g *game) scoreHand(successful bool) []int64 {
+type handResult string
+
+const (
+	dPush    handResult = "push"
+	dSuccess handResult = "success"
+	dFail    handResult = "failure"
+)
+
+func (g *game) scoreHand(result handResult) []int64 {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
+
+	if result == dPush {
+		return make([]int64, len(g.Players))
+	}
 
 	oldscores := pie.Map(g.Players, func(p *player) int64 { return p.Score })
 	dtbv := g.currentBidValue()
 	dl := len(g.DeclarersTeam)
 	ol := g.NumPlayers - dl
-	if !successful {
+	if result == dFail {
 		dtbv = -dtbv
 	}
 
@@ -73,7 +90,7 @@ func (g *game) scoreHand(successful bool) []int64 {
 	return deltaScores
 }
 
-func (g *game) startHand() {
+func (g *game) startHand() *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -101,6 +118,7 @@ func (g *game) startHand() {
 	g.DeclarersTeam = nil
 
 	g.deal()
+	return g.startBidPhase()
 }
 
 func (g *game) revealTalon() {
@@ -124,10 +142,10 @@ type lastResult struct {
 	Tricks        []trick
 	Path          []node
 	Scored        []int64
-	Success       bool
+	Success       handResult
 }
 
-func (g *game) saveLastResult(success bool, path []node, scored []int64) {
+func (g *game) saveLastResult(result handResult, path []node, scored []int64) {
 	last := lastResult{
 		Bids:          g.Bids,
 		SeatOrder:     g.OrderIDS,
@@ -135,7 +153,7 @@ func (g *game) saveLastResult(success bool, path []node, scored []int64) {
 		Tricks:        g.Tricks,
 		Path:          path,
 		Scored:        scored,
-		Success:       success,
+		Success:       result,
 	}
 	g.LastResults = append(g.LastResults, last.copy())
 }

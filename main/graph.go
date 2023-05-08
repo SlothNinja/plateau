@@ -65,77 +65,77 @@ type node struct {
 // implement graph.Node interface
 func (n node) ID() int64 { return n.UID }
 
-func bridge(graph boardGraph, paths path.AllShortest) (path []node, found bool) {
-	path, found = connected(paths, graph.side(1), graph.side(4))
-	if found {
-		return path, found
+func bridge(graph boardGraph, paths path.AllShortest) (path []node, result handResult) {
+	path, result = connected(paths, graph.side(1), graph.side(4))
+	if result == dSuccess {
+		return path, result
 	}
-	path, found = connected(paths, graph.side(2), graph.side(5))
-	if found {
-		return path, found
+	path, result = connected(paths, graph.side(2), graph.side(5))
+	if result == dSuccess {
+		return path, result
 	}
 	return connected(paths, graph.side(3), graph.side(6))
 }
 
-func y(graph boardGraph, paths path.AllShortest) (path []node, found bool) {
+func y(graph boardGraph, paths path.AllShortest) (path []node, result handResult) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	path, found = connected(paths, graph.side(1), graph.side(3), graph.side(5))
-	if found {
-		return path, true
+	path, result = connected(paths, graph.side(1), graph.side(3), graph.side(5))
+	if result == dSuccess {
+		return path, result
 	}
 	return connected(paths, graph.side(2), graph.side(4), graph.side(6))
 }
 
-func fork(graph boardGraph, paths path.AllShortest) (path []node, found bool) {
-	path1, found1 := bridge(graph, paths)
-	if !found1 {
-		return nil, false
+func fork(graph boardGraph, paths path.AllShortest) (path []node, result handResult) {
+	path1, result1 := bridge(graph, paths)
+	if result1 == dFail {
+		return nil, result1
 	}
-	path2, found2 := y(graph, paths)
-	if !found2 {
-		return nil, false
+	path2, result2 := y(graph, paths)
+	if result2 == dFail {
+		return nil, result2
 	}
-	return append(path1, path2...), true
+	return append(path1, path2...), dSuccess
 }
 
-func fiveSides(graph boardGraph, paths path.AllShortest) ([]node, bool) {
+func fiveSides(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
 	s1, s2, s3, s4, s5, s6 := graph.side(1), graph.side(2), graph.side(3), graph.side(4), graph.side(5), graph.side(6)
-	path, found := connected(paths, s1, s2, s3, s4, s5)
-	if found {
-		return path, true
+	path, result := connected(paths, s1, s2, s3, s4, s5)
+	if result == dSuccess {
+		return path, result
 	}
-	path, found = connected(paths, s1, s2, s3, s4, s6)
-	if found {
-		return path, true
+	path, result = connected(paths, s1, s2, s3, s4, s6)
+	if result == dSuccess {
+		return path, result
 	}
-	path, found = connected(paths, s1, s2, s3, s5, s6)
-	if found {
-		return path, true
+	path, result = connected(paths, s1, s2, s3, s5, s6)
+	if result == dSuccess {
+		return path, result
 	}
-	path, found = connected(paths, s1, s2, s4, s5, s6)
-	if found {
-		return path, true
+	path, result = connected(paths, s1, s2, s4, s5, s6)
+	if result == dSuccess {
+		return path, result
 	}
-	path, found = connected(paths, s1, s3, s4, s5, s6)
-	if found {
-		return path, true
+	path, result = connected(paths, s1, s3, s4, s5, s6)
+	if result == dSuccess {
+		return path, result
 	}
-	path, found = connected(paths, s2, s3, s4, s5, s6)
-	if found {
-		return path, true
+	path, result = connected(paths, s2, s3, s4, s5, s6)
+	if result == dSuccess {
+		return path, result
 	}
-	return nil, false
+	return nil, dFail
 }
 
-func sixSides(graph boardGraph, paths path.AllShortest) ([]node, bool) {
+func sixSides(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
 	s1, s2, s3, s4, s5, s6 := graph.side(1), graph.side(2), graph.side(3), graph.side(4), graph.side(5), graph.side(6)
 	return connected(paths, s1, s2, s3, s4, s5, s6)
 }
 
-func connected(paths path.AllShortest, ss ...[]node) (path []node, found bool) {
-	found = pie.Any(pie.First(ss), func(n0 node) bool {
+func connected(paths path.AllShortest, ss ...[]node) (path []node, result handResult) {
+	found := pie.Any(pie.First(ss), func(n0 node) bool {
 		return pie.All(pie.DropTop(ss, 1), func(ss1 []node) bool {
 			return pie.Any(ss1, func(n1 node) bool {
 				p, _, _ := paths.Between(n0.ID(), n1.ID())
@@ -148,9 +148,9 @@ func connected(paths path.AllShortest, ss ...[]node) (path []node, found bool) {
 		})
 	})
 	if found {
-		return path, true
+		return path, dSuccess
 	}
-	return nil, false
+	return nil, dFail
 }
 
 func (graph boardGraph) side(s int) (nodes []node) {

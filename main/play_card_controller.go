@@ -133,18 +133,13 @@ func (g *game) playCardFinishTurn(cu sn.User) (*player, *player, error) {
 	}
 
 	np = g.endTrick()
-	endHand, success, path := g.endHandCheck()
+	endHand, result, path := g.endHandCheck()
 	if !endHand {
 		return cp, np, nil
 	}
 
-	g.startEndHandPhase(success, path)
+	np = g.startEndHandPhase(result, path)
 
-	if end := g.endGameCheck(); end {
-		return cp, nil, nil
-	}
-	g.startHand()
-	np = g.startBidPhase()
 	return cp, np, nil
 }
 

@@ -223,8 +223,7 @@ func (cl Client) acceptHandler(ctx *gin.Context) {
 	var g game
 	g.Header = inv.Header
 	g.start()
-	g.startHand()
-	cp := g.startBidPhase()
+	cp := g.startHand()
 	g.setCurrentPlayers(cp)
 
 	err = cl.save(ctx, g, cu)

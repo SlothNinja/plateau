@@ -4,7 +4,7 @@
       <v-table density='compact'>
         <thead>
           <tr>
-            <th class='text-center'>Dealer</th>
+            <th class='text-center'>Declarer</th>
             <th class='text-center'>Name</th>
             <th class='text-center'>Last Bid</th>
             <th class='text-center'>Score</th>
@@ -12,7 +12,7 @@
         </thead>
         <tbody>
           <tr :class='cpClass(p)' v-for='(p, index) in players' :key='index'>
-            <td class='text-center'>{{(index == 0) ? 'X' : ''}}</td>
+            <td class='text-center'>{{declarer(p) ? 'X' : ''}}</td>
             <td class='text-center'>
               <UserButton
                   :user='useUserByIndex(game, p.ID-1)'
@@ -40,12 +40,12 @@ import { useIsCP, usePlayerByPID } from '@/composables/player.js'
 import { useColorFor } from '@/composables/color.js'
 
 // import lodash
-import _find from 'lodash/find'
+import _findLast from 'lodash/findLast'
+import _first from 'lodash/first'
 import _get from 'lodash/get'
 import _isEmpty from 'lodash/isEmpty'
 import _includes from 'lodash/includes'
 import _map from 'lodash/map'
-import _reverse from 'lodash/reverse'
 
 // import vue
 import { computed, inject, unref } from 'vue'
@@ -55,11 +55,7 @@ const props = defineProps(['bids', 'order', 'dTeam'])
 const players = computed(() => _map(_get(props, 'order', []), (pid) => usePlayerByPID(game, pid)))
 
 function bidLabel(pid) {
-  const p = usePlayerByPID(game, pid)
-  if (p.Passed) {
-    return 'passed'
-  }
-  const bid = _find(_reverse(_get(props, 'bids', [])), [ 'PID', pid ])
+  const bid = _findLast(_get(props, 'bids', []), [ 'PID', pid ])
   if (_isEmpty(bid)) {
     return 'no bid'
   }
@@ -74,6 +70,10 @@ function bidLabel(pid) {
 import { cuKey, gameKey } from '@/composables/keys.js'
 const cu = inject(cuKey)
 const game = inject(gameKey)
+
+function declarer(player) {
+  return _first(_get(unref(game), 'DeclarersTeam', [])) == unref(player).ID
+}
 
 function cpClass(player) {
   const pid = player.id
