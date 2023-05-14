@@ -17,7 +17,7 @@
 
           <v-select
               label="Number of Players"
-              :items="[ 3, 4, 5, 6 ]"
+              :items="[ 2, 3, 4, 5, 6 ]"
               v-model="invitation.NumPlayers"
               >
           </v-select> 

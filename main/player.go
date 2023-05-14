@@ -17,15 +17,83 @@ type player struct {
 	Colors          []sn.Color
 	PerformedAction bool
 	Hand            []card
+
+	// firestore does not support a slice of slices
+	// thus the stacks are not implemented as a slice of stacks
+	Stack0 []card
+	Stack1 []card
+	Stack2 []card
+	Stack3 []card
+	Stack4 []card
+
 	sn.Stats
 }
 
-func (p *player) copy() *player {
+func (p player) stacks() [][]card {
+	return [][]card{p.Stack0, p.Stack1, p.Stack2, p.Stack3, p.Stack4}
+}
+
+func (p player) playableStacks() []card {
+	var cards []card
+	for _, stack := range p.stacks() {
+		if len(stack) > 0 {
+			cards = append(cards, pie.Last(stack))
+		}
+	}
+	return cards
+}
+
+func (p player) playableCards() []card {
+	return append(p.Hand, p.playableStacks()...)
+}
+
+func (p player) hasCard(c card) bool {
+	return pie.Contains(p.playableCards(), c)
+}
+
+func (p player) hasSuit(s suit) bool {
+	return pie.Any(p.playableCards(), func(c card) bool { return c.Suit == s })
+}
+
+func (p player) hasRank(r rank) bool {
+	return pie.Any(p.playableCards(), func(c card) bool { return c.Rank == r })
+}
+
+func (p *player) updateStacks() {
+	updateStack(p.Stack0)
+	updateStack(p.Stack1)
+	updateStack(p.Stack2)
+	updateStack(p.Stack3)
+	updateStack(p.Stack4)
+}
+
+func updateStack(stack []card) {
+	if len(stack) == 1 {
+		stack[0].FaceUp = true
+	}
+}
+
+func (p player) copy() *player {
 	cs := make([]sn.Color, len(p.Colors))
 	copy(cs, p.Colors)
 
 	h := make([]card, len(p.Hand))
 	copy(h, p.Hand)
+
+	s0 := make([]card, len(p.Stack0))
+	copy(s0, p.Stack0)
+
+	s1 := make([]card, len(p.Stack1))
+	copy(s1, p.Stack1)
+
+	s2 := make([]card, len(p.Stack2))
+	copy(s2, p.Stack2)
+
+	s3 := make([]card, len(p.Stack3))
+	copy(s3, p.Stack3)
+
+	s4 := make([]card, len(p.Stack4))
+	copy(s4, p.Stack4)
 
 	return &player{
 		ID:              p.ID,
@@ -35,6 +103,11 @@ func (p *player) copy() *player {
 		PerformedAction: p.PerformedAction,
 		Stats:           p.Stats,
 		Hand:            h,
+		Stack0:          s0,
+		Stack1:          s1,
+		Stack2:          s2,
+		Stack3:          s3,
+		Stack4:          s4,
 	}
 }
 

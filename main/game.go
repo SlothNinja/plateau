@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/firestore"
@@ -59,6 +58,7 @@ func (g *game) start() {
 
 	g.Status = sn.Running
 	g.Phase = setupPhase
+	g.StartedAt = updateTime()
 
 	g.addNewPlayers()
 
@@ -238,7 +238,7 @@ func (cl Client) saveGameIn(ctx *gin.Context, tx *firestore.Transaction, g game,
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	g.UpdatedAt = time.Now()
+	g.UpdatedAt = updateTime()
 	id := getID(ctx)
 
 	if err := tx.Set(gameDocRef(cl.FS, id, g.rev()), g); err != nil {
@@ -266,9 +266,27 @@ func (g game) viewFor(p *player) game {
 		if p.ID != p2.ID {
 			p2.Hand = nil
 		}
+		stacksView(p2)
 	}
 	g2.Deck = nil
 	return g2
+}
+
+func stacksView(p *player) {
+	stackView(p.Stack0)
+	stackView(p.Stack1)
+	stackView(p.Stack2)
+	stackView(p.Stack3)
+	stackView(p.Stack4)
+}
+
+func stackView(stack []card) {
+	for i, c := range stack {
+		if !c.FaceUp {
+			stack[i].Rank = noRank
+			stack[i].Suit = noSuit
+		}
+	}
 }
 
 // not truly a deep copy, though state is deeply copied.

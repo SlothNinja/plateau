@@ -2,6 +2,7 @@ import { unref } from 'vue'
 import _find from 'lodash/find'
 import _get from 'lodash/get'
 import _findIndex from 'lodash/findIndex'
+import { useUserByIndex } from '@/composables/user'
 
 export function usePlayerByUser(game, user) {
   const pid = usePIDForUser(game, user)
@@ -10,7 +11,7 @@ export function usePlayerByUser(game, user) {
 
 export function usePlayerByPID(game, pid) {
   const players = _get(unref(game), 'Players', [])
-  return _find(players, [ 'ID', pid ])
+  return _find(players, [ 'ID', unref(pid) ])
 }
 
 export function usePIDForUser(game, user) {
@@ -35,4 +36,9 @@ export function useCPID(game) {
 
 export function useIsCP(game, cu) {
   return usePIDForUser(game, cu) == useCPID(game)
+}
+
+export function useNameFor(game, pid) {
+  const user = useUserByIndex(unref(game), unref(pid) - 1)
+  return _get(user, 'Name', '')
 }

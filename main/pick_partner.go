@@ -95,7 +95,7 @@ func (g *game) pickPartner(ctx *gin.Context, cu sn.User) (*player, *player, erro
 	}
 
 	for _, p := range g.opposers() {
-		if p.hasCards(card) {
+		if p.hasCard(card) {
 			g.DeclarersTeam = append(g.DeclarersTeam, p.ID)
 			break
 		}
@@ -133,7 +133,7 @@ func (g game) validatePickPartner(ctx *gin.Context, cu sn.User) (*player, card, 
 	switch {
 	case g.Phase != pickPartnerPhase:
 		return nil, noCard, fmt.Errorf("cannot select partner in %q phase: %w", g.Phase, sn.ErrValidation)
-	case cp.hasCards(selectedCard):
+	case cp.hasCard(selectedCard):
 		return nil, noCard, fmt.Errorf("must select highest non-trump card not in your hand: %w", sn.ErrValidation)
 	case selectedCard.Rank.value() < roiRank.value() && cp.hasRank(roiRank):
 		return nil, noCard, fmt.Errorf("must select a roi card that is not in your hand: %w", sn.ErrValidation)

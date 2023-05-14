@@ -4,10 +4,10 @@
       <CardStamp title='Le Plateu' subtitle='Invitations' :src='board36' width='74' />
       <v-card-text>
         <v-data-table
-            v-if='invitations'
+            v-if='sorted'
             v-model:expanded='expanded'
             :headers="headers"
-            :items="invitations"
+            :items="sorted"
             item-value='id'
             show-expand
             >
@@ -22,6 +22,9 @@
             </template>
             <template v-slot:item.players="{ item }">
               <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item.raw)' :key='user.id' />
+            </template>
+            <template v-slot:item.lastUpdated="{ item }">
+              {{fromNow(item.raw.UpdatedAt.toDate())}}
             </template>
             <template v-slot:expanded-row='{ columns, item }'>
               <Expansion
@@ -49,9 +52,10 @@ import { VDataTable } from 'vuetify/labs/VDataTable'
 // Composables
 import { useFetch } from '@/composables/fetch.js'
 import { useCreator, useUsers } from '@/composables/user.js'
+import { fromNow } from '@/composables/fromNow'
 
 // Vue
-import { ref } from 'vue'
+import { computed, ref, unref } from 'vue'
 import { useCollection, useFirestore } from 'vuefire'
 import { collection, query, where } from 'firebase/firestore'
 import { db } from '@/composables/firebase'
@@ -59,8 +63,12 @@ import { db } from '@/composables/firebase'
 // Lodash
 import _get from 'lodash/get'
 import _size from 'lodash/size'
+import _reverse from 'lodash/reverse'
+import _sortBy from 'lodash/sortBy'
 
 const invitations = useCollection(query(collection(db, 'Invitation'), where('Status', '==', 'recruiting')))
+
+const sorted = computed(() => _reverse(_sortBy(unref(invitations), ['UpdatedAt'])))
 
 const expanded = ref([])
 

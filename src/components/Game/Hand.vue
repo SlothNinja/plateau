@@ -1,14 +1,42 @@
 <template>
-  <div class='d-flex justify-center align-center ma-2' style='height:2em'>
-    <v-btn v-if='canSubmit' @click='submit' size='small' color='green'>Submit</v-btn>
-  </div>
-  <CardDisplay v-if='pickPartner' v-bind='$attrs' :height='height' :multi='multi' v-model:cards='pickPartnerCards' v-model:selected='selected' />
-  <CardDisplay sort v-bind='$attrs' :height='height' :multi='multi' v-model:cards='hand' v-model:selected='selected' />
+  <v-card elevation='4'>
+    <v-card-title class='d-flex'>
+      <div>{{useNameFor(game, pid)}}</div>
+      <div class='text-center w-100'>
+        <v-btn v-if='canSubmit' @click='submit' size='small' color='green'>Submit</v-btn>
+      </div>
+    </v-card-title>
+    <v-card-text class='h-100 w-100'>
+      <Stacks
+          v-if='showStack'
+          :height='height'
+          :stacks='myStacks'
+          v-model:selected='selected'
+          />
+      <CardDisplay
+          v-if='pickPartner'
+          v-bind='$attrs'
+          :height='height'
+          :multi='multi'
+          :cards='pickPartnerCards'
+          v-model:selected='selected'
+          />
+      <CardDisplay
+          sort
+          v-bind='$attrs'
+          :height='height'
+          :multi='multi'
+          :cards='hand'
+          v-model:selected='selected'
+          />
+    </v-card-text>
+  </v-card>
 </template>
 
 <script setup>
 // components
 import CardDisplay from '@/components/Game/CardDisplay.vue'
+import Stacks from '@/components/Game/Stacks.vue'
 
 // lodash
 import _size from 'lodash/size'
@@ -19,16 +47,18 @@ import _differenceWith from 'lodash/differenceWith'
 
 // vue
 import { computed, ref, inject, unref, watch } from 'vue'
-import { useIsCP, usePlayerByUser } from '@/composables/player.js'
-import { usePut } from '@/composables/fetch.js'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
 
 // composables
-import { cuKey, gameKey, snackKey } from '@/composables/keys.js'
+import { cuKey, gameKey, snackKey } from '@/composables/keys'
+import { useIsCP, useCPID, useNameFor, usePlayerByUser } from '@/composables/player'
+import { usePut } from '@/composables/fetch'
+import { useStackByPID } from '@/composables/stack'
 
 const player = computed(() => usePlayerByUser(game, cu))
+const pid = computed(() =>_get(unref(player), 'ID', 0))
 
 const hand = computed({
   get() {
@@ -46,6 +76,9 @@ const cu = inject(cuKey)
 const game = inject(gameKey)
 
 const isCP = computed(() => useIsCP(game, cu))
+const myStacks = computed(() => useStackByPID(game, pid))
+const numPlayers = computed(() => _get(unref(game), 'NumPlayers', 0))
+const showStack = computed(() => unref(numPlayers) == 2)
 
 const phase = computed(() => _get(unref(game), 'Phase', ''))
 const performedAction  = computed(() => _get(unref(player), 'PerformedAction', false))
@@ -72,7 +105,16 @@ const canSubmit = computed(() => (
   _size(unref(selected)) == unref(multi)
 ))
 
-const multi = computed(() => ( unref(phase) == 'card exchange' ? 3 : 1 ))
+const multi = computed(
+  () => {
+    switch (unref(phase)) {
+      case 'card exchange':
+        return unref(numPlayers) == 2 ? 2 : 3
+      default:
+        return 1
+    }
+  }
+)
 
 //////////////////////////////////////
 // Snackbar
@@ -81,10 +123,11 @@ const { snackbar, updateSnackbar } = inject(snackKey)
 /////////////////////////////////////
 // Submit bid to server
 function submit() {
+  console.log('phase: ' + unref(phase))
   let action = ''
   switch (unref(phase)) {
-    case 'card exchage':
-      action = 'exchage'
+    case 'card exchange':
+      action = 'exchange'
       break
     case 'pick partner':
       action = 'pick'

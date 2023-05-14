@@ -26,6 +26,7 @@ const isCP = computed(() => useIsCP(game, cu))
 const uIndex = computed(() => (unref(cpid) - 1))
 const user = computed(() => useUserByIndex(game, uIndex))
 const waitMessage = computed(() => (`Please wait for ${unref(user).Name} to take a turn.`))
+const numPlayers = computed(() => _get(unref(game), 'NumPlayers', 0))
 
 const message = computed(() => {
   switch(unref(phase)) {
@@ -45,6 +46,10 @@ const message = computed(() => {
 
       if (unref(cp).PerformedAction) {
         return 'Finish turn by selecting above check mark.'
+      }
+
+      if (unref(numPlayers) == 2) {
+        return 'Select two cards from your hand to return to talon.'
       }
 
       return 'Select three cards from your hand to return to talon.'

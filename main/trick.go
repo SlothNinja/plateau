@@ -47,6 +47,9 @@ func (g *game) endTrick() *player {
 		}
 	}
 
+	for _, p := range g.Players {
+		p.updateStacks()
+	}
 	g.Tricks[g.trickIndex()].WonBy = winningCard.PlayedBy
 	g.nextTrickIndex()
 
@@ -74,9 +77,9 @@ func (g game) objectiveBlocked() ([]node, handResult) {
 
 	switch path, result := g.objectiveTest(g.spacesNotOwnedBy(g.opposersTeam())); result {
 	case dSuccess:
-		return path, dFail
-	case dFail:
 		return path, dSuccess
+	case dFail:
+		return path, dFail
 	default:
 		return path, dPush
 	}
@@ -90,15 +93,15 @@ func (g game) objectiveTest(ss []space) ([]node, handResult) {
 	paths := path.DijkstraAllPaths(graph)
 	switch g.currentBid().Objective {
 	case bridgeBid:
-		return bridge(graph, paths)
+		return g.bridge(graph, paths)
 	case yBid:
-		return y(graph, paths)
+		return g.y(graph, paths)
 	case forkBid:
-		return fork(graph, paths)
+		return g.fork(graph, paths)
 	case fiveSidesBid:
-		return fiveSides(graph, paths)
+		return g.fiveSides(graph, paths)
 	case sixSidesBid:
-		return sixSides(graph, paths)
+		return g.sixSides(graph, paths)
 	default:
 		return nil, dFail
 	}

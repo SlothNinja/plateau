@@ -11,6 +11,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// if field is a serverTimestamp and field is zero value, firestore will auto-timestamp with server time
+// updateTime simply returns zero value, which can be used to zero field and cause server to auto-timestamp
+func updateTime() (t time.Time) { return }
+
 func (cl Client) newInvitationHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
@@ -210,7 +214,7 @@ func (cl Client) acceptHandler(ctx *gin.Context) {
 	}
 
 	if !start {
-		inv.UpdatedAt = time.Now()
+		inv.UpdatedAt = updateTime()
 		_, err = invitationDocRef(cl.FS, id).Set(ctx, &inv)
 		if err != nil {
 			sn.JErr(ctx, err)
@@ -279,7 +283,7 @@ func (cl Client) dropHandler(ctx *gin.Context) {
 		inv.Status = sn.Aborted
 	}
 
-	inv.UpdatedAt = time.Now()
+	inv.UpdatedAt = updateTime()
 	_, err = invitationDocRef(cl.FS, id).Set(ctx, &inv)
 	if err != nil {
 		sn.JErr(ctx, err)

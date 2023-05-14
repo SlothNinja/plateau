@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"text/template"
-	"time"
 
 	"cloud.google.com/go/firestore"
 	"github.com/SlothNinja/sn/v3"
@@ -27,6 +26,7 @@ func (cl Client) endGame(ctx *gin.Context, g game, cu sn.User) {
 	cl.Log.Debugf("places: %#v", places)
 
 	g.Status = sn.Completed
+	g.EndedAt = updateTime()
 
 	stats, err := sn.GetUStats(ctx, cl.FS, maxPlayers, g.UserIDS...)
 	if err != nil {
@@ -44,7 +44,6 @@ func (cl Client) endGame(ctx *gin.Context, g game, cu sn.User) {
 	}
 
 	g.Undo.Commit()
-	g.EndedAt = time.Now()
 	err = cl.FS.RunTransaction(ctx, func(c context.Context, tx *firestore.Transaction) error {
 		if err := cl.saveGameIn(ctx, tx, g, cu); err != nil {
 			return err

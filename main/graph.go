@@ -19,7 +19,7 @@ func (g game) graphFor(ss []space) boardGraph {
 		graph.UndirectedGraph.AddNode(u)
 		graph.ids[s] = uid
 
-		ns, ok := neighbors[s]
+		ns, ok := g.neighbors()[s]
 		if !ok {
 			continue
 		}
@@ -65,43 +65,43 @@ type node struct {
 // implement graph.Node interface
 func (n node) ID() int64 { return n.UID }
 
-func bridge(graph boardGraph, paths path.AllShortest) (path []node, result handResult) {
-	path, result = connected(paths, graph.side(1), graph.side(4))
+func (g game) bridge(graph boardGraph, paths path.AllShortest) (path []node, result handResult) {
+	path, result = connected(paths, g.side(graph, 1), g.side(graph, 4))
 	if result == dSuccess {
 		return path, result
 	}
-	path, result = connected(paths, graph.side(2), graph.side(5))
+	path, result = connected(paths, g.side(graph, 2), g.side(graph, 5))
 	if result == dSuccess {
 		return path, result
 	}
-	return connected(paths, graph.side(3), graph.side(6))
+	return connected(paths, g.side(graph, 3), g.side(graph, 6))
 }
 
-func y(graph boardGraph, paths path.AllShortest) (path []node, result handResult) {
+func (g game) y(graph boardGraph, paths path.AllShortest) (path []node, result handResult) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	path, result = connected(paths, graph.side(1), graph.side(3), graph.side(5))
+	path, result = connected(paths, g.side(graph, 1), g.side(graph, 3), g.side(graph, 5))
 	if result == dSuccess {
 		return path, result
 	}
-	return connected(paths, graph.side(2), graph.side(4), graph.side(6))
+	return connected(paths, g.side(graph, 2), g.side(graph, 4), g.side(graph, 6))
 }
 
-func fork(graph boardGraph, paths path.AllShortest) (path []node, result handResult) {
-	path1, result1 := bridge(graph, paths)
+func (g game) fork(graph boardGraph, paths path.AllShortest) (path []node, result handResult) {
+	path1, result1 := g.bridge(graph, paths)
 	if result1 == dFail {
 		return nil, result1
 	}
-	path2, result2 := y(graph, paths)
+	path2, result2 := g.y(graph, paths)
 	if result2 == dFail {
 		return nil, result2
 	}
 	return append(path1, path2...), dSuccess
 }
 
-func fiveSides(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
-	s1, s2, s3, s4, s5, s6 := graph.side(1), graph.side(2), graph.side(3), graph.side(4), graph.side(5), graph.side(6)
+func (g game) fiveSides(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
+	s1, s2, s3, s4, s5, s6 := g.side(graph, 1), g.side(graph, 2), g.side(graph, 3), g.side(graph, 4), g.side(graph, 5), g.side(graph, 6)
 	path, result := connected(paths, s1, s2, s3, s4, s5)
 	if result == dSuccess {
 		return path, result
@@ -129,8 +129,8 @@ func fiveSides(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
 	return nil, dFail
 }
 
-func sixSides(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
-	s1, s2, s3, s4, s5, s6 := graph.side(1), graph.side(2), graph.side(3), graph.side(4), graph.side(5), graph.side(6)
+func (g game) sixSides(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
+	s1, s2, s3, s4, s5, s6 := g.side(graph, 1), g.side(graph, 2), g.side(graph, 3), g.side(graph, 4), g.side(graph, 5), g.side(graph, 6)
 	return connected(paths, s1, s2, s3, s4, s5, s6)
 }
 
@@ -153,8 +153,64 @@ func connected(paths path.AllShortest, ss ...[]node) (path []node, result handRe
 	return nil, dFail
 }
 
-func (graph boardGraph) side(s int) (nodes []node) {
-	pie.Each(map[int][]space{
+func (g game) side(graph boardGraph, s int) (nodes []node) {
+	var sideSpaces map[int][]space
+	if g.NumPlayers == 2 {
+		sideSpaces = sides2()
+	} else {
+		sideSpaces = sides36()
+	}
+	pie.Each(sideSpaces[s], func(s space) {
+		if nid, exists := graph.ids[s]; exists {
+			nodes = append(nodes, graph.Node(nid).(node))
+		}
+	})
+	return nodes
+}
+
+func sides2() map[int][]space {
+	return map[int][]space{
+		1: []space{
+			space{oneRank, trumpKind},
+			space{oneRank, trickKind},
+			space{twoRank, trickKind},
+			space{threeRank, trickKind},
+		},
+		2: []space{
+			space{threeRank, trickKind},
+			space{fourRank, trickKind},
+			space{fiveRank, trickKind},
+			space{twoRank, trumpKind},
+		},
+		3: []space{
+			space{twoRank, trumpKind},
+			space{sixRank, trickKind},
+			space{sevenRank, trickKind},
+			space{eightRank, trickKind},
+		},
+		4: []space{
+			space{eightRank, trickKind},
+			space{nineRank, trickKind},
+			space{tenRank, trickKind},
+			space{threeRank, trumpKind},
+		},
+		5: []space{
+			space{threeRank, trumpKind},
+			space{elevenRank, trickKind},
+			space{twelveRank, trickKind},
+			space{thirteenRank, trickKind},
+		},
+		6: []space{
+			space{thirteenRank, trickKind},
+			space{fourteenRank, trickKind},
+			space{fifteenRank, trickKind},
+			space{oneRank, trumpKind},
+		},
+	}
+}
+
+func sides36() map[int][]space {
+	return map[int][]space{
 		1: []space{
 			space{oneRank, trumpKind},
 			space{oneRank, trickKind},
@@ -191,12 +247,7 @@ func (graph boardGraph) side(s int) (nodes []node) {
 			space{twelveRank, trickKind},
 			space{oneRank, trumpKind},
 		},
-	}[s], func(s space) {
-		if nid, exists := graph.ids[s]; exists {
-			nodes = append(nodes, graph.Node(nid).(node))
-		}
-	})
-	return nodes
+	}
 }
 
 func toNodes(path []graph.Node) []node {

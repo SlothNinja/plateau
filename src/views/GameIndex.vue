@@ -4,9 +4,9 @@
       <CardStamp title='Le Plateu' :subtitle="`${_capitalize(status)} Games`" :src='board36' width='74' />
       <v-card-text>
         <v-data-table
-            v-if='items'
+            v-if='sorted'
             :headers="headers"
-            :items="items"
+            :items="sorted"
             item-value='id'
             @click:row='show'
             >
@@ -23,6 +23,9 @@
             <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item.raw)' :key='user.ID'>
               <span :class='userClass(item, user)'>{{user.Name}}</span>
             </UserButton>
+          </template>
+          <template v-slot:item.lastUpdated="{ item }">
+            {{fromNow(item.raw.UpdatedAt.toDate())}}
           </template>
         </v-data-table>
         <div v-else>No Invitations</div>
@@ -41,7 +44,8 @@ import CardStamp from '@/components/Common/CardStamp.vue'
 import { VDataTable } from 'vuetify/labs/VDataTable'
 
 // Composables
-import { useCreator, useUsers } from '@/composables/user.js'
+import { useCreator, useUsers } from '@/composables/user'
+import { fromNow } from '@/composables/fromNow'
 
 // Vue
 import { computed, inject, ref, unref } from 'vue'
@@ -59,6 +63,8 @@ import _indexOf from 'lodash/indexOf'
 import _includes from 'lodash/includes'
 import _nth from 'lodash/nth'
 import _isEmpty from 'lodash/isEmpty'
+import _reverse from 'lodash/reverse'
+import _sortBy from 'lodash/sortBy'
 
 // inject current user
 import { cuKey } from '@/composables/keys.js'
@@ -73,6 +79,8 @@ const router = useRouter()
 const status = computed(() => _get(route, 'params.status', ''))
 
 const items = useCollection(query(collection(db, 'Committed'), where('Status', '==', unref(status))))
+
+const sorted = computed(() => _reverse(_sortBy(unref(items), ['UpdatedAt'])))
 
 function handsPerPlayer(item) {
   const opt = JSON.parse(_get(unref(item), 'raw.OptString', {}))

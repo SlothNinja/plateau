@@ -1,27 +1,15 @@
 <template>
-  <div :height='height' class='d-flex justify-center align-center h-100 w-100' >
-    <div
-        v-for='(card, index) in sorted'
-        :key='index'
-        @mouseover='hovered(index, true)'
-        @mouseleave='hovered(index, false)'
-        :style='hover[index] ? hoverstyle : nohoverstyle'
-        :class='isSelected(card)'
-        >
-        <Card 
-        @click='select(card)'
-        :rank='card.Rank'
-        :suit='card.Suit'
-        :width='height / 2.0'
-        :text='nameFor(card)'
-        />
-    </div>
-  </div>
+  <v-card elevation='4'>
+    <v-card-title>{{title}}</v-card-title>
+    <v-card-text class='h-100 w-100' >
+      <Stacks :stacks='stacks' :height='height' />
+    </v-card-text>
+  </v-card>
 </template>
 
 <script setup>
 // components
-import Card from '@/components/Game/Card.vue'
+import Stacks from '@/components/Game/Stacks'
 
 // lodash
 import _sortBy from 'lodash/sortBy'
@@ -43,14 +31,24 @@ import { cuKey, gameKey } from '@/composables/keys.js'
 
 const props = defineProps({
   height: [ Number, String],
+  title: String,
   multi: Number,
-  cards: Array,
   selected: Array,
   sort: Boolean,
+  stacks: Array,
 })
-const emit = defineEmits(['update:selected'])
+const emit = defineEmits(['update:cards', 'update:selected'])
 
 const player = computed(() => usePlayerByUser(game, cu))
+const hand = computed({
+  get() {
+    return _get(props, 'cards', [])
+  },
+  set(value) {
+    emit('update:cards', value)
+  }
+})
+
 
 function nameFor(card) {
   const pid = _get(card, 'PlayedBy', 0)
@@ -93,9 +91,9 @@ const nohoverstyle = 'overflow:hidden'
 
 const sorted = computed(() => {
   if (props.sort) {
-    return _sortBy(unref(props.cards), [ card => card.Suit, useCardValue ])
+    return _sortBy(hand.value, [ card => card.Suit, useCardValue ])
   }
-  return unref(props.cards)
+  return hand.value
 })
 
 const handSize = computed(() => _size(unref(sorted)))

@@ -10,6 +10,7 @@ type card struct {
 	Rank     rank
 	Suit     suit
 	PlayedBy sn.PID
+	FaceUp   bool
 }
 
 func (c card) value() int {
@@ -163,20 +164,9 @@ func (c card) toSpace() space {
 
 func cardsOfRank(r rank) []card {
 	return []card{
-		card{r, hearts, sn.NoPID},
-		card{r, diamonds, sn.NoPID},
-		card{r, clubs, sn.NoPID},
-		card{r, spades, sn.NoPID},
+		card{r, hearts, sn.NoPID, true},
+		card{r, diamonds, sn.NoPID, true},
+		card{r, clubs, sn.NoPID, true},
+		card{r, spades, sn.NoPID, true},
 	}
-}
-
-func (p player) hasCards(cards ...card) bool {
-	return pie.All(cards, func(c card) bool { return pie.Contains(p.Hand, c) })
-}
-
-func (p player) hasSuit(s suit) bool {
-	return pie.Any(p.Hand, func(c card) bool { return c.Suit == s })
-}
-func (p player) hasRank(r rank) bool {
-	return pie.Any(p.Hand, func(c card) bool { return c.Rank == r })
 }

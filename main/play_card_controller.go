@@ -59,7 +59,7 @@ func (g *game) playCard(ctx *gin.Context, cu sn.User) error {
 
 	// need to remove card from hand, before updating card.playedBy
 	// otherise, card will not match card in hand and therefore will not be removed
-	cp.Hand = removeCards(cp.Hand, card)
+	cp.play(card)
 
 	card.PlayedBy = cp.ID
 	g.Tricks[g.trickIndex()].Cards = append(g.currentTrick().Cards, card)
@@ -70,6 +70,58 @@ func (g *game) playCard(ctx *gin.Context, cu sn.User) error {
 
 	g.Undo.Update()
 	return nil
+}
+
+func (p *player) play(c card) {
+	if pie.Contains(p.Hand, c) {
+		p.Hand = removeCards(p.Hand, c)
+		return
+	}
+
+	if pie.Last(p.Stack0) == c {
+		if len(p.Stack0) == 1 {
+			p.Stack0 = nil
+			return
+		}
+		p.Stack0 = p.Stack0[0:1]
+		return
+	}
+
+	if pie.Last(p.Stack1) == c {
+		if len(p.Stack1) == 1 {
+			p.Stack1 = nil
+			return
+		}
+		p.Stack1 = p.Stack1[0:1]
+		return
+	}
+
+	if pie.Last(p.Stack2) == c {
+		if len(p.Stack2) == 1 {
+			p.Stack2 = nil
+			return
+		}
+		p.Stack2 = p.Stack2[0:1]
+		return
+	}
+
+	if pie.Last(p.Stack3) == c {
+		if len(p.Stack3) == 1 {
+			p.Stack3 = nil
+			return
+		}
+		p.Stack3 = p.Stack3[0:1]
+		return
+	}
+
+	if pie.Last(p.Stack4) == c {
+		if len(p.Stack4) == 1 {
+			p.Stack4 = nil
+			return
+		}
+		p.Stack4 = p.Stack4[0:1]
+		return
+	}
 }
 
 func removeCards(cards []card, remove ...card) []card {
@@ -102,7 +154,7 @@ func (g game) validatePlayCard(ctx *gin.Context, cu sn.User) (*player, card, err
 	switch {
 	case g.Phase != cardPlayPhase:
 		return nil, noCard, fmt.Errorf("cannot play cards in %q phase: %w", g.Phase, sn.ErrValidation)
-	case !cp.hasCards(playedCard):
+	case !cp.hasCard(playedCard):
 		return nil, noCard, fmt.Errorf("must play card from your hand: %w", sn.ErrValidation)
 	case ledSuit != noSuit && cp.hasSuit(ledSuit) && playedCard.Suit != ledSuit:
 		return nil, noCard, fmt.Errorf("must play card of %q, which is led suit: %w", ledSuit, sn.ErrValidation)

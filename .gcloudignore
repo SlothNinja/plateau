@@ -6,12 +6,15 @@
 # For more information, run:
 #   $ gcloud topic gcloudignore
 #
-.gcloudignore
+#.gcloudignore
 # If you would like to upload your .git directory, .gitignore file or files
 # from your .gitignore file, remove the corresponding line
 # below:
-.git
-.gitignore
+#.git
+#.gitignore
+
+# Hidden files
+.*
 
 # Binaries for programs and plugins
 *.exe
@@ -26,6 +29,7 @@
 
 node_modules/
 src/
+cmd/
 vue.config.js
 babel.config.js
 package.json
@@ -33,6 +37,8 @@ package-lock.json
 public/
 plateau
 gin-bin
+main/gin-bin
+main/main
 db
 backend
 README.md

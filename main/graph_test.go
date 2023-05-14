@@ -14,20 +14,20 @@ func TestConnected2(t *testing.T) {
 	g.DeclarersTeam = []sn.PID{1}
 	g.Tricks = []trick{
 		trick{[]card{
-			card{oneRank, trumps, 1},
-			card{cavalierRank, hearts, 2},
-			card{excuseRank, trumps, 3},
-			card{roiRank, spades, 4},
-			card{roiRank, hearts, 5},
-			card{twentyoneRank, trumps, 6},
+			card{oneRank, trumps, 1, true},
+			card{cavalierRank, hearts, 2, true},
+			card{excuseRank, trumps, 3, true},
+			card{roiRank, spades, 4, true},
+			card{roiRank, hearts, 5, true},
+			card{twentyoneRank, trumps, 6, true},
 		}, 1},
 		trick{[]card{
-			card{cavalierRank, diamonds, 1},
-			card{fourRank, trumps, 2},
-			card{excuseRank, trumps, 3},
-			card{tenRank, spades, 4},
-			card{tenRank, hearts, 5},
-			card{tenRank, clubs, 6},
+			card{cavalierRank, diamonds, 1, true},
+			card{fourRank, trumps, 2, true},
+			card{excuseRank, trumps, 3, true},
+			card{tenRank, spades, 4, true},
+			card{tenRank, hearts, 5, true},
+			card{tenRank, clubs, 6, true},
 		}, 1},
 	}
 
@@ -36,12 +36,12 @@ func TestConnected2(t *testing.T) {
 
 	graph := g.graphFor(spaces)
 	paths := path.DijkstraAllPaths(graph)
-	s1 := graph.side(1)
-	s2 := graph.side(2)
-	s3 := graph.side(3)
-	s4 := graph.side(4)
-	s5 := graph.side(5)
-	s6 := graph.side(6)
+	s1 := g.side(graph, 1)
+	s2 := g.side(graph, 2)
+	s3 := g.side(graph, 3)
+	s4 := g.side(graph, 4)
+	s5 := g.side(graph, 5)
+	s6 := g.side(graph, 6)
 
 	path, result := connected(paths, s1, s2)
 	assert.Equal(t, result, dFail, "path should not be found between side1 and side2")
@@ -70,20 +70,20 @@ func TestConnected3(t *testing.T) {
 	g.DeclarersTeam = []sn.PID{1}
 	g.Tricks = []trick{
 		trick{[]card{
-			card{oneRank, trumps, 1},
-			card{cavalierRank, hearts, 2},
-			card{excuseRank, trumps, 3},
-			card{roiRank, spades, 4},
-			card{roiRank, hearts, 5},
-			card{twentyoneRank, trumps, 6},
+			card{oneRank, trumps, 1, true},
+			card{cavalierRank, hearts, 2, true},
+			card{excuseRank, trumps, 3, true},
+			card{roiRank, spades, 4, true},
+			card{roiRank, hearts, 5, true},
+			card{twentyoneRank, trumps, 6, true},
 		}, 1},
 		trick{[]card{
-			card{cavalierRank, diamonds, 1},
-			card{fourRank, trumps, 2},
-			card{excuseRank, trumps, 3},
-			card{tenRank, spades, 4},
-			card{tenRank, hearts, 5},
-			card{tenRank, clubs, 6},
+			card{cavalierRank, diamonds, 1, true},
+			card{fourRank, trumps, 2, true},
+			card{excuseRank, trumps, 3, true},
+			card{tenRank, spades, 4, true},
+			card{tenRank, hearts, 5, true},
+			card{tenRank, clubs, 6, true},
 		}, 1},
 	}
 
@@ -92,12 +92,12 @@ func TestConnected3(t *testing.T) {
 
 	graph := g.graphFor(spaces)
 	paths := path.DijkstraAllPaths(graph)
-	s1 := graph.side(1)
-	s2 := graph.side(2)
-	s3 := graph.side(3)
-	s4 := graph.side(4)
-	s5 := graph.side(5)
-	s6 := graph.side(6)
+	s1 := g.side(graph, 1)
+	s2 := g.side(graph, 2)
+	s3 := g.side(graph, 3)
+	s4 := g.side(graph, 4)
+	s5 := g.side(graph, 5)
+	s6 := g.side(graph, 6)
 
 	path, result := connected(paths, s1, s2, s3)
 	assert.Equal(t, result, dFail, "path should not be found between side1, side2, and side3")

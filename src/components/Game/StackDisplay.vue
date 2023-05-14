@@ -1,22 +1,22 @@
 <template>
-  <div :height='height' class='d-flex justify-center align-center h-100 w-100' >
-    <div
-        v-for='(card, index) in sorted'
-        :key='index'
-        @mouseover='hovered(index, true)'
-        @mouseleave='hovered(index, false)'
-        :style='hover[index] ? hoverstyle : nohoverstyle'
-        :class='isSelected(card)'
-        >
-        <Card 
-        @click='select(card)'
-        :rank='card.Rank'
-        :suit='card.Suit'
-        :width='height / 2.0'
-        :text='nameFor(card)'
-        />
-    </div>
-  </div>
+  <v-sheet :height='height'>
+      <div
+          v-for='(card, index) in stack'
+          :key='index'
+          @mouseover='hovered(index, true)'
+          @mouseleave='hovered(index, false)'
+          :style='index == 1 ? style: ""'
+          :class='isSelected(card)'
+          >
+          <Card 
+          @click='select(card)'
+          :rank='card.Rank'
+          :suit='card.Suit'
+          :width='height / 2.0'
+          :text='nameFor(card)'
+          />
+      </div>
+  </v-sheet>
 </template>
 
 <script setup>
@@ -43,14 +43,20 @@ import { cuKey, gameKey } from '@/composables/keys.js'
 
 const props = defineProps({
   height: [ Number, String],
-  multi: Number,
-  cards: Array,
+  stack: Array,
   selected: Array,
-  sort: Boolean,
 })
-const emit = defineEmits(['update:selected'])
+const emit = defineEmits(['update:cards', 'update:selected'])
 
 const player = computed(() => usePlayerByUser(game, cu))
+const hand = computed({
+  get() {
+    return _get(props, 'cards', [])
+  },
+  set(value) {
+    emit('update:cards', value)
+  }
+})
 
 function nameFor(card) {
   const pid = _get(card, 'PlayedBy', 0)
@@ -66,6 +72,12 @@ const hover = ref([])
 const cu = inject(cuKey)
 const game = inject(gameKey)
 
+const style = computed(
+  () => {
+    const h = -(unref(props.height) * 0.90)
+    return `margin-top:${h}px`
+  }
+)
 
 const isCP = computed(() => useIsCP(game, cu))
 
@@ -91,12 +103,7 @@ function initHover() {
 const hoverstyle = 'overflow:visible'
 const nohoverstyle = 'overflow:hidden'
 
-const sorted = computed(() => {
-  if (props.sort) {
-    return _sortBy(unref(props.cards), [ card => card.Suit, useCardValue ])
-  }
-  return unref(props.cards)
-})
+const sorted = computed(() => hand.value)
 
 const handSize = computed(() => _size(unref(sorted)))
 const selection = computed({
@@ -123,7 +130,7 @@ function select(card) {
     _remove(selection.value, card)
   } else {
     selection.value.push(card)
-    selection.value = _takeRight(selection.value, props.multi)
+    selection.value = _takeRight(selection.value, 1)
   }
 }
 
