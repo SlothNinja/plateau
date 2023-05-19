@@ -161,7 +161,6 @@ func (cl Client) sendEndGameNotifications(ctx *gin.Context, g game, oldElos, new
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	id := getID(ctx)
 	g.Status = sn.Completed
 	rs := make(results, g.NumPlayers)
 
@@ -208,7 +207,7 @@ func (cl Client) sendEndGameNotifications(ctx *gin.Context, g game, oldElos, new
 	}
 
 	ms := make([]mailjet.InfoMessagesV31, len(g.Players))
-	subject := fmt.Sprintf("SlothNinja Games: Tammany Hall (%s) Has Ended", id)
+	subject := fmt.Sprintf("SlothNinja Games: Tammany Hall (%s) Has Ended", g.id)
 	body := buf.String()
 	for i, p := range g.Players {
 		ms[i] = mailjet.InfoMessagesV31{

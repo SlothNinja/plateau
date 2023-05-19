@@ -109,7 +109,6 @@ func (cl Client) resetHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	id := getID(ctx)
 	cu, err := cl.requireLogin(ctx)
 	if err != nil {
 		sn.JErr(ctx, err)
@@ -122,7 +121,7 @@ func (cl Client) resetHandler(ctx *gin.Context) {
 		return
 	}
 
-	err = cl.clearCached(ctx, g, id, cu)
+	err = cl.clearCached(ctx, g, cu)
 	if err != nil {
 		sn.JErr(ctx, err)
 		return

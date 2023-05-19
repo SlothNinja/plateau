@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 
 	"cloud.google.com/go/firestore"
 	"github.com/Pallinder/go-randomdata"
@@ -10,8 +12,10 @@ import (
 )
 
 const invitationKind = "Invitation"
+const hashKind = "Hash"
 
 type invitation struct {
+	id string `firestore:"-"`
 	sn.Header
 }
 
@@ -87,8 +91,11 @@ func invitationDocRef(cl *firestore.Client, id string) *firestore.DocumentRef {
 }
 
 func invitationCollectionRef(cl *firestore.Client) *firestore.CollectionRef {
-	sn.Debugf("cl: %#v", cl)
 	return cl.Collection(invitationKind)
+}
+
+func hashDocRef(ref *firestore.DocumentRef) *firestore.DocumentRef {
+	return ref.Collection(hashKind).Doc("hash")
 }
 
 func defaultInvitation() (invitation, error) {
@@ -110,18 +117,62 @@ func getID(ctx *gin.Context) string {
 	return ctx.Param("id")
 }
 
-func (cl Client) getInvitation(ctx *gin.Context, id string) (invitation, error) {
+func (cl Client) getInvitation(ctx *gin.Context) (invitation, error) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
+	id := getID(ctx)
 	snap, err := invitationDocRef(cl.FS, id).Get(ctx)
 	if err != nil {
 		return invitation{}, err
 	}
 
 	var inv invitation
-	err = snap.DataTo(&inv)
-	return inv, err
+	if err := snap.DataTo(&inv); err != nil {
+		return invitation{}, err
+	}
+	inv.id = id
+	return inv, nil
+}
+
+func (cl Client) getHash(ctx *gin.Context) ([]byte, error) {
+	cl.Log.Debugf(msgEnter)
+	defer cl.Log.Debugf(msgExit)
+
+	id := getID(ctx)
+	snap, err := hashDocRef(invitationDocRef(cl.FS, id)).Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	hashInf, err := snap.DataAt("Hash")
+	if err != nil {
+		return nil, err
+	}
+
+	hash, ok := hashInf.([]byte)
+	if !ok {
+		return nil, fmt.Errorf("unexpected type for stored hash")
+	}
+	return hash, nil
+}
+
+func (cl Client) deleteInvitation(ctx context.Context, inv invitation) error {
+	return cl.FS.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		return cl.deleteInvitationIn(ctx, tx, inv)
+	})
+}
+
+func (cl Client) deleteInvitationIn(ctx context.Context, tx *firestore.Transaction, inv invitation) error {
+	ref := invitationDocRef(cl.FS, inv.id)
+	if err := tx.Delete(ref); err != nil {
+		return err
+	}
+
+	if err := tx.Delete(hashDocRef(ref)); err != nil {
+		return err
+	}
+	return nil
 }
 
 type options struct {

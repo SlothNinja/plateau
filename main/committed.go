@@ -42,12 +42,16 @@ func (cl Client) getCommitted(ctx *gin.Context) (game, error) {
 	defer cl.Log.Debugf(msgExit)
 
 	id := getID(ctx)
-	cl.Log.Debugf("id: %s", id)
 	snap, err := committedDocRef(cl.FS, id).Get(ctx)
 	if err != nil {
 		return game{}, err
 	}
+
 	var g game
-	err = snap.DataTo(&g)
-	return g, err
+	if err := snap.DataTo(&g); err != nil {
+		return game{}, err
+	}
+
+	g.id = id
+	return g, nil
 }

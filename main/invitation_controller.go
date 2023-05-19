@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
 
+	"cloud.google.com/go/firestore"
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 	"github.com/gin-gonic/gin"
@@ -46,7 +48,17 @@ func (cl Client) createHandler(ctx *gin.Context) {
 		return
 	}
 
-	if _, _, err := invitationCollectionRef(cl.FS).Add(ctx, &inv); err != nil {
+	if err := cl.FS.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		ref := invitationCollectionRef(cl.FS).NewDoc()
+		if err := tx.Create(ref, inv); err != nil {
+			return err
+		}
+
+		if err := tx.Create(hashDocRef(ref), gin.H{"Hash": hash}); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		sn.JErr(ctx, err)
 		return
 	}
@@ -134,7 +146,7 @@ func (cl Client) detailsHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	inv, err := cl.getInvitation(ctx, getID(ctx))
+	inv, err := cl.getInvitation(ctx)
 	if err != nil {
 		sn.JErr(ctx, err)
 		return
@@ -184,17 +196,25 @@ func (cl Client) acceptHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	id := getID(ctx)
-	inv, err := cl.getInvitation(ctx, id)
+	cu, err := cl.requireLogin(ctx)
 	if err != nil {
 		sn.JErr(ctx, err)
 		return
 	}
 
-	cu, err := cl.requireLogin(ctx)
+	inv, err := cl.getInvitation(ctx)
 	if err != nil {
 		sn.JErr(ctx, err)
 		return
+	}
+
+	var hash []byte
+	if inv.Private {
+		hash, err = cl.getHash(ctx)
+		if err != nil {
+			sn.JErr(ctx, err)
+			return
+		}
 	}
 
 	obj := struct {
@@ -207,7 +227,7 @@ func (cl Client) acceptHandler(ctx *gin.Context) {
 		return
 	}
 
-	start, err := inv.AcceptWith(cu, []byte(obj.Password), nil)
+	start, err := inv.AcceptWith(cu, []byte(obj.Password), hash)
 	if err != nil {
 		sn.JErr(ctx, err)
 		return
@@ -215,7 +235,7 @@ func (cl Client) acceptHandler(ctx *gin.Context) {
 
 	if !start {
 		inv.UpdatedAt = updateTime()
-		_, err = invitationDocRef(cl.FS, id).Set(ctx, &inv)
+		_, err = invitationDocRef(cl.FS, inv.id).Set(ctx, &inv)
 		if err != nil {
 			sn.JErr(ctx, err)
 			return
@@ -230,14 +250,12 @@ func (cl Client) acceptHandler(ctx *gin.Context) {
 	cp := g.startHand()
 	g.setCurrentPlayers(cp)
 
-	err = cl.save(ctx, g, cu)
-	if err != nil {
-		sn.JErr(ctx, err)
-		return
-	}
-
-	_, err = invitationDocRef(cl.FS, id).Delete(ctx)
-	if err != nil {
+	if err := cl.FS.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		if err := cl.saveGameIn(ctx, tx, g, cu); err != nil {
+			return err
+		}
+		return cl.deleteInvitationIn(ctx, tx, inv)
+	}); err != nil {
 		sn.JErr(ctx, err)
 		return
 	}
@@ -260,8 +278,7 @@ func (cl Client) dropHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	id := getID(ctx)
-	inv, err := cl.getInvitation(ctx, id)
+	inv, err := cl.getInvitation(ctx)
 	if err != nil {
 		sn.JErr(ctx, err)
 		return
@@ -279,15 +296,16 @@ func (cl Client) dropHandler(ctx *gin.Context) {
 		return
 	}
 
-	if len(inv.UserIDS) == 0 {
-		inv.Status = sn.Aborted
+	if len(inv.UserIDS) != 0 {
+		inv.UpdatedAt = updateTime()
+		_, err = invitationDocRef(cl.FS, inv.id).Set(ctx, inv)
+	} else {
+		err = cl.deleteInvitation(ctx, inv)
 	}
-
-	inv.UpdatedAt = updateTime()
-	_, err = invitationDocRef(cl.FS, id).Set(ctx, &inv)
 	if err != nil {
 		sn.JErr(ctx, err)
 		return
 	}
+
 	ctx.JSON(http.StatusOK, gin.H{"Message": fmt.Sprintf("%s dropped from game invitation: %s", cu.Name, inv.Title)})
 }

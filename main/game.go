@@ -24,6 +24,7 @@ const (
 // Game provides a Le Plateau game.
 type game struct {
 	// Log glog
+	id string `firestore:"-"`
 	sn.Header
 	state
 }
@@ -209,9 +210,17 @@ func (cl Client) getCached(ctx *gin.Context, rev int, uid sn.UID) (game, error) 
 
 	id := getID(ctx)
 	snap, err := fullyCachedDocRef(cl.FS, id, rev, uid).Get(ctx)
+	if err != nil {
+		return game{}, err
+	}
+
 	var g game
-	err = snap.DataTo(&g)
-	return g, err
+	if err := snap.DataTo(&g); err != nil {
+		return game{}, err
+	}
+
+	g.id = id
+	return g, nil
 }
 
 func (cl Client) getRev(ctx *gin.Context, rev int) (game, error) {
@@ -220,12 +229,19 @@ func (cl Client) getRev(ctx *gin.Context, rev int) (game, error) {
 
 	id := getID(ctx)
 	snap, err := gameDocRef(cl.FS, id, rev).Get(ctx)
+	if err != nil {
+		return game{}, err
+	}
+
 	var g game
-	err = snap.DataTo(&g)
-	return g, err
+	if err := snap.DataTo(&g); err != nil {
+		return game{}, err
+	}
+	g.id = id
+	return g, nil
 }
 
-func (cl Client) save(ctx *gin.Context, g game, cu sn.User) error {
+func (cl Client) save(ctx context.Context, g game, cu sn.User) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -234,29 +250,26 @@ func (cl Client) save(ctx *gin.Context, g game, cu sn.User) error {
 	})
 }
 
-func (cl Client) saveGameIn(ctx *gin.Context, tx *firestore.Transaction, g game, cu sn.User) error {
+func (cl Client) saveGameIn(ctx context.Context, tx *firestore.Transaction, g game, cu sn.User) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
 	g.UpdatedAt = updateTime()
-	id := getID(ctx)
 
-	if err := tx.Set(gameDocRef(cl.FS, id, g.rev()), g); err != nil {
+	if err := tx.Set(gameDocRef(cl.FS, g.id, g.rev()), g); err != nil {
 		return err
 	}
 
-	if err := tx.Set(committedDocRef(cl.FS, id), g); err != nil {
+	if err := tx.Set(committedDocRef(cl.FS, g.id), g); err != nil {
 		return err
 	}
-
-	cl.Log.Debugf("pick: %#v", g.Pick)
 
 	for _, p := range g.Players {
-		if err := tx.Set(viewDocRef(cl.FS, id, g.uidForPID(p.ID)), g.viewFor(p)); err != nil {
+		if err := tx.Set(viewDocRef(cl.FS, g.id, g.uidForPID(p.ID)), g.viewFor(p)); err != nil {
 			return err
 		}
 	}
-	return cl.clearCached(ctx, g, id, cu)
+	return cl.clearCached(ctx, g, cu)
 }
 
 // remove hand of other players and deck from data viewed by player
@@ -298,7 +311,7 @@ func (g game) copy() game {
 	}
 }
 
-func (cl Client) commit(ctx *gin.Context, g game, cu sn.User) error {
+func (cl Client) commit(ctx context.Context, g game, cu sn.User) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -306,11 +319,11 @@ func (cl Client) commit(ctx *gin.Context, g game, cu sn.User) error {
 	return cl.save(ctx, g, cu)
 }
 
-func (cl Client) clearCached(ctx context.Context, g game, id string, cu sn.User) error {
+func (cl Client) clearCached(ctx context.Context, g game, cu sn.User) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	refs := cachedCollectionRef(cl.FS, id).DocumentRefs(ctx)
+	refs := cachedCollectionRef(cl.FS, g.id).DocumentRefs(ctx)
 	for {
 		ref, err := refs.Next()
 		if err == iterator.Done {
@@ -330,7 +343,7 @@ func (cl Client) clearCached(ctx context.Context, g game, id string, cu sn.User)
 		}
 	}
 
-	_, err := stackDocRef(cl.FS, id, cu.ID()).Delete(ctx)
+	_, err := stackDocRef(cl.FS, g.id, cu.ID()).Delete(ctx)
 
 	return err
 }
@@ -348,16 +361,15 @@ func (cl Client) putCached(ctx *gin.Context, g game, rev int, uid sn.UID) error 
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	id := getID(ctx)
 	return cl.FS.RunTransaction(ctx, func(c context.Context, tx *firestore.Transaction) error {
-		if err := tx.Set(fullyCachedDocRef(cl.FS, id, rev, uid), g); err != nil {
+		if err := tx.Set(fullyCachedDocRef(cl.FS, g.id, rev, uid), g); err != nil {
 			return err
 		}
 
-		if err := tx.Set(cachedDocRef(cl.FS, id, rev, uid), g.viewFor(g.playerByUID(uid))); err != nil {
+		if err := tx.Set(cachedDocRef(cl.FS, g.id, rev, uid), g.viewFor(g.playerByUID(uid))); err != nil {
 			return err
 		}
 
-		return tx.Set(stackDocRef(cl.FS, id, uid), g.Undo)
+		return tx.Set(stackDocRef(cl.FS, g.id, uid), g.Undo)
 	})
 }

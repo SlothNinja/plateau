@@ -30,7 +30,6 @@
             </v-select> 
 
               <v-text-field
-                  disabled
                   label='Password'
                   v-model='invitation.Password'
                   :append-icon="show ? 'mdi-eye' : 'mdi-eye-off'"
