@@ -52,13 +52,13 @@ func (cl Client) pickPartnerHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	cu, err := cl.User.Current(ctx)
+	cu, err := cl.Current(ctx)
 	if err != nil {
 		cl.Log.Warningf(err.Error())
 	}
 
-	g, err := cl.getGame(ctx, cu, noUndo)
-	if err != nil {
+	var g game
+	if err := sn.GetGame(ctx, cl.Client, &g, cu); err != nil {
 		sn.JErr(ctx, err)
 		return
 	}
@@ -75,8 +75,7 @@ func (cl Client) pickPartnerHandler(ctx *gin.Context) {
 	np.reset()
 	g.setCurrentPlayers(np)
 
-	err = cl.commit(ctx, g, cu)
-	if err != nil {
+	if err := sn.Commit(ctx, cl.Client, &g, cu); err != nil {
 		sn.JErr(ctx, err)
 		return
 	}

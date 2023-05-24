@@ -173,7 +173,3 @@ func (t teams) value(numPlayers int) int64 {
 func (g game) lastBid() bid {
 	return pie.Last(g.Bids)
 }
-
-// func (b bid) includesPartner() bool {
-// 	return b.Teams == duoBid || b.Teams == trioBid
-// }

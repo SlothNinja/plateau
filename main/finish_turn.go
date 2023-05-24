@@ -13,19 +13,19 @@ func (cl Client) finishTurnHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
-	cu, err := cl.User.Current(ctx)
+	cu, err := cl.Current(ctx)
 	if err != nil {
 		cl.Log.Warningf(err.Error())
 	}
 
-	g, err := cl.getGame(ctx, cu, noUndo)
-	if err != nil {
+	var g game
+	if err := sn.GetGame(ctx, cl.Client, &g, cu); err != nil {
 		sn.JErr(ctx, err)
 		return
 	}
 
-	gc, err := cl.getCommitted(ctx)
-	if err != nil {
+	var gc game
+	if err := sn.GetCommitted(ctx, cl.Client, &gc); err != nil {
 		sn.JErr(ctx, err)
 		return
 	}
@@ -66,7 +66,7 @@ func (cl Client) finishTurnHandler(ctx *gin.Context) {
 
 	np.reset()
 	g.setCurrentPlayers(np)
-	err = cl.commit(ctx, g, cu)
+	err = sn.Commit(ctx, cl.Client, &g, cu)
 	if err != nil {
 		sn.JErr(ctx, err)
 		return
@@ -81,7 +81,11 @@ func (cl Client) finishTurnHandler(ctx *gin.Context) {
 }
 
 func (g game) validateFinishTurn(cu sn.User) (*player, error) {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
 	cp, err := g.validateCurrentPlayer(cu)
+	sn.Debugf("cp: %#v", cp)
 	switch {
 	case err != nil:
 		return nil, err

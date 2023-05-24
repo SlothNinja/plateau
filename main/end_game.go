@@ -37,7 +37,7 @@ func (cl Client) endGame(ctx *gin.Context, g game, cu sn.User) {
 
 	g.UpdateUStats(stats, g.playerStats(), g.playerUIDS())
 
-	oldElos, newElos, err := sn.UpdateElo(ctx, cl.FS, g.UserIDS, places)
+	oldElos, newElos, err := cl.UpdateElo(ctx, g.UserIDS, places)
 	if err != nil {
 		sn.JErr(ctx, err)
 		return
@@ -45,15 +45,15 @@ func (cl Client) endGame(ctx *gin.Context, g game, cu sn.User) {
 
 	g.Undo.Commit()
 	err = cl.FS.RunTransaction(ctx, func(c context.Context, tx *firestore.Transaction) error {
-		if err := cl.saveGameIn(ctx, tx, g, cu); err != nil {
+		if err := sn.SaveGameIn(ctx, cl.Client, tx, &g, cu); err != nil {
 			return err
 		}
 
-		if err := sn.SaveUStatsIn(ctx, cl.FS, tx, stats); err != nil {
+		if err := cl.SaveUStatsIn(tx, stats); err != nil {
 			return err
 		}
 
-		return sn.SaveElosIn(ctx, cl.FS, tx, newElos)
+		return cl.SaveElosIn(tx, newElos)
 	})
 	if err != nil {
 		sn.JErr(ctx, err)
@@ -207,7 +207,7 @@ func (cl Client) sendEndGameNotifications(ctx *gin.Context, g game, oldElos, new
 	}
 
 	ms := make([]mailjet.InfoMessagesV31, len(g.Players))
-	subject := fmt.Sprintf("SlothNinja Games: Tammany Hall (%s) Has Ended", g.id)
+	subject := fmt.Sprintf("SlothNinja Games: Tammany Hall (%s) Has Ended", g.ID)
 	body := buf.String()
 	for i, p := range g.Players {
 		ms[i] = mailjet.InfoMessagesV31{

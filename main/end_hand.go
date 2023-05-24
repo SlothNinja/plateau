@@ -176,3 +176,12 @@ func (l lastResult) copy() lastResult {
 	copy(last.Scored, l.Scored)
 	return last
 }
+
+func (g game) currentHand() int {
+	return g.Round
+}
+
+func (g *game) nextHand() int {
+	g.Round++
+	return g.Round
+}

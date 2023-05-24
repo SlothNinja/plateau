@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
@@ -26,36 +25,6 @@ func (g *game) startExchange() *player {
 	return declarer
 }
 
-func (cl Client) exchangeHandler(ctx *gin.Context) {
-	cl.Log.Debugf(msgEnter)
-	defer cl.Log.Debugf(msgExit)
-
-	cu, err := cl.User.Current(ctx)
-	if err != nil {
-		cl.Log.Warningf(err.Error())
-	}
-
-	g, err := cl.getGame(ctx, cu, noUndo)
-	if err != nil {
-		sn.JErr(ctx, err)
-		return
-	}
-
-	err = g.exchange(ctx, cu)
-	if err != nil {
-		sn.JErr(ctx, err)
-		return
-	}
-
-	err = cl.putCached(ctx, g, g.Undo.Current, cu.ID())
-	if err != nil {
-		sn.JErr(ctx, err)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"game": g})
-}
-
 func (g *game) exchange(ctx *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
@@ -72,7 +41,6 @@ func (g *game) exchange(ctx *gin.Context, cu sn.User) error {
 
 	// g.newEntryFor(cp.ID, message{"template": "card-exchange"})
 
-	g.Undo.Update()
 	return nil
 }
 

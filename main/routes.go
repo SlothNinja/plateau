@@ -2,11 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
-	"fmt"
 	log2 "log"
-	"math/rand"
-	"net/http"
 	"os"
 	"time"
 
@@ -14,8 +10,6 @@ import (
 	"firebase.google.com/go/messaging"
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/sn/v3"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/patrickmn/go-cache"
 	"google.golang.org/api/option"
@@ -83,51 +77,30 @@ func getUserHostURL() string {
 
 // Client provide client structure of the tammany service
 type Client struct {
-	*sn.Client
-	User      *sn.UserClient
-	MLog      *sn.MLogClient
-	Messaging *messaging.Client
-	Rand      rand.Source
+	sn.Client
 }
 
 // NewClient returns a new Client for the plateau service
 func NewClient(ctx context.Context) *Client {
+	var inv invitation
+	var g game
 	logClient := newLogClient()
-	snClient := sn.NewClient(ctx, sn.Options{
-		ProjectID: projectID(),
-		DSURL:     dsURL(),
-		Logger:    logClient.Logger("plateau"),
-		Cache:     cache.New(30*time.Minute, 10*time.Minute),
-		Router:    gin.Default(),
+	snClient := sn.NewClient(ctx, sn.Options[*game, *invitation]{
+		ProjectID:     projectID(),
+		UserProjectID: getUserProjectID(),
+		UserDSURL:     getUserDSURL(),
+		Logger:        logClient.Logger("plateau"),
+		Cache:         cache.New(30*time.Minute, 10*time.Minute),
+		Router:        gin.Default(),
+		CorsAllow:     []string{"https://plateau.fake-slothninja.com:8092/*"},
+		Prefix:        "sn",
+		Game:          &g,
+		Invitation:    &inv,
 	})
-
-	uClient := sn.NewUserClient(sn.NewClient(ctx, sn.Options{
-		ProjectID: getUserProjectID(),
-		DSURL:     getUserDSURL(),
-		Logger:    snClient.Log,
-		Cache:     snClient.Cache,
-		Router:    snClient.Router,
-	}))
-
-	store, err := sn.NewCookieClient(uClient.Client).NewStore(ctx)
-	if err != nil {
-		snClient.Log.Panicf("unable create cookie store: %v", err)
-	}
-	snClient.Router.Use(sessions.Sessions(sessionName, store))
-
-	if !sn.IsProduction() {
-		config := cors.DefaultConfig()
-		config.AllowOrigins = []string{"https://plateau.fake-slothninja.com:8092/*"}
-		config.AllowCredentials = true
-		config.AllowWildcard = true
-		// config.AllowOrigins = []string{"http://google.com", "http://facebook.com"}
-		// config.AllowAllOrigins = true
-		snClient.Router.Use(cors.New(config))
-	}
-
+	snClient.NewStore(ctx)
 	nClient := &Client{
 		Client: snClient,
-		User:   uClient,
+		// User:   uClient,
 		// MLog:      sn.NewMLogClient(snClient, uClient),
 		// Elo: sn.NewEloClient(snClient, "elo"),
 		// Messaging: newMsgClient(ctx),
@@ -135,28 +108,9 @@ func NewClient(ctx context.Context) *Client {
 	return nClient.addRoutes("sn")
 }
 
-// CloseErrors provides struct of errors returned by the multiple clients that make up the tammany service Client
-type CloseErrors struct {
-	Client     error
-	UserClient error
-}
-
-// Error provides error interface for CloseErrors
-func (ce CloseErrors) Error() string {
-	return fmt.Sprintf("error closing clients: client: %q userClient: %q", ce.Client, ce.UserClient)
-}
-
 // Close closes plateau service Client
 func (cl *Client) Close() error {
-	var ce CloseErrors
-
-	ce.Client = cl.Client.Close()
-	ce.UserClient = cl.User.Client.Close()
-
-	if ce.Client != nil || ce.UserClient != nil {
-		return ce
-	}
-	return nil
+	return cl.Client.Close()
 }
 
 func newMsgClient(ctx context.Context) *messaging.Client {
@@ -201,134 +155,36 @@ func newLogClient() *sn.LogClient {
 	return client
 }
 
-func (cl *Client) loginHandler(ctx *gin.Context) {
-	cl.Log.Debugf(msgEnter)
-	defer cl.Log.Debugf(msgExit)
-
-	referer := ctx.Request.Referer()
-	encodedReferer := base64.StdEncoding.EncodeToString([]byte(referer))
-
-	path := getUserHostURL() + "/login?redirect=" + encodedReferer
-	cl.Log.Debugf("path: %q", path)
-	ctx.Redirect(http.StatusSeeOther, path)
-}
-
-func (cl *Client) logoutHandler(ctx *gin.Context) {
-	cl.Log.Debugf(msgEnter)
-	defer cl.Log.Debugf(msgExit)
-
-	referer := ctx.Request.Referer()
-	sn.Logout(ctx)
-	ctx.Redirect(http.StatusSeeOther, referer)
-}
-
 // AddRoutes addes routing for game.
 func (cl *Client) addRoutes(prefix string) *Client {
-	////////////////////////////////////////////
-	// Home
-	// cl.Router.GET(prefix+"/home", cl.homeHandler)
-
-	////////////////////////////////////////////
-	// Invitation Group
-	inv := cl.Router.Group(prefix + "/invitation")
-
-	// New
-	inv.GET("/new", cl.newInvitationHandler)
-
-	// Create
-	inv.PUT("/new", cl.createHandler)
-
-	// Drop
-	inv.PUT("/drop/:id", cl.dropHandler)
-
-	// Accept
-	inv.PUT("/accept/:id", cl.acceptHandler)
-
-	// Details
-	inv.GET("/details/:id", cl.detailsHandler)
-
-	/////////////////////////////////////////////
-	// Invitations Group
-	// invs := cl.Router.Group(invitationsPath)
-
-	// // Index
-	// // invs.POST("", cl.invitationsIndexHandler)
-	// cl.Router.GET(prefix+"/invitations", cl.invitationsIndexHandler)
-
-	// /////////////////////////////////////////////
-	// // Games Group
-	// gs := cl.Router.Group(prefix + "/games")
-
-	// // JSON Data for Index
-	// gs.GET("/:status", cl.gamesIndex)
-
 	/////////////////////////////////////////////
 	// Game Group
-	g := cl.Router.Group(prefix + "/game")
-
-	// // Show
-	// g.GET("/show/:id", cl.showHandler)
+	var g game
+	gGroup := cl.Router.Group(prefix + "/game")
 
 	// Place Bid
-	g.PUT("bid/:id", cl.bidHandler)
+	gGroup.PUT("bid/:id", sn.CachedHandler(cl.Client, &g, (*game).placeBid))
 
 	// Pass Bid
-	g.PUT("passBid/:id", cl.passBidHandler)
+	gGroup.PUT("passBid/:id", sn.CachedHandler(cl.Client, &g, (*game).passBid))
 
 	// Increase Objective
-	g.PUT("incObjective/:id", cl.incObjectiveHandler)
+	gGroup.PUT("incObjective/:id", sn.CachedHandler(cl.Client, &g, (*game).incObjective))
 
 	// Abdicate
-	g.PUT("abdicate/:id", cl.abdicateHandler)
+	gGroup.PUT("abdicate/:id", sn.CachedHandler(cl.Client, &g, (*game).abdicate))
 
 	// Card Exchange
-	g.PUT("exchange/:id", cl.exchangeHandler)
+	gGroup.PUT("exchange/:id", sn.CachedHandler(cl.Client, &g, (*game).exchange))
 
 	// Play Card
-	g.PUT("play/:id", cl.playCardHandler)
+	gGroup.PUT("play/:id", sn.CachedHandler(cl.Client, &g, (*game).playCard))
 
 	// Pick Partner
-	g.PUT("pick/:id", cl.pickPartnerHandler)
+	gGroup.PUT("pick/:id", cl.pickPartnerHandler)
 
 	// Actions Finish
-	g.PUT("finish/:id", cl.finishTurnHandler)
+	gGroup.PUT("finish/:id", cl.finishTurnHandler)
 
-	// Reset
-	g.PUT("reset/:id", cl.resetHandler)
-
-	// Undo
-	g.PUT("undo/:id", cl.undoHandler)
-
-	// Redo
-	g.PUT("redo/:id", cl.redoHandler)
-
-	// Rollback
-	g.PUT("rollback/:id", cl.rollbackHandler)
-
-	// Rollforward
-	g.PUT("rollforward/:id", cl.rollforwardHandler)
-
-	// 	// Sub
-	// 	g.PUT(subPath, cl.subHandler)
-	//
-	// login
-	cl.Router.GET(prefix+"/login", cl.loginHandler)
-	//
-	// logout
-	cl.Router.GET(prefix+"/logout", cl.logoutHandler)
-
-	// current user
-	cl.Router.GET(prefix+"/cu", cl.cuHandler)
-	//
-	// 	////////////////////////////////////////////
-	// 	// Message Log
-	// 	msg := cl.Router.Group("mlog")
-	//
-	// 	// Get
-	// 	msg.GET("/:id", cl.mlogHandler)
-	//
-	// 	// Add
-	// 	msg.PUT("/:id/add", cl.mlogAddHandler)
-	//
 	return cl
 }

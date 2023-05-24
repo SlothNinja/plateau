@@ -1,4 +1,4 @@
-// Package provides Tammany Hall service
+// Package provides Le Plateau service
 package main
 
 import (
@@ -32,6 +32,10 @@ func (g game) validateCurrentPlayer(cu sn.User) (*player, error) {
 		return nil, sn.ErrPlayerNotFound
 	}
 	return cp, nil
+}
+
+func (g game) IsCurrentPlayer(cu sn.User) bool {
+	return g.currentPlayerFor(cu) != nil
 }
 
 func validateAdmin(cu sn.User) error {
