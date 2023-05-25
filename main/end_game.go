@@ -18,7 +18,7 @@ func (g game) endGameCheck() bool {
 	return g.currentHand() == g.finalHand()
 }
 
-func (cl Client) endGame(ctx *gin.Context, g game, cu sn.User) {
+func (cl Client) endGame(ctx *gin.Context, g *game, cu sn.User) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -45,7 +45,7 @@ func (cl Client) endGame(ctx *gin.Context, g game, cu sn.User) {
 
 	g.Undo.Commit()
 	err = cl.FS.RunTransaction(ctx, func(c context.Context, tx *firestore.Transaction) error {
-		if err := sn.SaveGameIn(ctx, cl.Client, tx, &g, cu); err != nil {
+		if err := cl.SaveGameIn(ctx, tx, g, cu); err != nil {
 			return err
 		}
 
@@ -157,7 +157,7 @@ type result struct {
 
 type results []result
 
-func (cl Client) sendEndGameNotifications(ctx *gin.Context, g game, oldElos, newElos []sn.Elo) error {
+func (cl Client) sendEndGameNotifications(ctx *gin.Context, g *game, oldElos, newElos []sn.Elo) error {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 

@@ -57,8 +57,8 @@ func (cl Client) pickPartnerHandler(ctx *gin.Context) {
 		cl.Log.Warningf(err.Error())
 	}
 
-	var g game
-	if err := sn.GetGame(ctx, cl.Client, &g, cu); err != nil {
+	g, err := cl.GetGame(ctx, cu)
+	if err != nil {
 		sn.JErr(ctx, err)
 		return
 	}
@@ -75,7 +75,7 @@ func (cl Client) pickPartnerHandler(ctx *gin.Context) {
 	np.reset()
 	g.setCurrentPlayers(np)
 
-	if err := sn.Commit(ctx, cl.Client, &g, cu); err != nil {
+	if err := cl.Commit(ctx, g, cu); err != nil {
 		sn.JErr(ctx, err)
 		return
 	}

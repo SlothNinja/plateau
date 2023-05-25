@@ -18,14 +18,14 @@ func (cl Client) finishTurnHandler(ctx *gin.Context) {
 		cl.Log.Warningf(err.Error())
 	}
 
-	var g game
-	if err := sn.GetGame(ctx, cl.Client, &g, cu); err != nil {
+	g, err := cl.GetGame(ctx, cu)
+	if err != nil {
 		sn.JErr(ctx, err)
 		return
 	}
 
-	var gc game
-	if err := sn.GetCommitted(ctx, cl.Client, &gc); err != nil {
+	gc, err := cl.GetCommitted(ctx)
+	if err != nil {
 		sn.JErr(ctx, err)
 		return
 	}
@@ -66,7 +66,7 @@ func (cl Client) finishTurnHandler(ctx *gin.Context) {
 
 	np.reset()
 	g.setCurrentPlayers(np)
-	err = sn.Commit(ctx, cl.Client, &g, cu)
+	err = cl.Commit(ctx, g, cu)
 	if err != nil {
 		sn.JErr(ctx, err)
 		return

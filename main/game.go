@@ -1,12 +1,8 @@
 package main
 
 import (
-	"context"
-
-	"cloud.google.com/go/firestore"
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
-	"github.com/gin-gonic/gin"
 )
 
 const (
@@ -22,7 +18,25 @@ type game struct {
 	state
 }
 
-func (inv invitation) Start() (sn.Game, sn.PID, error) {
+func (inv invitation) Start() (*game, sn.PID, error) {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
+	var g game
+	g.Header = inv.Header
+	g.Status = sn.Running
+	g.Phase = setupPhase
+	g.StartedAt = updateTime()
+
+	g.addNewPlayers()
+
+	cp := g.startHand()
+	g.setCurrentPlayers(cp)
+	// g.newEntry(message{"template": "start-game"})
+	return &g, cp.ID, nil
+}
+
+func (inv invitation) Start2() (*game, sn.PID, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -169,8 +183,12 @@ func (g *game) setCurrentPlayers(ps ...*player) {
 // 	return cl.clearCached(ctx, g, cu)
 // }
 
-func (g game) Views() ([]sn.UID, []sn.Game) {
-	uids, games := make([]sn.UID, g.NumPlayers), make([]sn.Game, g.NumPlayers)
+func (g *game) New() *game {
+	return new(game)
+}
+
+func (g game) Views() ([]sn.UID, []*game) {
+	uids, games := make([]sn.UID, g.NumPlayers), make([]*game, g.NumPlayers)
 	for i, p := range g.Players {
 		uids[i] = g.uidForPID(p.ID)
 		games[i] = g.viewFor(p)
@@ -263,19 +281,19 @@ func (g game) copy() game {
 // 	return *s == fmt.Sprintf("%d", uid)
 // }
 
-func (cl Client) putCached(ctx *gin.Context, g game, rev int, uid sn.UID) error {
-	cl.Log.Debugf(msgEnter)
-	defer cl.Log.Debugf(msgExit)
-
-	return cl.FS.RunTransaction(ctx, func(c context.Context, tx *firestore.Transaction) error {
-		if err := tx.Set(cl.FullyCachedDocRef(g.ID, rev, uid), g); err != nil {
-			return err
-		}
-
-		if err := tx.Set(cl.CachedDocRef(g.ID, rev, uid), g.viewFor(g.playerByUID(uid))); err != nil {
-			return err
-		}
-
-		return tx.Set(cl.StackDocRef(g.ID, uid), g.Undo)
-	})
-}
+// func (cl Client) putCached(ctx *gin.Context, g game, rev int, uid sn.UID) error {
+// 	cl.Log.Debugf(msgEnter)
+// 	defer cl.Log.Debugf(msgExit)
+//
+// 	return cl.FS.RunTransaction(ctx, func(c context.Context, tx *firestore.Transaction) error {
+// 		if err := tx.Set(cl.FullyCachedDocRef(g.ID, rev, uid), g); err != nil {
+// 			return err
+// 		}
+//
+// 		if err := tx.Set(cl.CachedDocRef(g.ID, rev, uid), g.viewFor(g.playerByUID(uid))); err != nil {
+// 			return err
+// 		}
+//
+// 		return tx.Set(cl.StackDocRef(g.ID, uid), g.Undo)
+// 	})
+// }

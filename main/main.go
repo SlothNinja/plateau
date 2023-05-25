@@ -34,7 +34,7 @@ func getPort() string {
 	return ":" + os.Getenv("PORT")
 }
 
-func staticRoutes(cl *Client) *Client {
+func staticRoutes(cl Client) Client {
 	if sn.IsProduction() {
 		return cl
 	}

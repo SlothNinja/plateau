@@ -14,17 +14,27 @@ type invitation struct {
 	sn.Header
 }
 
-func (inv *invitation) Default() {
+func (i *invitation) New() *invitation {
+	var inv invitation
+	return &inv
+}
+
+func (inv *invitation) Default() *invitation {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
 	opt, err := encodeOptions(1)
 	if err != nil {
 		panic(err)
 	}
 
 	// Default Values
+	inv = new(invitation)
 	inv.Type = sn.Plateau
 	inv.Title = randomdata.SillyName()
 	inv.NumPlayers = defaultPlayers
 	inv.OptString = opt
+	return inv
 }
 
 func getID(ctx *gin.Context) string {
@@ -77,7 +87,7 @@ const (
 	maxRounds     = 5
 )
 
-func (inv *invitation) FromForm(ctx *gin.Context, cu sn.User) ([]byte, error) {
+func (inv *invitation) FromForm(ctx *gin.Context, cu sn.User) (*invitation, []byte, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -90,13 +100,10 @@ func (inv *invitation) FromForm(ctx *gin.Context, cu sn.User) ([]byte, error) {
 
 	err := ctx.ShouldBind(&obj)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	if inv == nil {
-		inv = &invitation{}
-	}
-
+	inv = new(invitation)
 	inv.Title = cu.Name + "'s Game"
 	if obj.Title != "" {
 		inv.Title = obj.Title
@@ -113,14 +120,14 @@ func (inv *invitation) FromForm(ctx *gin.Context, cu sn.User) ([]byte, error) {
 	}
 	inv.OptString, err = encodeOptions(rounds)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var hash []byte
 	if len(obj.Password) > 0 {
 		hash, err = bcrypt.GenerateFromPassword([]byte(obj.Password), bcrypt.DefaultCost)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		inv.Private = true
 	}
@@ -128,5 +135,5 @@ func (inv *invitation) FromForm(ctx *gin.Context, cu sn.User) ([]byte, error) {
 	inv.AddUser(cu)
 	inv.Status = sn.Recruiting
 	inv.Type = sn.Plateau
-	return hash, nil
+	return inv, hash, nil
 }

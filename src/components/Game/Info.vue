@@ -20,13 +20,16 @@ import _get from 'lodash/get'
 import _isEmpty from 'lodash/isEmpty'
 import { computed, inject, unref } from 'vue'
 import { useHands } from '@/composables/hands'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
 
 // inject game and current user
 import { gameKey } from '@/composables/keys'
 const game = inject(gameKey)
 
 const title = computed(() => _get(unref(game), 'Title', ''))
-const id = computed(() => _get(unref(game), 'id', ''))
+const id = computed(() => _get(unref(route), 'params.id', ''))
 const hand = computed(() => _get(unref(game), 'Round', 0))
 const hands = computed(() => (useHands(game)))
 const phase = computed(() => _get(unref(game), 'Phase', ''))
