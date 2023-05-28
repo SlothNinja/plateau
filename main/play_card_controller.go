@@ -102,7 +102,7 @@ func (g game) validatePlayCard(ctx *gin.Context, cu sn.User) (*player, card, err
 	defer sn.Debugf(msgExit)
 
 	noCard := card{}
-	cp, err := g.validatePlayerAction(cu)
+	cp, err := g.ValidatePlayerAction(cu)
 	if err != nil {
 		return nil, noCard, err
 	}
@@ -137,7 +137,7 @@ func (g game) ledSuit() suit {
 	return pie.First(g.currentTrick().Cards).Suit
 }
 
-func (g *game) playCardFinishTurn(cu sn.User) (*player, *player, error) {
+func (g *game) playCardFinishTurn(_ *gin.Context, cu sn.User) (*player, *player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -148,7 +148,7 @@ func (g *game) playCardFinishTurn(cu sn.User) (*player, *player, error) {
 
 	var np *player
 	if len(g.currentTrick().Cards) != g.NumPlayers {
-		np = g.nextPlayer(cp)
+		np = g.NextPlayer(cp)
 		return cp, np, nil
 	}
 

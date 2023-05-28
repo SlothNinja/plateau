@@ -6,7 +6,7 @@ import (
 
 // state stores the game state of a Tammany Hall game.
 type state struct {
-	Players       []*player
+	// Players       []*player
 	Deck          []card
 	DeclarersTeam []sn.PID
 	Tricks        []trick
@@ -16,10 +16,10 @@ type state struct {
 }
 
 func (s state) copy() state {
-	ps := make([]*player, len(s.Players))
-	for i, p := range s.Players {
-		ps[i] = p.copy()
-	}
+	// ps := make([]*player, len(s.Players))
+	// for i, p := range s.Players {
+	// 	ps[i] = p.copy()
+	// }
 
 	d := make([]card, len(s.Deck))
 	copy(d, s.Deck)
@@ -42,7 +42,7 @@ func (s state) copy() state {
 	copy(pc, s.Pick)
 
 	return state{
-		Players:       ps,
+		// Players:       ps,
 		Deck:          d,
 		DeclarersTeam: dt,
 		Tricks:        ts,

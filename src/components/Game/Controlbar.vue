@@ -40,7 +40,7 @@
       <!-- Finish control -->
       <v-tooltip location='bottom' text='Finish' color="info" :disabled='!canFinish' >
         <template v-slot:activator="{ props }">
-          <v-btn v-bind="props" icon='mdi-check' :disabled='!canFinish' @click="action('finish')" />
+          <v-btn v-bind="props" icon='mdi-check' :disabled='!canFinish' @click="action(finishPath)" />
         </template>
       </v-tooltip>
 
@@ -97,4 +97,19 @@ function action(path, data) {
     }
   })
 }
+
+const finishPath = computed(
+  ()=> {
+    switch(_get(unref(game), 'Phase', '')) {
+      case 'pass':
+        return 'finish/pass'
+      case 'card exchange':
+        return 'finish/exchange'
+      case 'increase objective':
+        return 'finish/objective'
+      default:
+        return 'finsih'
+    }
+  }
+)
 </script>

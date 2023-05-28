@@ -36,7 +36,7 @@ func (g game) validatePlaceBid(ctx *gin.Context, cu sn.User) (*player, bid, erro
 	// define noBid here, as bid type shadowed by bid variable after getBid call
 	noBid := bid{}
 
-	cp, err := g.validatePlayerAction(cu)
+	cp, err := g.ValidatePlayerAction(cu)
 	if err != nil {
 		return nil, noBid, err
 	}

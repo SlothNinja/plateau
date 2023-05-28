@@ -28,7 +28,7 @@ func (g game) validateAbdicate(cu sn.User) (*player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	cp, err := g.validatePlayerAction(cu)
+	cp, err := g.ValidatePlayerAction(cu)
 	switch {
 	case err != nil:
 		return nil, err

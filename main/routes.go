@@ -74,12 +74,12 @@ func getUserHostURL() string {
 
 // Client provide client structure of the Le Plateau service
 type Client struct {
-	sn.Client[*game, *invitation]
+	sn.Client[*game, *invitation, *player]
 }
 
 // NewClient returns a new Client for the plateau service
 func NewClient(ctx context.Context) Client {
-	nClient := Client{sn.NewClient[*game, *invitation](ctx, sn.Options{
+	nClient := Client{sn.NewClient[*game, *invitation, *player](ctx, sn.Options{
 		ProjectID:     projectID(),
 		UserProjectID: getUserProjectID(),
 		UserDSURL:     getUserDSURL(),
@@ -162,10 +162,19 @@ func (cl Client) addRoutes(prefix string) Client {
 	gGroup.PUT("play/:id", cl.CachedHandler((*game).playCard))
 
 	// Pick Partner
-	gGroup.PUT("pick/:id", cl.pickPartnerHandler)
+	gGroup.PUT("finish/pick/:id", cl.FinishTurnHandler((*game).pickPartner))
 
-	// // Actions Finish
-	gGroup.PUT("finish/:id", cl.finishTurnHandler)
+	// Bid Finish
+	gGroup.PUT("finish/bid/:id", cl.FinishTurnHandler((*game).bidFinishTurn))
+
+	// Exchange Finish
+	gGroup.PUT("finish/exchange/:id", cl.FinishTurnHandler((*game).exchangeFinishTurn))
+
+	// IncObjective Finish
+	gGroup.PUT("finish/objective/:id", cl.FinishTurnHandler((*game).incObjectiveFinishTurn))
+
+	// Play Card Finish
+	gGroup.PUT("finish/play/:id", cl.FinishTurnHandler((*game).playCardFinishTurn))
 
 	return cl
 }

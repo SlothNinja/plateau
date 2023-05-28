@@ -53,7 +53,7 @@ func (g *game) endTrick() *player {
 	g.Tricks[g.trickIndex()].WonBy = winningCard.PlayedBy
 	g.nextTrickIndex()
 
-	return g.playerByPID(winningCard.PlayedBy)
+	return g.PlayerByPID(winningCard.PlayedBy)
 }
 
 func (g game) allCardsPlayed() bool {

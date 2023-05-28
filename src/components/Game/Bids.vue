@@ -6,6 +6,7 @@
           <tr>
             <th class='text-center'>Declarer</th>
             <th class='text-center'>Name</th>
+            <th class='text-center'>Passed</th>
             <th class='text-center'>Last Bid</th>
             <th class='text-center'>Score</th>
           </tr>
@@ -20,6 +21,7 @@
                   :color='useColorFor(dTeam, p.ID)'
                   />
             </td>
+            <td class='text-center'>{{p.Passed}}</td>
             <td class='text-center'>{{bidLabel(p.ID)}}</td>
             <td class='text-center'>{{p.Score}}</td>
           </tr>

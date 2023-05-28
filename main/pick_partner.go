@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"time"
 
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
@@ -43,45 +41,45 @@ func (g *game) updatePickCards() {
 }
 
 func (g game) otherTeam(pids1 []sn.PID) []sn.PID {
-	return pie.FilterNot(pidsFor(g.Players), func(pid2 sn.PID) bool {
+	return pie.FilterNot(g.Players.PIDS(), func(pid2 sn.PID) bool {
 		return pie.Any(pids1, func(pid1 sn.PID) bool { return pid1 == pid2 })
 	})
 }
 
-func (cl Client) pickPartnerHandler(ctx *gin.Context) {
-	cl.Log.Debugf(msgEnter)
-	defer cl.Log.Debugf(msgExit)
-
-	cu, err := cl.Current(ctx)
-	if err != nil {
-		cl.Log.Warningf(err.Error())
-	}
-
-	g, err := cl.GetGame(ctx, cu)
-	if err != nil {
-		sn.JErr(ctx, err)
-		return
-	}
-
-	cp, np, err := g.pickPartner(ctx, cu)
-	if err != nil {
-		sn.JErr(ctx, err)
-		return
-	}
-
-	cp.Stats.Moves++
-	cp.Stats.Think += time.Since(g.UpdatedAt)
-
-	np.reset()
-	g.setCurrentPlayers(np)
-
-	if err := cl.Commit(ctx, g, cu); err != nil {
-		sn.JErr(ctx, err)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, nil)
-}
+// func (cl Client) pickPartnerHandler(ctx *gin.Context) {
+// 	cl.Log.Debugf(msgEnter)
+// 	defer cl.Log.Debugf(msgExit)
+//
+// 	cu, err := cl.Current(ctx)
+// 	if err != nil {
+// 		cl.Log.Warningf(err.Error())
+// 	}
+//
+// 	g, err := cl.GetGame(ctx, cu)
+// 	if err != nil {
+// 		sn.JErr(ctx, err)
+// 		return
+// 	}
+//
+// 	cp, np, err := g.pickPartner(ctx, cu)
+// 	if err != nil {
+// 		sn.JErr(ctx, err)
+// 		return
+// 	}
+//
+// 	cp.Stats.Moves++
+// 	cp.Stats.Think += time.Since(g.UpdatedAt)
+//
+// 	np.reset()
+// 	g.SetCurrentPlayers(np)
+//
+// 	if err := cl.Commit(ctx, g, cu); err != nil {
+// 		sn.JErr(ctx, err)
+// 		return
+// 	}
+//
+// 	ctx.JSON(http.StatusOK, nil)
+// }
 
 func (g *game) pickPartner(ctx *gin.Context, cu sn.User) (*player, *player, error) {
 	sn.Debugf(msgEnter)
@@ -113,7 +111,7 @@ func (g game) validatePickPartner(ctx *gin.Context, cu sn.User) (*player, card, 
 	defer sn.Debugf(msgExit)
 
 	noCard := card{}
-	cp, err := g.validatePlayerAction(cu)
+	cp, err := g.ValidatePlayerAction(cu)
 	if err != nil {
 		return nil, noCard, err
 	}

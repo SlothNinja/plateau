@@ -5,9 +5,20 @@ import (
 
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
+	"github.com/gin-gonic/gin"
 )
 
-func (g *game) bidFinishTurn(cu sn.User) (*player, *player, error) {
+func (g *game) startBidPhase() *player {
+	sn.Debugf(msgEnter)
+	defer sn.Debugf(msgExit)
+
+	g.Phase = bidPhase
+	pie.Each(g.Players, (*player).bidReset)
+	g.Bids = nil
+	return g.forehand()
+}
+
+func (g *game) bidFinishTurn(ctx *gin.Context, cu sn.User) (*player, *player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -16,7 +27,7 @@ func (g *game) bidFinishTurn(cu sn.User) (*player, *player, error) {
 		return nil, nil, err
 	}
 
-	np := g.nextPlayer(cp, func(p *player) bool {
+	np := g.NextPlayer(cp, func(p *player) bool {
 		return !p.Passed && p.ID != g.lastBid().PID
 	})
 

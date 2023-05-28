@@ -21,7 +21,7 @@ func (g game) selectIncrementer() *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	return g.nextPlayer(g.declarer(), func(p *player) bool { return pie.Contains(g.declarers(), p) && !p.Bid })
+	return g.NextPlayer(g.declarer(), func(p *player) bool { return pie.Contains(g.declarers(), p) && !p.Bid })
 }
 
 func (g game) partnerPIDS() []sn.PID {
@@ -64,7 +64,7 @@ func (g game) validateIncObjective(ctx *gin.Context, cu sn.User) (*player, bid, 
 	// define noBid here, as bid type shadowed by bid variable after getBid call
 	noBid := bid{}
 
-	cp, err := g.validatePlayerAction(cu)
+	cp, err := g.ValidatePlayerAction(cu)
 	if err != nil {
 		return nil, noBid, err
 	}
@@ -94,7 +94,7 @@ func (g game) validateIncObjective(ctx *gin.Context, cu sn.User) (*player, bid, 
 	}
 }
 
-func (g *game) incObjectiveFinishTurn(cu sn.User) (*player, *player, error) {
+func (g *game) incObjectiveFinishTurn(_ *gin.Context, cu sn.User) (*player, *player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 

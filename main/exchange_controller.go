@@ -48,7 +48,7 @@ func (g game) validateExchange(ctx *gin.Context, cu sn.User) (*player, []card, e
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	cp, err := g.validatePlayerAction(cu)
+	cp, err := g.ValidatePlayerAction(cu)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -74,7 +74,7 @@ func (g game) validateExchange(ctx *gin.Context, cu sn.User) (*player, []card, e
 	}
 }
 
-func (g *game) exchangeFinishTurn(cu sn.User) (*player, *player, error) {
+func (g *game) exchangeFinishTurn(_ *gin.Context, cu sn.User) (*player, *player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
