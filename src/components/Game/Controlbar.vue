@@ -101,6 +101,8 @@ function action(path, data) {
 const finishPath = computed(
   ()=> {
     switch(_get(unref(game), 'Phase', '')) {
+      case 'bid':
+        return 'finish/bid'
       case 'pass':
         return 'finish/pass'
       case 'card exchange':
@@ -108,7 +110,7 @@ const finishPath = computed(
       case 'increase objective':
         return 'finish/objective'
       default:
-        return 'finsih'
+        return 'finish'
     }
   }
 )

@@ -12,12 +12,12 @@
       <!-- Chat control -->
       <v-tooltip location='bottom' color='info' text='Chat' >
         <template v-slot:activator='{ props }' >
-          <v-btn disabled v-if='show' density='compact' v-bind='props' @click='chat = !chat' stacked >
+          <v-btn v-if='show' density='compact' v-bind='props' @click='toggleChat' stacked >
             <v-badge :content='unread' >
               <v-icon>mdi-chat</v-icon>
             </v-badge>
           </v-btn>
-          <v-btn v-else disabled icon='mdi-chat' v-bind='props' @click='chat = !chat' />
+          <v-btn v-else icon='mdi-chat' v-bind='props' @click='toggleChat' />
         </template>
       </v-tooltip>
 
@@ -32,6 +32,8 @@
 
     <LogDrawer v-model='log' />
 
+    <ChatDrawer v-model='chat' />
+
     <DefaultSnack v-model:open='snackbar.open' v-model:message='snackbar.message' />
   </v-app>
 </template>
@@ -44,6 +46,7 @@ import DefaultFooter from '@/layouts/default/Footer.vue'
 import DefaultSnack from '@/layouts/default/SnackBar.vue'
 import Controlbar from '@/components/Game/Controlbar.vue'
 import LogDrawer from '@/components/Log/Drawer.vue'
+import ChatDrawer from '@/components/Chat/Drawer.vue'
 import { computed, ref, inject, provide, unref, watch } from 'vue'
 import { cuKey, gameKey, snackKey, stackKey } from '@/composables/keys.js'
 import { useDocument, useCollection } from 'vuefire'
@@ -75,22 +78,32 @@ provide( snackKey, { snackbar, updateSnackbar } )
 
 const chat = ref(false)
 const log = ref(false)
-const unread = ref(0)
+const unread = ref(1)
 
 const show = computed(() => (unread > 0))
 
 function toggleNav() {
-  if (!nav.value) {
+  if (!unref(nav)) {
     log.value = false
+    chat.value = false
   }
-  nav.value = !nav.value
+  nav.value = !unref(nav)
 }
 
 function toggleLog() {
-  if (!log.value) {
+  if (!unref(log)) {
     nav.value = false
+    chat.value = false
   }
-  log.value = !log.value
+  log.value = !unref(log)
+}
+
+function toggleChat() {
+  if (!unref(log)) {
+    nav.value = false
+    log.value = false
+  }
+  chat.value = !unref(chat)
 }
 
 const stackSource = computed(

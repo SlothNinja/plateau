@@ -21,24 +21,6 @@ func (g *game) Start(h *sn.Header) sn.Playerer {
 	return cp
 }
 
-// func (inv invitation) Start() (*game, sn.PID, error) {
-// 	sn.Debugf(msgEnter)
-// 	defer sn.Debugf(msgExit)
-//
-// 	var g game
-// 	g.Header = inv.Header
-// 	g.Status = sn.Running
-// 	g.Phase = setupPhase
-// 	g.StartedAt = updateTime()
-//
-// 	g.addNewPlayers()
-//
-// 	cp := g.startHand()
-// 	g.SetCurrentPlayers(cp)
-// 	// g.newEntry(message{"template": "start-game"})
-// 	return &g, cp.ID, nil
-// }
-
 func (g game) dealer() *player {
 	return pie.First(g.Players)
 }
@@ -47,22 +29,12 @@ func (g game) forehand() *player {
 	return pie.First(pie.DropTop(g.Players, 1))
 }
 
-func (g *game) randomSeats() {
-	g.Players = pie.Shuffle(g.Players, myRandomSource)
-	g.updateOrder()
-}
-
 // Basically a circular shift left of players so dealer is always first element in slice
 func (g *game) newDealer() {
 	oldDealer := g.dealer()
 	rest := g.Players[1:]
 	g.Players = append(rest, oldDealer)
-	g.updateOrder()
-}
-
-// reflect player order game state to header
-func (g *game) updateOrder() {
-	g.OrderIDS = pie.Map(g.Players, func(p *player) sn.PID { return p.ID })
+	g.UpdateOrder()
 }
 
 func (g *game) New() *game {

@@ -74,12 +74,12 @@ func getUserHostURL() string {
 
 // Client provide client structure of the Le Plateau service
 type Client struct {
-	sn.Client[*game, *invitation, *player]
+	sn.Client[*game, *player]
 }
 
 // NewClient returns a new Client for the plateau service
 func NewClient(ctx context.Context) Client {
-	nClient := Client{sn.NewClient[*game, *invitation, *player](ctx, sn.Options{
+	nClient := Client{sn.NewClient[*game, *player](ctx, sn.Options{
 		ProjectID:     projectID(),
 		UserProjectID: getUserProjectID(),
 		UserDSURL:     getUserDSURL(),

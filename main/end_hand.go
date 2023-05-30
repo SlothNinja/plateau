@@ -19,6 +19,10 @@ func (g *game) startEndHandPhase(result handResult, path []node) *player {
 	return g.startHand()
 }
 
+func (g game) endGameCheck() bool {
+	return g.currentHand() == g.finalHand()
+}
+
 func (g *game) endHandCheck() (end bool, result handResult, path []node) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
@@ -101,7 +105,7 @@ func (g *game) startHand() *player {
 	g.nextHand()
 
 	if g.currentHand() == 1 {
-		g.randomSeats()
+		g.RandomizePlayers()
 	} else {
 		g.newDealer()
 	}

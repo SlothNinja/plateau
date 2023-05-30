@@ -84,14 +84,20 @@ watch(data, () => update(data))
 ///////////////////////////////////////////////////////
 // Put data of new invitation to server
 function putData () {
+  invitation.value.OptString = `{ "HandsPerPlayer": ${invitation.value.HandsPerPlayer} }`
   const { response, error } = usePut('/sn/invitation/new', invitation)
   watch(response, () => update(response))
 }
 
 function update(data) {
   invitation.value = _get(unref(data), 'Invitation', {})
-  const opt = JSON.parse(_get(unref(invitation), 'OptString', {}))
-  invitation.value.HandsPerPlayer = _get(opt, 'HandsPerPlayer', 0)
+  if (!_isEmpty(unref(invitation))) {
+    invitation.value.NumPlayers = 2
+    invitation.value.HandsPerPlayer = 1
+  }
+
+  // const opt = JSON.parse(_get(unref(invitation), 'OptString', {}))
+  // invitation.value.HandsPerPlayer = _get(opt, 'HandsPerPlayer', 0)
   const message = _get(unref(data), 'Message', '')
   if (!_isEmpty(message)) {
     updateSnackbar(message)
