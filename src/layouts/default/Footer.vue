@@ -1,5 +1,5 @@
 <template>
-  <v-footer app color="green" dark padless absolute >
+  <v-footer app absolute color="green" >
     <v-col
       class="text-center text-caption"
       cols="12"

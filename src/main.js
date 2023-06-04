@@ -24,9 +24,9 @@ app
 
 /////////////////////////////////////////////////////
 // get and provide current user
-import  { useFetch } from '@/composables/fetch.js'
+import  { useFetch } from '@/composables/fetch'
 import { get } from 'lodash'
-import { cuKey } from '@/composables/keys.js'
+import { cuKey } from '@/composables/keys'
 
 const { data, error } = useFetch('/sn/cu')
 const cu = computed( () => {

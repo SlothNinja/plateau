@@ -32,7 +32,7 @@
 
     <LogDrawer v-model='log' />
 
-    <ChatDrawer v-model='chat' />
+    <ChatDrawer v-model='chat' @unread='(n) => unread = n' />
 
     <DefaultSnack v-model:open='snackbar.open' v-model:message='snackbar.message' />
   </v-app>
@@ -47,20 +47,26 @@ import DefaultSnack from '@/layouts/default/SnackBar.vue'
 import Controlbar from '@/components/Game/Controlbar.vue'
 import LogDrawer from '@/components/Log/Drawer.vue'
 import ChatDrawer from '@/components/Chat/Drawer.vue'
-import { computed, ref, inject, provide, unref, watch } from 'vue'
-import { cuKey, gameKey, snackKey, stackKey } from '@/composables/keys.js'
+import { computed, ref, inject, provide, unref, watch, watchEffect } from 'vue'
+import { cuKey, gameKey, snackKey, stackKey } from '@/composables/keys'
 import { useDocument, useCollection } from 'vuefire'
 import { doc, collection } from 'firebase/firestore'
 import { db } from '@/composables/firebase'
 import { useRoute } from 'vue-router'
+import { usePut } from '@/composables/fetch'
+
 // lodash
 import _get from 'lodash/get'
 import _size from 'lodash/size'
 import _find from 'lodash/find'
 import _isEmpty from 'lodash/isEmpty'
+import _filter from 'lodash/filter'
+import _includes from 'lodash/includes'
+import _map from 'lodash/map'
 
 const route = useRoute()
 
+const chat = ref(false)
 const nav = ref(false)
 const snackbar = ref({
   message: '',
@@ -76,11 +82,9 @@ function updateSnackbar(msg) {
 
 provide( snackKey, { snackbar, updateSnackbar } )
 
-const chat = ref(false)
 const log = ref(false)
-const unread = ref(1)
 
-const show = computed(() => (unread > 0))
+const show = computed(() => ((unref(unread) > 0) && !unref(chat)))
 
 function toggleNav() {
   if (!unref(nav)) {
@@ -89,6 +93,8 @@ function toggleNav() {
   }
   nav.value = !unref(nav)
 }
+
+const unread = ref(0)
 
 function toggleLog() {
   if (!unref(log)) {
@@ -103,7 +109,7 @@ function toggleChat() {
     nav.value = false
     log.value = false
   }
-  chat.value = !unref(chat)
+  chat.value = !chat.value
 }
 
 const stackSource = computed(

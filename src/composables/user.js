@@ -21,7 +21,7 @@ export function useUsers(header) {
 export function useCreator(header) {
   const h = unref(header)
   return {
-    ID: h.CreatorId,
+    ID: h.CreatorID,
     Name: h.CreatorName,
     EmailHash: h.CreatorEmailHash,
     GravType: h.CreatorGravType

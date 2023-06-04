@@ -1,121 +1,83 @@
 <template>
   <v-navigation-drawer
-    v-model="drawer"
-    location='right' 
-    width='500'
-    >
-    <!--
-    <v-card class='d-flex flex-column' height='100%' >
-    -->
-    <v-toolbar color='green' height='1em' class='text-subtitle-1'>
-      <v-toolbar-title>Chat</v-toolbar-title>
-    </v-toolbar>
-    <v-card height='100%' class='d-flex flex-column' >
-    <!--
-      <v-toolbar
-        color='green'
-        dark
-        dense
-        flat
-        class='flex-grow-0 flex-shrink-0'
-        >
-        <v-toolbar-title>Chat</v-toolbar-title>
+      v-model="open"
+      location='right' 
+      width='500'
+      floating
+      >
+        <v-toolbar color='green' height='1em' class='text-subtitle-1'>
+          <v-toolbar-title>Chat</v-toolbar-title>
+        </v-toolbar>
+      <div class='overflow-auto fill-height flex-column d-flex justify-space-between'>
+        <v-sheet class='align-start'>
+          <Message
+              class='mb-1 mx-1'
+              v-for='(message, index) in sorted'
+              :message='message'
+              >
+          </Message>
+        </v-sheet>
 
-      </v-toolbar>
-    -->
-
-      <v-container
-        ref='chatbox'
-        fluid
-        style='overflow-y: auto'
-        >
-        <Message
-          class='my-2'
-          v-for='(message, index) in messages'
-          :key='index'
-          :message='message'
-          :id='msgId(index)'
-          :game='game'
-          >
-        </Message>
-
-        <!--
-          <v-progress-linear
-            color='green'
-            indeterminate
-            v-if='loading || sending'
-            >
-          </v-progress-linear>
-        -->
-
-            <div class='messagebox'></div>
-      </v-container>
-    <v-spacer></v-spacer>
-
-    <v-divider></v-divider>
-
-    <v-card>
-      <v-card-text>
-
-        <v-textarea
-          auto-grow
-          color='green'
-          label='Message'
-          placeholder="Type Message.  Press 'Enter' Key To Send."
-          v-model='message.text'
-          rows=1
-          clearable
-          v-on:keyup.enter='send'
-          >
-        </v-textarea>
-        <v-btn v-if='canSend' color='green' size='small' @click='send'>Send</v-btn>
-
-      </v-card-text>
-    </v-card>
-
-    </v-card>
-<!--
-    <v-card class='w-100 h-100' >
-      <v-container
-        ref='gamelog'
-        id='gamelog'
-        style='overflow-y: auto'
-        >
-        <Entry class='my-1' v-for='(entry, index) in log' :key="index" :entry='entry' />
-        <div class='gamelog'></div>
-      </v-container>
-    </v-card>
--->
+        <v-sheet class='align-end'>
+          <v-textarea
+              ref='chatbox'
+              auto-grow
+              color='green'
+              label='Message'
+              placeholder="Type Message.  Press 'Enter' Key To Send."
+              v-model='message.text'
+              rows=1
+              clearable
+              v-on:keyup.enter='send'
+              >
+              <template v-slot:prepend-inner>
+                <v-btn v-if='canSend' color='green' size='small' density='comfortable' icon='mdi-send' @click='send'></v-btn>
+              </template>
+          </v-textarea>
+        </v-sheet>
+      </div>
   </v-navigation-drawer>
 </template>
 
 <script setup>
 import Message from '@/components/Chat/Message'
-import { computed, inject, ref, watch, unref } from 'vue'
+import { computed, inject, ref, watch, unref, nextTick, onMounted } from 'vue'
 import { cuKey, gameKey, snackKey } from '@/composables/keys.js'
 import { useDocument, useCollection } from 'vuefire'
+import { useDebouncedRef } from '@/composables/debouncedRef'
 import { doc, collection } from 'firebase/firestore'
 import { useRoute } from 'vue-router'
 import { db } from '@/composables/firebase'
-import  { usePut } from '@/composables/fetch.js'
+import { usePut } from '@/composables/fetch'
 
 import _get from 'lodash/get'
+import _sortBy from 'lodash/sortBy'
 import _isEmpty from 'lodash/isEmpty'
+import _filter from 'lodash/filter'
+import _includes from 'lodash/includes'
+import _size from 'lodash/size'
+import _map from 'lodash/map'
 
 const props = defineProps(['modelValue'])
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'unread'])
 
 const route = useRoute()
 const cu = inject(cuKey)
 
-const chatSource = computed(
-  () => doc(db, 'Chat', route.params.id, 'View', `${unref(cu).ID}` )
+
+const gid = computed(() => _get(unref(route), 'params.id', ''))
+const messagesRef = computed(() => collection(db, 'Committed', unref(gid), 'Messages'))
+const messages = useCollection(messagesRef)
+const sorted = computed(
+  () => {
+    if (_isEmpty(unref(messages))) {
+      return []
+    }
+    return _sortBy(unref(messages), m => m.CreatedAt.toDate())
+  }
 )
-const chatDoc = useDocument(chatSource)
 
-const messages = computed(() => _get(unref(chatDoc), 'Messages', []))
-
-const drawer = computed({
+const open = computed({
   get() {
     return props.modelValue
   },
@@ -124,9 +86,29 @@ const drawer = computed({
   }
 })
 
+watch(open, () => {
+  if(unref(open)) {
+    scrollChatBox()
+  }
+})
+
+watch(sorted, () => {
+  if(unref(open)) {
+    scrollChatBox()
+  }
+})
+
 const game = inject(gameKey)
 
 const message = ref( { text: '' })
+
+const chatbox = ref(null)
+
+function scrollChatBox(){
+  if (chatbox.value) {
+    nextTick(() => chatbox.value.scrollIntoView(false))
+  }
+}
 
 ///////////////////////////////////////////////////////
 // Put data of new invitation to server
@@ -138,6 +120,7 @@ function send () {
   watch(response, () => update(response))
 }
 
+
 function update(response) {
   const msg = _get(unref(response), 'Message', '')
   if (!_isEmpty(msg)) {
@@ -147,56 +130,31 @@ function update(response) {
 
 const canSend = computed(() => !_isEmpty(_get(unref(message), 'text', '')))
 
+const cuid = computed(() => _get(unref(cu), 'ID', 0))
+const unreadIDS = useDebouncedRef([], 5000)
+const unreadMesssages = computed(
+  () => {
+    const um = _filter(unref(messages), (m) => !_includes(_get(m, 'Read', []), unref(cuid)))
+    unreadIDS.value = _map(um, (m) => m.id)
+    return um
+  }
+)
+
+const unread = computed(() => {
+  const value = _size(unref(unreadMesssages))
+  emit('unread', value)
+  return value
+})
+
+watch([open, unreadIDS], () => {
+  if ((_size(unref(unreadIDS)) > 0) && (unref(open))) {
+    const { response, error } = usePut(`/sn/mlog/updateRead/${route.params.id}`, { "Read": unref(unreadIDS) })
+    watch(response, () => update(response))
+  }
+})
+
 //////////////////////////////////////
 // Snackbar
 const { snackbar, updateSnackbar } = inject(snackKey)
 
-// import CurrentUser from '@/components/lib/mixins/CurrentUser'
-// import Entry from '@/components/Log/Entry'
-// 
-// const _ = require("lodash")
-// 
-// export default {
-//   name: 'sn-log-drawer',
-//   mixins: [ CurrentUser ],
-//   props: [ 'value', 'game' ],
-//   components: {
-//     'sn-log-entry': Entry
-//   },
-//   watch: {
-//     drawer: function (oldValue, newValue) {
-//       if (oldValue != newValue) {
-//         this.scroll()
-//       }
-//     },
-//     entries: function (oldValue, newValue) {
-//       if (oldValue != newValue) {
-//         this.scroll()
-//       }
-//     }
-//   },
-//   methods: {
-//     scroll: function() {
-//       let self = this
-//       self.$nextTick(function () {
-//         self.$vuetify.goTo('.gamelog', { container: self.$refs.gamelog } )
-//       })
-//     },
-//   },
-//   computed: {
-//     entries: function () {
-//       return _.size(this.game.glog)
-//     },
-//     drawer: {
-//       get: function () {
-//         var self = this
-//         return self.value
-//       },
-//       set: function (value) {
-//         var self = this
-//         self.$emit('input', value)
-//       }
-//     }
-//   }
-// }
 </script>

@@ -16,33 +16,7 @@
 
 
 <script setup>
-  import { computed } from 'vue'
   import logo100 from '@/assets/slothninja_logo_100.png'
 
-  // const props = defineProps(['modelValue'])
-  // const emit = defineEmits(['update:modelValue'])
   defineEmits(['toggleNav'])
-
-  // const value = computed({
-  //   get() {
-  //     return props.modelValue
-  //   },
-  //   set(value) {
-  //     emit('update:modelValue', value)
-  //   }
-  // })
 </script>
-
-<!--
-<script>
-  import CurrentUser from '@/components/lib/mixins/CurrentUser'
-  import ImagePaths from '@/components/lib/mixins/ImagePaths'
-
-  export default {
-    mixins: [ CurrentUser, ImagePaths ],
-    name: 'sn-toolbar',
-    props: [ 'value' ]
-  }
-</script>
--->
-
