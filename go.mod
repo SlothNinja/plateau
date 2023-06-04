@@ -7,7 +7,7 @@ require (
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/SlothNinja/log v1.0.6
-	github.com/SlothNinja/sn/v3 v3.0.0
+	github.com/SlothNinja/sn/v3 v3.0.1
 	github.com/elliotchance/pie/v2 v2.5.1
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-contrib/sessions v0.0.5
