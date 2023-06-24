@@ -10,23 +10,33 @@
             item-value='id'
             @click:row='show'
             >
+
+            <template v-slot:item.admin='{ item }'>
+              <v-btn @click.stop='abandon(item.raw.id)' size='small' color='green'>Abandon</v-btn>
+            </template>
+
             <template v-slot:item.title='{ item }'>
               {{item.raw.Title}}
             </template>
-          <template v-slot:item.creator='{ item }'>
-            <UserButton :user='useCreator(item.raw)' :size='size' />
-          </template>
-          <template v-slot:item.pRounds='{ item }'>
-            {{item.raw.NumPlayers}} : {{handsPerPlayer(item)}}
-          </template>
-          <template v-slot:item.players="{ item }">
-            <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item.raw)' :key='user.ID'>
+
+            <template v-slot:item.creator='{ item }'>
+              <UserButton :user='useCreator(item.raw)' :size='size' />
+            </template>
+
+            <template v-slot:item.pRounds='{ item }'>
+              {{item.raw.NumPlayers}} : {{handsPerPlayer(item)}}
+            </template>
+
+            <template v-slot:item.players="{ item }">
+              <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item.raw)' :key='user.ID'>
               <span :class='userClass(item, user)'>{{user.Name}}</span>
-            </UserButton>
-          </template>
-          <template v-slot:item.lastUpdated="{ item }">
-            {{fromNow(item.raw.UpdatedAt.toDate())}}
-          </template>
+              </UserButton>
+            </template>
+
+            <template v-slot:item.lastUpdated="{ item }">
+              {{fromNow(item.raw.UpdatedAt.toDate())}}
+            </template>
+
         </v-data-table>
         <div v-else>No Invitations</div>
       </v-card-text>
@@ -39,16 +49,17 @@
 import board36 from '@/assets/board36.png'
 
 // Components
-import UserButton from '@/components/Common/UserButton.vue'
-import CardStamp from '@/components/Common/CardStamp.vue'
+import UserButton from '@/components/Common/UserButton'
+import CardStamp from '@/components/Common/CardStamp'
 import { VDataTable } from 'vuetify/labs/VDataTable'
 
 // Composables
 import { useCreator, useUsers } from '@/composables/user'
 import { fromNow } from '@/composables/fromNow'
+import { usePut } from '@/composables/fetch'
 
 // Vue
-import { computed, inject, ref, unref } from 'vue'
+import { computed, inject, ref, unref, watch } from 'vue'
 import { useCollection, useFirestore } from 'vuefire'
 import { collection, query, where } from 'firebase/firestore'
 import { db } from '@/composables/firebase'
@@ -67,7 +78,7 @@ import _reverse from 'lodash/reverse'
 import _sortBy from 'lodash/sortBy'
 
 // inject current user
-import { cuKey } from '@/composables/keys.js'
+import { cuKey, snackKey } from '@/composables/keys'
 const cu = inject(cuKey)
 const cuid = computed(() => (_get(unref(cu), 'ID', -1)))
 
@@ -88,14 +99,29 @@ function handsPerPlayer(item) {
 }
 
 // defines table headings
-const headers = ref([
-  { title: 'ID', key: 'id' },
-  { title: 'Title', key: 'title' },
-  { title: 'Creator', key: 'creator' },
-  { title: 'Players:Rounds Per', key: 'pRounds' },
-  { title: 'Players', key: 'players' },
-  { title: 'Last Updated', key: 'lastUpdated' },
-])
+const headers = computed(
+  () => {
+    if (unref(cu).Admin) {
+      return [
+        { title: 'Admin', key: 'admin' },
+        { title: 'ID', key: 'id' },
+        { title: 'Title', key: 'title' },
+        { title: 'Creator', key: 'creator' },
+        { title: 'Players:Rounds Per', key: 'pRounds' },
+        { title: 'Players', key: 'players' },
+        { title: 'Last Updated', key: 'lastUpdated' },
+      ]
+    }
+    return [
+      { title: 'ID', key: 'id' },
+      { title: 'Title', key: 'title' },
+      { title: 'Creator', key: 'creator' },
+      { title: 'Players:Rounds Per', key: 'pRounds' },
+      { title: 'Players', key: 'players' },
+      { title: 'Last Updated', key: 'lastUpdated' },
+    ]
+  }
+)
 
 // Provides size for user buttons
 const size = 32
@@ -142,6 +168,21 @@ function winnerClass(itm, uid) {
     return 'font-weight-black'
   }
   return ''
+}
+
+// Inject snackbar
+const { snackbar, updateSnackbar } = inject(snackKey)
+
+function abandon (id) {
+  const { response, error } = usePut(`/sn/game/abandon/${id}`)
+  watch(response, () => update(response))
+}
+
+function update(response) {
+  const msg = _get(unref(response), 'Message', '')
+  if (!_isEmpty(msg)) {
+    updateSnackbar(msg)
+  }
 }
 
 </script>
