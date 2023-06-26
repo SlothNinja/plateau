@@ -85,6 +85,7 @@ watch(data, () => update(data))
 // Put data of new invitation to server
 function putData () {
   invitation.value.OptString = `{ "HandsPerPlayer": ${invitation.value.HandsPerPlayer} }`
+  invitation.value.Type = 'plateau'
   const { response, error } = usePut('/sn/invitation/new', invitation)
   watch(response, () => update(response))
 }
