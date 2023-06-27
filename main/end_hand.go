@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 )
@@ -105,7 +106,9 @@ func (g *game) startHand() *player {
 	g.nextHand()
 
 	if g.currentHand() == 1 {
+		log.Debugf("g.OrderIDS: %#v", g.OrderIDS)
 		g.RandomizePlayers()
+		log.Debugf("g.OrderIDS: %#v", g.OrderIDS)
 	} else {
 		g.newDealer()
 	}

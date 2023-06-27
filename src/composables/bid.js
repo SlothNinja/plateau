@@ -50,11 +50,18 @@ export function teamsValue(numPlayers, bid) {
 }
 
 function team45(bid) {
-  return (bid.Teams == 'solo') ? 5 : 0
+  const t = _get(bid, 'Teams', '')
+  switch (t) {
+    case 'solo':
+      return 5
+    default:
+      return 0
+  }
 }
 
 function team6(bid) {
-  switch (bid.Teams) {
+  const t = _get(bid, 'Teams', '')
+  switch (t) {
     case 'duo':
       return 5
     case 'solo':

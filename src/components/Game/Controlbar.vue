@@ -109,6 +109,8 @@ const finishPath = computed(
         return 'finish/exchange'
       case 'increase objective':
         return 'finish/objective'
+      case 'card play':
+        return 'finish/play'
       default:
         return 'finish'
     }
