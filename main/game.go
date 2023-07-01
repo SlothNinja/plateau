@@ -14,8 +14,8 @@ type game struct {
 }
 
 func (g *game) Start(h *sn.Header) sn.Playerer {
-	sn.Debugf("g: %#v", g)
 	g.Game.Start(h)
+	sn.Debugf("g.Log: %#v", g.Log)
 	cp := g.startHand()
 	g.SetCurrentPlayers(cp)
 	return cp
@@ -84,6 +84,7 @@ func stackView(stack []card) {
 func (g game) copy() game {
 	var g2 game
 	g2.Header = g.Header
+	g2.Log = g.Log
 	g2.state = g.state.copy()
 	g2.Players = copyPlayers(g.Players)
 	return g2

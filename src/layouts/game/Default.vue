@@ -1,11 +1,15 @@
 <template>
   <v-app>
+    <ChatDrawer v-model='chat' @unread='(n) => unread = n' />
+
+    <LogDrawer v-model='log' />
+
     <DefaultToolBar @toggleNav='toggleNav'>
 
       <!-- History control -->
       <v-tooltip location='bottom' color='info' text='Game Log'  >
         <template v-slot:activator='{ props }' >
-          <v-btn disabled v-bind='props' icon='mdi-history' @click='toggleLog' />
+          <v-btn v-bind='props' icon='mdi-history' @click='toggleLog' />
         </template>
       </v-tooltip>
 
@@ -30,9 +34,7 @@
 
     <DefaultNavDrawer v-model='nav' />
 
-    <LogDrawer v-model='log' />
 
-    <ChatDrawer v-model='chat' @unread='(n) => unread = n' />
 
     <DefaultSnack v-model:open='snackbar.open' v-model:message='snackbar.message' />
   </v-app>
@@ -105,7 +107,7 @@ function toggleLog() {
 }
 
 function toggleChat() {
-  if (!unref(log)) {
+  if (!unref(chat)) {
     nav.value = false
     log.value = false
   }

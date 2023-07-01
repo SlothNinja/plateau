@@ -12,7 +12,7 @@
             >
 
             <template v-slot:item.admin='{ item }'>
-              <v-btn @click.stop='abandon(item.raw.id)' size='small' color='green'>Abandon</v-btn>
+              <v-btn @click.stop='abandon(item.raw.id)' size='x-small' rounded color='green'>Abandon</v-btn>
             </template>
 
             <template v-slot:item.title='{ item }'>
@@ -103,13 +103,13 @@ const headers = computed(
   () => {
     if (unref(cu).Admin) {
       return [
-        { title: 'Admin', key: 'admin' },
         { title: 'ID', key: 'id' },
         { title: 'Title', key: 'title' },
         { title: 'Creator', key: 'creator' },
         { title: 'Players:Rounds Per', key: 'pRounds' },
         { title: 'Players', key: 'players' },
         { title: 'Last Updated', key: 'lastUpdated' },
+        { title: 'Admin', key: 'admin' },
       ]
     }
     return [

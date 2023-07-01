@@ -3,12 +3,11 @@
       v-model="open"
       location='right' 
       width='500'
-      floating
       >
-        <v-toolbar color='green' height='1em' class='text-subtitle-1'>
+      <div class='overflow-auto fill-height flex-column d-flex justify-space-between'>
+        <v-toolbar color='green' class='text-subtitle-1'>
           <v-toolbar-title>Chat</v-toolbar-title>
         </v-toolbar>
-      <div class='overflow-auto fill-height flex-column d-flex justify-space-between'>
         <v-sheet class='align-start'>
           <Message
               class='mb-1 mx-1'
@@ -27,6 +26,7 @@
               placeholder="Type Message.  Press 'Enter' Key To Send."
               v-model='message.text'
               rows=1
+              hide-details
               clearable
               v-on:keyup.enter='send'
               >

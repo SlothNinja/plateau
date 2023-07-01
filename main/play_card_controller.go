@@ -35,10 +35,17 @@ func (g *game) playCard(ctx *gin.Context, cu sn.User) error {
 
 	cp.PerformedAction = true
 
-	// g.newEntryFor(cp.ID, message{"template": "card-exchange"})
+	if i := len(g.currentTrick().Cards) - 1; i == 0 {
+		g.NewEntry(playedCardTemplate, sn.Entry{"TrickNumber": g.trickNumber(),
+			"HandNumber": g.currentHand()}, sn.Line{"0": card})
+	} else {
+		g.AppendLine(sn.Line{fmt.Sprintf("%d", i): card})
+	}
 
 	return nil
 }
+
+const playedCardTemplate = "played-card"
 
 func (p *player) play(c card) {
 	if pie.Contains(p.Hand, c) {
@@ -153,6 +160,9 @@ func (g *game) playCardFinishTurn(_ *gin.Context, cu sn.User) (*player, *player,
 	}
 
 	np = g.endTrick()
+	if np != nil {
+		g.AppendEntry(wonTrickTemplate, sn.Line{"PID": np.ID})
+	}
 	endHand, result, path := g.endHandCheck()
 	if !endHand {
 		return cp, np, nil
@@ -162,6 +172,8 @@ func (g *game) playCardFinishTurn(_ *gin.Context, cu sn.User) (*player, *player,
 
 	return cp, np, nil
 }
+
+const wonTrickTemplate = "won-trick"
 
 func (g game) validatePlayCardFinishTurn(cu sn.User) (*player, error) {
 	cp, err := g.validateFinishTurn(cu)

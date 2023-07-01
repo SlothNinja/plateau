@@ -27,9 +27,9 @@ export function  objectiveValue(bid) {
       return 2
     case 'fork':
       return 4
-    case '5-sides':
+    case 'five sides':
       return 6
-    case '6-sides':
+    case 'six sides':
       return 8
     default:
       return 0

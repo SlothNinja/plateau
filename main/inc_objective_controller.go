@@ -42,20 +42,12 @@ func (g *game) incObjective(ctx *gin.Context, cu sn.User) error {
 
 	cp.PerformedAction = true
 	cp.Bid = true
-	if g.lastBid().Objective == bid.Objective {
-		// g.newEntryFor(cp.ID, message{
-		// 	"template": "no-increased-objective",
-		// })
-	}
-
 	g.Bids = append(g.Bids, bid)
-	// g.newEntryFor(cp.ID, message{
-	// 	"template": "increased-objective",
-	// 	"bid":      bid,
-	// })
-
+	g.AppendEntry(incObjectiveTemplate, sn.Line{"Bid": bid})
 	return nil
 }
+
+const incObjectiveTemplate = "inc-objective"
 
 func (g game) validateIncObjective(ctx *gin.Context, cu sn.User) (*player, bid, error) {
 	sn.Debugf(msgEnter)

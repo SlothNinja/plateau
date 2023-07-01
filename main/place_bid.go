@@ -21,13 +21,12 @@ func (g *game) placeBid(ctx *gin.Context, cu sn.User) error {
 	g.Bids = append(g.Bids, bid)
 	g.DeclarersTeam = []sn.PID{cp.ID}
 
-	// g.newEntryFor(cp.ID, message{
-	// 	"Template": "placed-bid",
-	// 	"Bid":      bid,
-	// })
+	g.NewEntry(placedBidTemplate, sn.Entry{"PID": cp.ID, "HandNumber": g.currentHand()}, sn.Line{"Bid": bid})
 
 	return nil
 }
+
+const placedBidTemplate = "placed-bid"
 
 func (g game) validatePlaceBid(ctx *gin.Context, cu sn.User) (*player, bid, error) {
 	sn.Debugf(msgEnter)

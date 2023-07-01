@@ -4,13 +4,11 @@
     location='right' 
     width='500'
     >
-    <!--
-    <v-card class='d-flex flex-column' height='100%' >
-    -->
-    <v-toolbar color='green' height='1em' class='text-subtitle-1'>
+    <div class='fill-height flex-column d-flex justify-space-between' >
+    <v-toolbar color='green' class='text-subtitle-1'>
       <v-toolbar-title>Game Log</v-toolbar-title>
     </v-toolbar>
-    <v-card class='w-100 h-100' >
+    <v-card class='overflow-auto w-100 h-100' >
       <v-container
         ref='gamelog'
         id='gamelog'
@@ -20,6 +18,7 @@
         <div class='gamelog'></div>
       </v-container>
     </v-card>
+    </div>
   </v-navigation-drawer>
 </template>
 

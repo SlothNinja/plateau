@@ -22,6 +22,7 @@ const (
 )
 
 func (b bid) value(numPlayers int) int64 {
+	sn.Debugf("b: %#v", b)
 	return b.Exchange.value(numPlayers) + b.Objective.value() + b.Teams.value(numPlayers)
 }
 
@@ -107,15 +108,15 @@ const (
 
 func (o objective) value() int64 {
 	switch o {
-	case "bridge":
+	case bridgeBid:
 		return 0
-	case "y":
+	case yBid:
 		return 2
-	case "fork":
+	case forkBid:
 		return 4
-	case "five sides":
+	case fiveSidesBid:
 		return 6
-	case "six sides":
+	case sixSidesBid:
 		return 8
 	default:
 		sn.Warningf("invalid objective bid of: %s", o)

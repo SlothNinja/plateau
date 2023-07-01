@@ -39,10 +39,12 @@ func (g *game) exchange(ctx *gin.Context, cu sn.User) error {
 	_, cp.Hand = pie.Diff(cp.Hand, cards)
 	cp.PerformedAction = true
 
-	// g.newEntryFor(cp.ID, message{"template": "card-exchange"})
+	g.NewEntry(exchangedCardsTemplate, sn.Entry{"PID": cp.ID, "HandNumber": g.currentHand()}, nil)
 
 	return nil
 }
+
+const exchangedCardsTemplate = "exchanged-cards"
 
 func (g game) validateExchange(ctx *gin.Context, cu sn.User) (*player, []card, error) {
 	sn.Debugf(msgEnter)

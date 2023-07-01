@@ -30,8 +30,8 @@
             <v-radio :disabled="disableObjective('bridge')" :label="'Bridge (' + obValue('bridge') + ')'" value='bridge'/>
               <v-radio :disabled="disableObjective('y')" :label="'Y (' + obValue('y') + ')'" value='y'/>
                 <v-radio :disabled="disableObjective('fork')" :label="'Fork (' + obValue('fork') + ')'" value='fork'/>
-                  <v-radio :disabled="disableObjective('5-sides')" :label="'5 sides (' + obValue('5-sides') + ')'" value='5-sides'/>
-                    <v-radio :disabled="disableObjective('6-sides')" :label="'6 sides (' + obValue('6-sides') + ')'" value='6-sides'/>
+                  <v-radio :disabled="disableObjective('five sides')" :label="'5 sides (' + obValue('five sides') + ')'" value='five sides'/>
+                    <v-radio :disabled="disableObjective('six sides')" :label="'6 sides (' + obValue('six sides') + ')'" value='six sides'/>
           </v-radio-group>
         </v-col>
         <v-col cols='3'>

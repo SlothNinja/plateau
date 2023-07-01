@@ -20,10 +20,17 @@ func (g *game) passBid(_ *gin.Context, cu sn.User) error {
 	cp.Bid = true
 	cp.Passed = true
 
-	// g.newEntryFor(cp.ID, message{"template": "pass-bid"})
+	if g.Phase == incObjectivePhase {
+		g.AppendEntry(passedIncObjectiveTemplate, nil)
+	} else {
+		g.NewEntry(passedBidTemplate, sn.Entry{"PID": cp.ID, "HandNumber": g.currentHand()}, nil)
+	}
 
 	return nil
 }
+
+const passedIncObjectiveTemplate = "passed-inc-objective"
+const passedBidTemplate = "passed-bid"
 
 func (g game) validatePassBid(cu sn.User) (*player, error) {
 	sn.Debugf(msgEnter)
