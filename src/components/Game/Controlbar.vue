@@ -10,14 +10,14 @@
       </v-tooltip>
 
       <!-- Rollback control -->
-      <v-tooltip location='bottom' text='Rollback' color="info" :disabled='!canRollback' v-if='cu.Admin' >
+      <v-tooltip location='bottom' text='Rollback' color="info" :disabled='!canRollback' v-if='admin' >
         <template v-slot:activator="{ props }">
             <v-btn v-bind="props" icon='mdi-step-backward' :disabled='!canRollback' @click="action('rollback', { rev: stack.Committed })" />
         </template>
       </v-tooltip>
 
       <!-- Rollforward control -->
-      <v-tooltip location='bottom' text='Rollforward' color="info" :disabled='!canRollforward' v-if='cu.Admin'>
+      <v-tooltip location='bottom' text='Rollforward' color="info" :disabled='!canRollforward' v-if='admin'>
         <template v-slot:activator="{ props }">
             <v-btn v-bind="props" icon='mdi-step-forward' @click="action('rollforward', { rev: stack.Committed })" />
         </template>
@@ -62,6 +62,7 @@ const route = useRoute()
 // inject current user
 import { cuKey, stackKey } from '@/composables/keys.js'
 const cu = inject(cuKey)
+const admin = _get(unref(cu), 'Admin', false)
 
 //////////////////////////////////////
 // Snackbar
@@ -83,8 +84,8 @@ const canUndo = computed(() => (unref(running) && unref(isCP) && (unref(stack).C
 const canRedo = computed(() => (unref(running) && unref(isCP) && (unref(stack).Current < unref(stack).Updated)))
 const canReset = computed(() => (unref(running) && unref(isCP)))
 
-const canRollback = computed(() => (unref(cu).Admin && (unref(stack).Current == unref(stack).Committed) && (unref(stack).Committed) > 0))
-const canRollforward = computed(() => (unref(cu).Admin && (unref(stack).Current == unref(stack).Committed)))
+const canRollback = computed(() => (unref(admin) && (unref(stack).Current == unref(stack).Committed) && (unref(stack).Committed) > 0))
+const canRollforward = computed(() => (unref(admin) && (unref(stack).Current == unref(stack).Committed)))
 
 import { usePut } from '@/composables/fetch.js'
 function action(path, data) {

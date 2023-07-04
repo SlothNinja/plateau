@@ -21,14 +21,14 @@
           title='Your Games'
           />
 
-        <v-list-group prepend-icon='mdi-pencil' value='Create'>
+        <v-list-group v-if='cu' prepend-icon='mdi-pencil' >
           <template v-slot:activator='{ props }'>
             <v-list-item v-bind='props' title='Create' />
           </template>
           <v-list-item v-for='(item, index) in items' :key='index' :to='item.createlink' :title='item.title' />
         </v-list-group>
 
-        <v-list-group prepend-icon='mdi-plus' value='Join' >
+        <v-list-group v-if='cu' prepend-icon='mdi-plus' value='Join' >
           <template v-slot:activator='{ props }'>
             <v-list-item v-bind='props' title='Join' />
           </template>

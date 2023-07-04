@@ -101,7 +101,8 @@ function handsPerPlayer(item) {
 // defines table headings
 const headers = computed(
   () => {
-    if (unref(cu).Admin) {
+    const admin = _get(unref(cu), 'Admin', false)
+    if (admin) {
       return [
         { title: 'ID', key: 'id' },
         { title: 'Title', key: 'title' },

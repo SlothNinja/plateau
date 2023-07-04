@@ -108,7 +108,7 @@ const cu = inject(cuKey)
 const game = inject(gameKey)
 
 const player = computed(() => usePlayerByUser(game, cu))
-const pid = computed(() => _get(unref(player), 'ID', 0))
+const pid = computed(() => _get(unref(player), 'ID', 1))
 const opid = computed(
   () => {
     switch (unref(pid)) {

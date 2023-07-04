@@ -42,11 +42,16 @@ func (g *game) New() *game {
 }
 
 func (g game) Views() ([]sn.UID, []*game) {
-	uids, games := make([]sn.UID, g.NumPlayers), make([]*game, g.NumPlayers)
+	uids, games := make([]sn.UID, g.NumPlayers+1), make([]*game, g.NumPlayers+1)
 	for i, p := range g.Players {
 		uids[i] = g.UIDForPID(p.ID)
 		games[i] = g.viewFor(p)
 	}
+
+	// add view for non-player
+	uids[g.NumPlayers] = 0
+	games[g.NumPlayers] = g.viewFor(nil)
+
 	return uids, games
 }
 
@@ -54,7 +59,7 @@ func (g game) Views() ([]sn.UID, []*game) {
 func (g game) viewFor(p *player) *game {
 	g2 := g.copy()
 	for _, p2 := range g2.Players {
-		if p.ID != p2.ID {
+		if p == nil || p.ID != p2.ID {
 			p2.Hand = nil
 		}
 		stacksView(p2)

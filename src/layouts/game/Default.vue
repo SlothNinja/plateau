@@ -26,6 +26,7 @@
       </v-tooltip>
 
       <Controlbar />
+
     </DefaultToolBar>
 
     <DefaultView />
@@ -34,9 +35,8 @@
 
     <DefaultNavDrawer v-model='nav' />
 
-
-
     <DefaultSnack v-model:open='snackbar.open' v-model:message='snackbar.message' />
+
   </v-app>
 </template>
 
@@ -76,6 +76,7 @@ const snackbar = ref({
 })
 
 const cu = inject(cuKey)
+const cuid = _get(unref(cu), 'ID', 0)
 
 function updateSnackbar(msg) {
   snackbar.value.message = msg
@@ -115,17 +116,17 @@ function toggleChat() {
 }
 
 const stackSource = computed(
-  () => doc(db, 'Stack', `${route.params.id}-${unref(cu).ID}`)
+  () => doc(db, 'Stack', `${route.params.id}-${unref(cuid)}`)
 )
 const dbStack = useDocument(stackSource)
 
 const viewSource = computed(
-  () => doc(db, 'Committed', route.params.id, 'View', `${unref(cu).ID}` )
+  () => doc(db, 'Committed', route.params.id, 'View', `${unref(cuid)}` )
 )
 const view = useDocument(viewSource)
 
 const current = computed(() => _get(unref(dbStack), 'Current', -1000))
-const cachedPath = computed(() => `${unref(current)}-${unref(cu).ID}`)
+const cachedPath = computed(() => `${unref(current)}-${unref(cuid)}`)
 const cachedSource = computed(
   () => doc(db, 'Committed', route.params.id, 'Cached', unref(cachedPath))
 )
