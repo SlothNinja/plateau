@@ -76,7 +76,7 @@ const snackbar = ref({
 })
 
 const cu = inject(cuKey)
-const cuid = _get(unref(cu), 'ID', 0)
+const cuid = computed(() => _get(unref(cu), 'ID', 0))
 
 function updateSnackbar(msg) {
   snackbar.value.message = msg
