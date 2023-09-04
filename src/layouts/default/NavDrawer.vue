@@ -102,7 +102,7 @@ const items = computed(
     return _map(unref(types), game => {
       return { 
         createlink: { name: 'sng-new-game', params: { type: game.type } },
-        joinlink: { name: 'sng-join-game', params: { type: game.type, status: 'recruiting' } },
+        joinlink: { name: 'sng-join-game', params: { type: game.type } },
         playlink: { name: 'sng-games', params: { type: game.type, status: 'running' } },
         completedlink: { name: 'sng-games', params: { type: game.type, status: 'completed' } },
         ratingslink: { name: 'sng-ratings', params: { type: game.type } },

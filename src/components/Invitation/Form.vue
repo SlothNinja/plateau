@@ -8,10 +8,11 @@
         New Invitation
       </v-card-subtitle>
       <v-card-text v-if='invitation'>
-
+        <form>
         <v-text-field
             label="Title"
             v-model="invitation.Title"
+            autocomplete='title'
             >
         </v-text-field>
 
@@ -19,6 +20,7 @@
               label="Number of Players"
               :items="[ 2, 3, 4, 5, 6 ]"
               v-model="invitation.NumPlayers"
+              autocomplete='number-of-players'
               >
           </v-select> 
 
@@ -26,6 +28,7 @@
                 label="Hands per Player"
                 :items="[ 1, 2, 3, 4, 5 ]"
                 v-model="invitation.HandsPerPlayer"
+                autocomplete='hands-per-player'
                 >
             </v-select> 
 
@@ -36,11 +39,13 @@
                   :type="show ? 'text' : 'password'"
                   :placeholder="passwordMessage"
                   :hint="passwordMessage"
+                  autocomplete='new-password'
                   persistent-hint
                   clearable
                   @click:append="show = !show"
                   >
               </v-text-field>
+        </form>
 
                 <v-btn class="mt-3" color='green' dark @click="putData">Submit</v-btn>
 
@@ -73,21 +78,23 @@ const invitation = ref()
 
 //////////////////////////////////////////////////////
 // Fetch invitation default values from server
-const { data, error } = useFetch('/sn/invitation/new')
+const fetchURL = `${import.meta.env.VITE_PLATEAU_BACKEND}sn/invitation/new`
+const fetchResponse = useFetch(fetchURL)
 
 /////////////////////////////////////////////////////
 // Watch for data promise to resolve from useFetch
 // update invitation to received default values
 // update snackbar message based on any received message
-watch(data, () => update(data))
+watch(fetchResponse.isReady, () => update(fetchResponse.state))
 
 ///////////////////////////////////////////////////////
 // Put data of new invitation to server
 function putData () {
   invitation.value.OptString = `{ "HandsPerPlayer": ${invitation.value.HandsPerPlayer} }`
   invitation.value.Type = 'plateau'
-  const { response, error } = usePut('/sn/invitation/new', invitation)
-  watch(response, () => update(response))
+  const putURL = `${import.meta.env.VITE_PLATEAU_BACKEND}sn/invitation/new`
+  const putResponse = usePut(putURL, invitation)
+  watch(putResponse.isReady, () => update(putResponse.state))
 }
 
 function update(data) {

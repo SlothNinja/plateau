@@ -1,43 +1,21 @@
 <template>
-  <div>
-    <div :class='klass'>
-      <v-avatar :color='color' :size='size'>
-        <v-avatar :image='path' :size='size-6'></v-avatar>
-      </v-avatar>
-      <div class='ml-1'>
-        <slot v-if='showSlot'></slot>
-        <div v-else>{{user.Name}}</div>
-      </div>
-    </div>
-  </div>
+  <v-avatar :color='color' :size='size'>
+    <v-avatar :image='path' :size='size-6'></v-avatar>
+  </v-avatar>
 </template>
 
 <script setup>
 
 import  { useGravatar } from '@/composables/gravatar.js'
-import { computed, useSlots } from 'vue'
-import _get from 'lodash/get'
-import _isEmpty from 'lodash/isEmpty'
+import { computed } from 'vue'
 
 const props = defineProps({
   color: { type: String, default: 'black' },
-  user: { type: Object, required: true },
+  hash: { type: String, required: true },
   size: { type: Number, required: true },
-  variant: { type: String, default: 'right' },
+  variant: { type: String, default: 'monsterid' },
 })
 
-const path = computed( () => useGravatar(props.user.EmailHash, props.size, props.user.GravType ))
-const klass = computed( () => {
-  switch (props.variant) {
-    case 'bottom':
-      return 'd-inline-flex align-center flex-column'
-    default:
-      return 'd-flex align-center'
-  }
-})
-
-const slots = useSlots()
-
-const showSlot = computed(() => (!_isEmpty(_get(slots.default(), '[0].children[0]', {}))))
+const path = computed( () => useGravatar(props.hash, props.size, props.variant ))
 
 </script>

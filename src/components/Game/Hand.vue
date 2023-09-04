@@ -123,7 +123,6 @@ const { snackbar, updateSnackbar } = inject(snackKey)
 /////////////////////////////////////
 // Submit bid to server
 function submit() {
-  console.log('phase: ' + unref(phase))
   let action = ''
   switch (unref(phase)) {
     case 'card exchange':

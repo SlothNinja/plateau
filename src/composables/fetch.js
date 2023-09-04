@@ -1,20 +1,29 @@
 import { ref, unref } from 'vue'
+import { useAsyncState } from '@vueuse/core'
 
 export function useFetch(url) {
-  const data = ref(null)
-  const error = ref(null)
-
   if (process.env.NODE_ENV == 'development') {
-    url = 'https://plateau.fake-slothninja.com:8091' + url
     console.log('fetching: ' + unref(url))
   }
 
-  fetch(unref(url), { credentials: 'include' } )
-    .then((res) => res.json())
-    .then((json) => (data.value = json))
-    .catch((err) => (error.value = err))
+  return useAsyncState(fetch(unref(url), { credentials: 'include' } ).then((res) => res.json()), {})
+}
 
-  return { data, error }
+function put(url, data) {
+  if (process.env.NODE_ENV == 'development') {
+    console.log('putting: ' + unref(url))
+  }
+
+  const opt = {
+    method: 'PUT',
+    credentials: 'include',
+    headers: {
+      'Content-type': 'application/json'
+    },
+    body: JSON.stringify(unref(data)),
+  } 
+
+  return fetch(unref(url), opt).then((res) => res.json())
 }
 
 export function usePut(url, data) {
@@ -22,21 +31,8 @@ export function usePut(url, data) {
   const error = ref(null)
 
   if (process.env.NODE_ENV == 'development') {
-    url = 'https://plateau.fake-slothninja.com:8091' + unref(url)
     console.log('putting: ' + unref(url))
   }
 
-  fetch(unref(url), {
-    method: 'PUT',
-    credentials: 'include',
-    headers: {
-      'Content-type': 'application/json'
-    },
-    body: JSON.stringify(unref(data)),
-  } )
-    .then((res) => res.json())
-    .then((json) => (response.value = json))
-    .catch((err) => (error.value = err))
-
-  return { response, error }
+  return useAsyncState(put(url, data, {}))
 }

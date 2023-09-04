@@ -74,19 +74,26 @@ func getUserHostURL() string {
 
 // Client provide client structure of the Le Plateau service
 type Client struct {
-	sn.Client[*game, *player]
+	sn.GameClient[*game, *player]
 }
 
 // NewClient returns a new Client for the plateau service
 func NewClient(ctx context.Context) Client {
-	nClient := Client{sn.NewClient[*game, *player](ctx, sn.Options{
-		ProjectID:     projectID(),
-		UserProjectID: getUserProjectID(),
-		UserDSURL:     getUserDSURL(),
-		LoggerID:      "plateau",
-		CorsAllow:     []string{"https://plateau.fake-slothninja.com:8092/*"},
-		Prefix:        "sn",
-	})}
+	sn.Debugf("Entering")
+	defer sn.Debugf("Exiting")
+
+	nClient := Client{sn.NewGameClient[*game, *player](ctx, // sn.Options{
+		sn.WithProjectID(projectID()),
+		sn.WithUserProjectID(getUserProjectID()),
+		sn.WithUserDSURL(getUserDSURL()),
+		sn.WithLoggerID("plateau"),
+		sn.WithCORSAllow(
+			"https://plateau.fake-slothninja.com:8092/*",
+			"https://plateau.fake-slothninja.com:8091/sn/user/current",
+			"https://plateau.slothninja.com/*",
+		),
+		sn.WithPrefix("sn"),
+	)}
 	return nClient.addRoutes("sn")
 }
 

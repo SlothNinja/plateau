@@ -200,12 +200,7 @@ const routes = [
     path: '/user/:id',
     name: 'User',
     beforeEnter(to) {
-      let url = `/#/show/${to.params.id}`
-      if (process.env.NODE_ENV == "development") {
-        url = 'https://user.fake-slothninja.com:8087' + url
-      } else {
-        url = 'https://user.slothninja.com' + url
-      }
+      const url = `${import.meta.env.VITE_USER_FRONTEND}user/${to.params.id}`
       window.location.replace(url)
     }
   },
@@ -213,10 +208,7 @@ const routes = [
     path: '/login',
     name: 'Login',
     beforeEnter() {
-      let url = '/sn/login'
-      if (process.env.NODE_ENV == "development") {
-        url = 'https://plateau.fake-slothninja.com:8091' + url
-      }
+      const url = `${import.meta.env.VITE_USER_BACKEND}sn/user/login`
       window.location.replace(url)
     }
   },
@@ -224,10 +216,8 @@ const routes = [
     path: '/logout',
     name: 'Logout',
     beforeEnter() {
-      let url = '/sn/logout'
-      if (process.env.NODE_ENV == "development") {
-        url = 'https://plateau.fake-slothninja.com:8091' + url
-      }
+      const query = `?redirect=${encodeURIComponent(import.meta.env.VITE_PLATEAU_FRONTEND)}`
+      const url = `${import.meta.env.VITE_USER_BACKEND}sn/user/logout${query}`
       window.location.replace(url)
     }
   },
@@ -235,7 +225,7 @@ const routes = [
     path: '/webpublished',
     name: 'WebPublished',
     beforeEnter() {
-      let url = 'https://boardgamegeek.com/boardgame/339349/le-plateau'
+      const url = 'https://boardgamegeek.com/boardgame/339349/le-plateau'
       window.location.replace(url)
     }
   },
@@ -243,7 +233,7 @@ const routes = [
     path: '/rules',
     name: 'Rules',
     beforeEnter() {
-      let url = 'https://boardgamegeek.com/filepage/223027/le-plateau-rules'
+      const url = 'https://boardgamegeek.com/filepage/223027/le-plateau-rules'
       window.location.replace(url)
     }
   }
