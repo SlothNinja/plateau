@@ -2,34 +2,27 @@ package main
 
 import (
 	"context"
-	"math/rand"
-	"os"
-	"time"
 
+	"github.com/SlothNinja/plateau/main/client"
 	"github.com/SlothNinja/sn/v3"
-	"github.com/gin-gonic/gin"
 )
 
-var myRandomSource = rand.NewSource(time.Now().UnixNano())
-
 func main() {
-	ctx := context.Background()
+	cl := client.New(
+		context.Background(),
+		sn.WithLoggerID("user-service"),
+	)
+
+	defer func() {
+		if err := cl.Close(); err != nil {
+			sn.Warningf("error when closing client: %w", err)
+		}
+	}()
 
 	if sn.IsProduction() {
-		gin.SetMode(gin.ReleaseMode)
-		cl := NewClient(ctx)
-		defer cl.Close()
-		cl.Router.TrustedPlatform = gin.PlatformGoogleAppEngine
 		cl.Router.Run()
-	} else {
-		gin.SetMode(gin.DebugMode)
-		cl := NewClient(ctx)
-		defer cl.Close()
-		cl.Router.SetTrustedProxies(nil)
-		cl.Router.RunTLS(getPort(), "cert.pem", "key.pem")
+		return
 	}
-}
 
-func getPort() string {
-	return ":" + os.Getenv("PORT")
+	cl.Router.RunTLS(":"+cl.GetPort(), "cert.pem", "key.pem")
 }

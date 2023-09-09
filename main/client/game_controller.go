@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"github.com/gin-gonic/gin"
@@ -9,7 +9,7 @@ const (
 	msgExit  = "Exiting"
 )
 
-func (cl Client) mlogHandler(ctx *gin.Context) {
+func (cl *Client) mlogHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 
@@ -42,7 +42,7 @@ func (cl Client) mlogHandler(ctx *gin.Context) {
 	// })
 }
 
-func (cl Client) mlogAddHandler(ctx *gin.Context) {
+func (cl *Client) mlogAddHandler(ctx *gin.Context) {
 	cl.Log.Debugf(msgEnter)
 	defer cl.Log.Debugf(msgExit)
 

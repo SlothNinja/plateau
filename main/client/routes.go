@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"context"
@@ -72,36 +72,6 @@ func getUserHostURL() string {
 	return os.Getenv(UserHostURLEnv)
 }
 
-// Client provide client structure of the Le Plateau service
-type Client struct {
-	sn.GameClient[*game, *player]
-}
-
-// NewClient returns a new Client for the plateau service
-func NewClient(ctx context.Context) Client {
-	sn.Debugf("Entering")
-	defer sn.Debugf("Exiting")
-
-	nClient := Client{sn.NewGameClient[*game, *player](ctx, // sn.Options{
-		sn.WithProjectID(projectID()),
-		sn.WithUserProjectID(getUserProjectID()),
-		sn.WithUserDSURL(getUserDSURL()),
-		sn.WithLoggerID("plateau"),
-		sn.WithCORSAllow(
-			"https://plateau.fake-slothninja.com:8092/*",
-			"https://plateau.fake-slothninja.com:8091/sn/user/current",
-			"https://plateau.slothninja.com/*",
-		),
-		sn.WithPrefix("sn"),
-	)}
-	return nClient.addRoutes("sn")
-}
-
-// Close closes plateau service Client
-func (cl *Client) Close() error {
-	return cl.Client.Close()
-}
-
 func newMsgClient(ctx context.Context) *messaging.Client {
 	if sn.IsProduction() {
 		log.Debugf("production")
@@ -145,10 +115,10 @@ func newMsgClient(ctx context.Context) *messaging.Client {
 // }
 
 // AddRoutes addes routing for game.
-func (cl Client) addRoutes(prefix string) Client {
+func (cl *Client) addRoutes() *Client {
 	/////////////////////////////////////////////
 	// Game Group
-	gGroup := cl.Router.Group(prefix + "/game")
+	gGroup := cl.Router.Group(cl.GetPrefix() + "/game")
 
 	// Place Bid
 	gGroup.PUT("bid/:id", cl.CachedHandler((*game).placeBid))

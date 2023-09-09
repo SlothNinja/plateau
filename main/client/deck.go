@@ -1,9 +1,14 @@
-package main
+package client
 
 import (
+	"math/rand"
+	"time"
+
 	"github.com/SlothNinja/sn/v3"
 	"github.com/elliotchance/pie/v2"
 )
+
+var myRandomSource = rand.NewSource(time.Now().UnixNano())
 
 // shuffled deck for number players
 func deckFor(numPlayers int) []card {
