@@ -62,10 +62,6 @@ import board36 from '@/assets/board36.png'
 import UserButton from '@/components/Common/UserButton'
 import CardStamp from '@/components/Common/CardStamp'
 import Expansion from '@/components/Invitation/Expansion'
-<<<<<<< Updated upstream
-=======
-// import { VDataTable } from 'vuetify/labs/VDataTable'
->>>>>>> Stashed changes
 
 // Composables
 import { useFetch, usePut } from '@/composables/fetch'

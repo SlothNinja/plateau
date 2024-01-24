@@ -23,13 +23,8 @@ export default defineConfig({
     basicSsl(),
   ],
   define: {
-<<<<<<< Updated upstream
     'process.env': {},
     __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'true',
-=======
-          'process.env': {},
-          __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'true',
->>>>>>> Stashed changes
   },
   resolve: {
     alias: {

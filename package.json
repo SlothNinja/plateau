@@ -18,17 +18,10 @@
     "firebase": "^9.20.0",
     "firestore": "^1.1.6",
     "roboto-fontface": "*",
-<<<<<<< Updated upstream
     "vue": "^3.4.15",
     "vue-router": "^4.0.0",
     "vuefire": "^3.1.22",
     "vuetify": "^3.5.1",
-=======
-    "vue": "^3.3.7",
-    "vue-router": "^4.2.5",
-    "vuefire": "^3.1.22",
-    "vuetify": "3.4",
->>>>>>> Stashed changes
     "webfontloader": "^1.0.0"
   },
   "devDependencies": {
