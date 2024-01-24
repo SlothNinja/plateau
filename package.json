@@ -18,10 +18,10 @@
     "firebase": "^9.20.0",
     "firestore": "^1.1.6",
     "roboto-fontface": "*",
-    "vue": "^3.2.13",
+    "vue": "^3.4.15",
     "vue-router": "^4.0.0",
-    "vuefire": "^3.1.0",
-    "vuetify": "^3.3.2",
+    "vuefire": "^3.1.22",
+    "vuetify": "^3.5.1",
     "webfontloader": "^1.0.0"
   },
   "devDependencies": {

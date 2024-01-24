@@ -51,7 +51,6 @@ import board36 from '@/assets/board36.png'
 // Components
 import UserButton from '@/components/Common/UserButton'
 import CardStamp from '@/components/Common/CardStamp'
-import { VDataTable } from 'vuetify/labs/VDataTable'
 
 // Composables
 import { useCreator, useUsers } from '@/composables/user'

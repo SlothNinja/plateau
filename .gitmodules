@@ -1,0 +1,3 @@
+[submodule "src/snvue"]
+	path = src/snvue
+	url = git@github.com:SlothNinja/snvue.git
