@@ -73,11 +73,12 @@ const stack = inject(stackKey)
 // Inject game
 import { gameKey } from '@/composables/keys'
 const game = inject(gameKey)
+const header = computed(() => _get(unref(game), 'Header', {}))
 
 import { useCP, useIsCP } from '@/composables/player.js'
-const isCP = computed(() => useIsCP(game, cu))
+const isCP = computed(() => useIsCP(header, cu))
 const performedAction = computed(() => _get(unref(useCP(game)), 'PerformedAction', false))
-const running = computed(() => (_get(unref(game), 'Status', '') == 'running'))
+const running = computed(() => (_get(unref(game), 'Header.Status', '') == 'running'))
 
 const canFinish = computed(() => (unref(running) && unref(isCP) && unref(performedAction)))
 const canUndo = computed(() => (unref(running) && unref(isCP) && (unref(stack).Current > unref(stack).Committed)))
@@ -89,10 +90,15 @@ const canRollforward = computed(() => (unref(admin) && (unref(stack).Current == 
 
 import { usePut } from '@/composables/fetch.js'
 function action(path, data) {
-  const { response, error } = usePut(`/sn/game/${path}/${route.params.id}`, data)
+  let url = `/sn/game/${path}/${route.params.id}`
+  if (process.env.NODE_ENV == 'development') {
+    const backend = import.meta.env.VITE_PLATEAU_BACKEND
+    url = `${backend}sn/game/${path}/${route.params.id}`
+  }
+  const { state, isReady, isLoading } = usePut(url, data)
 
-  watch( response, () => {
-    const msg = _get(unref(response), 'Message', '')
+  watch( state, () => {
+    const msg = _get(unref(state), 'Message', '')
     if (!_isEmpty(msg)) {
       updateSnackbar(msg)
     }
@@ -101,7 +107,7 @@ function action(path, data) {
 
 const finishPath = computed(
   ()=> {
-    switch(_get(unref(game), 'Phase', '')) {
+    switch(_get(unref(game), 'Header.Phase', '')) {
       case 'bid':
         return 'finish/bid'
       case 'pass':

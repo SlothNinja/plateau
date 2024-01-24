@@ -12,7 +12,7 @@ func (g *game) startPickPartner() *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	g.Phase = pickPartnerPhase
+	g.Header.Phase = pickPartnerPhase
 	switch b := g.lastBid(); b.Teams {
 	case duoBid:
 		g.updatePickCards()
@@ -30,17 +30,17 @@ func (g *game) updatePickCards() {
 	defer sn.Debugf(msgExit)
 
 	for _, r := range []rank{roiRank, dameRank, cavalierRank, valetRank, tenRank} {
-		g.Pick = removeCards(cardsOfRank(r), g.Deck...)
+		g.State.Pick = removeCards(cardsOfRank(r), g.State.Deck...)
 		for _, p := range g.declarers() {
-			g.Pick = removeCards(g.Pick, p.Hand...)
+			g.State.Pick = removeCards(g.State.Pick, p.Hand...)
 		}
-		if len(g.Pick) > 0 {
+		if len(g.State.Pick) > 0 {
 			break
 		}
 	}
 }
 
-func (g game) otherTeam(pids1 []sn.PID) []sn.PID {
+func (g *game) otherTeam(pids1 []sn.PID) []sn.PID {
 	return pie.FilterNot(g.Players.PIDS(), func(pid2 sn.PID) bool {
 		return pie.Any(pids1, func(pid1 sn.PID) bool { return pid1 == pid2 })
 	})
@@ -81,32 +81,39 @@ func (g game) otherTeam(pids1 []sn.PID) []sn.PID {
 // 	ctx.JSON(http.StatusOK, nil)
 // }
 
-func (g *game) pickPartner(ctx *gin.Context, cu sn.User) (*player, *player, error) {
+//	func pickPartnerAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) (*player, *player, error) {
+//		sn.Debugf(msgEnter)
+//		defer sn.Debugf(msgExit)
+//
+//		g := &game{sngame}
+//		return g.pickPartner(ctx, cu)
+//	}
+func (g *game) pickPartner(ctx *gin.Context, cu sn.User) (sn.PID, sn.PID, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	// warning card variable shadows card type
 	cp, card, err := g.validatePickPartner(ctx, cu)
 	if err != nil {
-		return cp, nil, err
+		return cp.id(), sn.NoPID, err
 	}
 
 	for _, p := range g.opposers() {
 		if p.hasCard(card) {
-			g.DeclarersTeam = append(g.DeclarersTeam, p.ID)
+			g.State.DeclarersTeam = append(g.State.DeclarersTeam, p.id())
 			break
 		}
 	}
 
-	if g.lastBid().Teams == trioBid && len(g.DeclarersTeam) < 3 {
+	if g.lastBid().Teams == trioBid && len(g.State.DeclarersTeam) < 3 {
 		g.updatePickCards()
-		return cp, cp, nil
+		return cp.id(), cp.id(), nil
 	}
-	g.Pick = nil
-	return cp, g.startIncObjective(), nil
+	g.State.Pick = nil
+	return cp.id(), g.startIncObjective().ID, nil
 }
 
-func (g game) validatePickPartner(ctx *gin.Context, cu sn.User) (*player, card, error) {
+func (g *game) validatePickPartner(ctx *gin.Context, cu sn.User) (*player, card, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -128,8 +135,8 @@ func (g game) validatePickPartner(ctx *gin.Context, cu sn.User) (*player, card, 
 	selectedCard := pie.First(cards)
 
 	switch {
-	case g.Phase != pickPartnerPhase:
-		return nil, noCard, fmt.Errorf("cannot select partner in %q phase: %w", g.Phase, sn.ErrValidation)
+	case g.Header.Phase != pickPartnerPhase:
+		return nil, noCard, fmt.Errorf("cannot select partner in %q phase: %w", g.Header.Phase, sn.ErrValidation)
 	case cp.hasCard(selectedCard):
 		return nil, noCard, fmt.Errorf("must select highest non-trump card not in your hand: %w", sn.ErrValidation)
 	case selectedCard.Rank.value() < roiRank.value() && cp.hasRank(roiRank):

@@ -1,6 +1,6 @@
 <template>
   <div :style='style'>
-    <div v-if="text != ''" class='text-center' style='white-space: pre'>{{text}}</div>
+    <div v-if="text != ''" class='text-center font-weight-bold' :class="`text-${textcolor}`" style='white-space: pre'>{{text}}</div>
     <v-img :src='src' />
   </div>
 </template>
@@ -99,9 +99,22 @@ import excusetrumps from '@/assets/card_24.png'
 import { computed, ref, unref } from 'vue'
 import _lowerCase from 'lodash/lowerCase'
 
-const props = defineProps([ 'suit', 'rank', 'width', 'text' ])
+const props = defineProps({
+  suit: { type: String, require: true },
+  rank: { type: String, required: true },
+  width: { type: Number, required: true },
+  text: { type: String, required: true },
+  textcolor: { type: String, default: 'black' },
+  stacked: { type: Boolean, default: false },
+})
 
-const style = computed(() => (`width:${props.width}px`))
+const style = computed(() => {
+  let styl = `width:${props.width}px;height:${props.width*2}`
+  if (props.stacked) {
+    return styl + ';position:relative;top:-145px'
+  }
+  return styl
+})
 
 const key = computed(() => _lowerCase(`${props.rank}${props.suit}`))
 

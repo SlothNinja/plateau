@@ -12,29 +12,29 @@
             >
 
             <template v-slot:item.admin='{ item }'>
-              <v-btn @click.stop='abandon(item.raw.id)' size='x-small' rounded color='green'>Abandon</v-btn>
+              <v-btn @click.stop='abandon(item.id)' size='x-small' rounded color='green'>Abandon</v-btn>
             </template>
 
             <template v-slot:item.title='{ item }'>
-              {{item.raw.Title}}
+              {{item.Title}}
             </template>
 
             <template v-slot:item.creator='{ item }'>
-              <UserButton :user='useCreator(item.raw)' :size='size' />
+              <UserButton :user='useCreator(item)' :size='size' />
             </template>
 
             <template v-slot:item.pRounds='{ item }'>
-              {{item.raw.NumPlayers}} : {{handsPerPlayer(item)}}
+              {{item.NumPlayers}} : {{handsPerPlayer(item)}}
             </template>
 
             <template v-slot:item.players="{ item }">
-              <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item.raw)' :key='user.ID'>
+              <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item)' :key='user.ID'>
               <span :class='userClass(item, user)'>{{user.Name}}</span>
               </UserButton>
             </template>
 
             <template v-slot:item.lastUpdated="{ item }">
-              {{fromNow(item.raw.UpdatedAt.toDate())}}
+              {{fromNow(item.UpdatedAt.toDate())}}
             </template>
 
         </v-data-table>
@@ -51,6 +51,10 @@ import board36 from '@/assets/board36.png'
 // Components
 import UserButton from '@/components/Common/UserButton'
 import CardStamp from '@/components/Common/CardStamp'
+<<<<<<< Updated upstream
+=======
+// import { VDataTable } from 'vuetify/labs/VDataTable'
+>>>>>>> Stashed changes
 
 // Composables
 import { useCreator, useUsers } from '@/composables/user'
@@ -88,12 +92,12 @@ const router = useRouter()
 
 const status = computed(() => _get(route, 'params.status', ''))
 
-const items = useCollection(query(collection(db, 'Committed'), where('Status', '==', unref(status))))
+const items = useCollection(query(collection(db, 'Index'), where('Status', '==', unref(status))))
 
 const sorted = computed(() => _reverse(_sortBy(unref(items), ['UpdatedAt'])))
 
 function handsPerPlayer(item) {
-  const opt = JSON.parse(_get(unref(item), 'raw.OptString', {}))
+  const opt = JSON.parse(_get(unref(item), 'OptString', {}))
   return _get(opt, 'HandsPerPlayer', 0)
 }
 
@@ -128,30 +132,25 @@ const size = 32
 
 // Directs browser to selected game in table
 function show(event, data) {
-  let id = _get(data, 'item.raw.id', -1)
+  let id = _get(data, 'item.id', -1)
   if (id != -1) {
     router.push({ name: 'GameShow', params: { id: id } })
   }
 } 
 
 function userClass(item, user) {
-  const itm = _get(item, 'raw', {})
-  if (_isEmpty(itm)) {
-    return ''
-  }
-
   const uid = _get(unref(user), 'ID', -1)
 
-  if (itm.status == 'completed') {
-    return winnerClass(itm, uid)
+  if (item.status == 'completed') {
+    return winnerClass(item, uid)
   } 
-  return cpClass(itm, uid)
+  return cpClass(item, uid)
 }
 
-function cpClass(itm, uid) {
-  const pid = _indexOf(_get(itm, 'UserIDS', []), uid) + 1
+function cpClass(item, uid) {
+  const pid = _indexOf(_get(item, 'UserIDS', []), uid) + 1
 
-  if (_includes(_get(itm, 'CPIDS', []), pid)) {
+  if (_includes(_get(item, 'CPIDS', []), pid)) {
     if (unref(cuid) == uid) {
       return 'font-weight-black text-red-darken-4'
     }
@@ -160,8 +159,8 @@ function cpClass(itm, uid) {
   return ''
 }
 
-function winnerClass(itm, uid) {
-  if (_includes(_get(itm, 'WinnerIDS', []), uid)) {
+function winnerClass(item, uid) {
+  if (_includes(_get(item, 'WinnerIDS', []), uid)) {
     if (unref(cuid) == usid) {
       return 'font-weight-black text-red-darken-4'
     }

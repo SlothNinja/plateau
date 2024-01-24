@@ -4,6 +4,7 @@
         :hash='user.EmailHash'
         :size='size'
         :variant='user.GravType'
+        :color='color'
         @click="toUser"
         style="cursor:pointer"
         />
@@ -26,6 +27,7 @@ const props = defineProps({
   user: { type: Object, required: true },
   size: { type: Number, required: true },
   bottom: { type: Boolean, default: false },
+  color: { type: String, default: 'black' },
 })
 
 const router = useRouter()

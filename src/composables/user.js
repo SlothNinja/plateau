@@ -13,6 +13,10 @@ export function useUserByIndex(header, index) {
   }
 }
 
+export function useUserByPID(header, pid) {
+  return useUserByIndex(header, unref(pid) - 1)
+}
+
 export function useUsers(header) {
   const h = unref(header)
   return _map(_get(h, 'UserIDS', []), (id, i) => useUserByIndex(h, i))

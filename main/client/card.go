@@ -147,7 +147,7 @@ func getCards(ctx *gin.Context) ([]card, error) {
 	return obj, nil
 }
 
-func (g game) cardsFor(team []sn.PID) []card {
+func (g *game) cardsFor(team []sn.PID) []card {
 	var cards []card
 	pie.Each(g.tricksFor(team), func(t trick) {
 		cards = append(cards, pie.Map(t.Cards, func(c card) card {

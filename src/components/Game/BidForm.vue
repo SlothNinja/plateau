@@ -98,45 +98,61 @@ const route = useRoute()
 // inject game and current user
 const cu = inject(cuKey)
 const game = inject(gameKey)
+const header = computed(() => _get(unref(game), 'Header', {}))
 
 const cp = computed(() => useCP(game))
-const cpid = computed(() => useCPID(game))
-const isCP = computed(() => useIsCP(game, cu))
+const cpid = computed(() => useCPID(header))
+const isCP = computed(() => useIsCP(header, cu))
 
-const bvalue = ref({})
+const bid = ref({})
 
 const minObjective = ref('')
 const minObjectiveValue = computed(() => obValue(unref(minObjective)))
-const bids = computed(() => _get(unref(game), 'Bids', []))
+const bids = computed(() => _get(unref(game), 'State.Bids', []))
 const lastBid = computed(() => _last(unref(bids)))
 
-const bid = computed({
-  get() {
-    switch (unref(phase)) {
-      case 'bid':
-        if (_isEmpty(unref(bvalue))) {
-          if (_isEmpty(unref(lastBid))) {
-            bvalue.value = minBid(unref(numPlayers))
-          } else {
-            bvalue.value = { ...unref(lastBid) }
-          }
-          bvalue.value.PID = unref(cpid)
-        }
-        return unref(bvalue)
-      case 'increase objective':
-        bvalue.value = { ...unref(lastBid) }
-        bvalue.value.PID = unref(cpid)
-        minObjective.value = _get(unref(lastBid), 'Objective', '')
-        return unref(bvalue)
-      default:
-        bvalue.value = {}
-        return unrefi(bvalue)
-    }
-  },
-  set(value) {
-    bvalue.value = value
+onMounted(() => {
+  if (_isEmpty(unref(lastBid))) {
+    bid.value = minBid(unref(numPlayers))
+    bid.value.PID = unref(cpid)
+    return
   }
+  bid.value = {...unref(lastBid)}
+  bid.value.PID = unref(cpid)
 })
+
+watch(lastBid, (newBid) => {
+  bid.value = {...unref(newBid)}
+  bid.value.PID = unref(cpid)
+})
+
+// const bid = computed({
+//   get() {
+//     switch (unref(phase)) {
+//       case 'bid':
+//         if (_isEmpty(unref(bvalue))) {
+//           if (_isEmpty(unref(lastBid))) {
+//             bvalue.value = minBid(unref(numPlayers))
+//           } else {
+//             bvalue.value = { ...unref(lastBid) }
+//           }
+//           bvalue.value.PID = unref(cpid)
+//         }
+//         return unref(bvalue)
+//       case 'increase objective':
+//         bvalue.value = { ...unref(lastBid) }
+//         bvalue.value.PID = unref(cpid)
+//         minObjective.value = _get(unref(lastBid), 'Objective', '')
+//         return unref(bvalue)
+//       default:
+//         bvalue.value = {}
+//         return unref(bvalue)
+//     }
+//   },
+//   set(value) {
+//     bvalue.value = value
+//   }
+// })
 
 function exValue(exchange) {
   return exchangeValue({'Exchange': exchange})
@@ -164,8 +180,8 @@ const objective = computed({
   }
 })
 
-const phase = computed(() => _get(unref(game), 'Phase', ''))
-const numPlayers = computed(() => _get(unref(game), 'NumPlayers', 0))
+const phase = computed(() => _get(unref(game), 'Header.Phase', ''))
+const numPlayers = computed(() => _get(unref(game), 'Header.NumPlayers', 0))
 
 const showExchange = computed(() => (unref(numPlayers) < 6))
 const showTeams = computed(() => (unref(numPlayers) >= 4))
@@ -205,7 +221,7 @@ const canAbdicate = computed(() => {
 })
 
 function declarer(player) {
-  return _first(_get(unref(game), 'DeclarersTeam', [])) == unref(player).ID
+  return _first(_get(unref(game), 'State.DeclarersTeam', [])) == unref(player).ID
 }
 
 //////////////////////////////////////
@@ -219,15 +235,25 @@ function submit() {
   if (unref(phase) == 'increase objective') {
     action = 'incObjective'
   }
-  const { response, error } = usePut(`/sn/game/${action}/${route.params.id}`, bid)
+  let url = `/sn/game/${action}/${route.params.id}`
+  if (process.env.NODE_ENV == 'development') {
+    const backend = import.meta.env.VITE_PLATEAU_BACKEND
+    url = `${backend}sn/game/${action}/${route.params.id}`
+  }
+  const { state, isReady, isLoading } = usePut(url, bid)
 
-  watch(response, () => update(response))
+  watch(state, () => update(state))
 }
 
 /////////////////////////////////////
 // Send pass action to server
 function pass() {
-  const { response, error } = usePut(`/sn/game/passBid/${route.params.id}`)
+  let url = `/sn/game/passBid/${route.params.id}`
+  if (process.env.NODE_ENV == 'development') {
+    const backend = import.meta.env.VITE_PLATEAU_BACKEND
+    url = `${backend}sn/game/passBid/${route.params.id}`
+  }
+  const { response, error } = usePut(url)
 
   watch(response, () => update(response))
 }

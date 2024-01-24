@@ -4,7 +4,6 @@
       <v-table density='compact'>
         <thead>
           <tr>
-            <th class='text-center'>Declarer</th>
             <th class='text-center'>Name</th>
             <th class='text-center'>Passed</th>
             <th class='text-center'>Last Bid</th>
@@ -13,13 +12,14 @@
         </thead>
         <tbody>
           <tr :class='cpClass(p)' v-for='(p, index) in players' :key='index'>
-            <td class='text-center'>{{declarer(p) ? 'X' : ''}}</td>
             <td class='text-center'>
               <UserButton
-                  :user='useUserByIndex(game, p.ID-1)'
+                  :user='useUserByPID(header, p.ID)'
                   :size='24'
                   :color='useColorFor(dTeam, p.ID)'
-                  />
+                  >
+                  {{nameFor(p)}}
+              </UserButton>
             </td>
             <td class='text-center'>{{p.Passed}}</td>
             <td class='text-center'>{{bidLabel(p.ID)}}</td>
@@ -36,10 +36,10 @@
 import UserButton from '@/components/Common/UserButton.vue'
 
 // import composables
-import { bidValue } from '@/composables/bid.js'
-import { useUserByIndex } from '@/composables/user.js'
-import { useIsCP, usePlayerByPID } from '@/composables/player.js'
-import { useColorFor } from '@/composables/color.js'
+import { bidValue } from '@/composables/bid'
+import { useUserByPID } from '@/composables/user'
+import { useIsCP, useCPID, useNameFor, usePlayerByPID } from '@/composables/player'
+import { useColorFor } from '@/composables/color'
 
 // import lodash
 import _findLast from 'lodash/findLast'
@@ -73,19 +73,29 @@ import { cuKey, gameKey } from '@/composables/keys.js'
 const cu = inject(cuKey)
 const game = inject(gameKey)
 
+const header = computed(() => _get(unref(game), 'Header', {}))
+
 function declarer(player) {
-  return _first(_get(unref(game), 'DeclarersTeam', [])) == unref(player).ID
+  return _first(_get(unref(game), 'State.DeclarersTeam', [])) == unref(player).ID
+}
+
+const cpid = computed(() => useCPID(header))
+
+function nameFor(p) {
+  let name = useNameFor(header, p.ID)
+  if (declarer(p)) {
+    return `[${name}]`
+  }
+  return name
 }
 
 function cpClass(player) {
-  const pid = player.id
-
-  if (_includes(_get(unref(game), 'CPIDS', []), pid)) {
-    if (useIsCP(game, cu)) {
-      return 'font-weight-black text-red-darken-4'
-    }
-    return 'font-weight-black'
+  const pid = player.ID
+  const color = useColorFor(props.dTeam, pid)
+ 
+  if (_includes(_get(unref(header), 'CPIDS', []), pid)) {
+    return `font-weight-black text-${color}`
   }
-  return ''
+  return `text-${color}`
 }
 </script>

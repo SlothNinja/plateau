@@ -19,14 +19,15 @@ import _get from 'lodash/get'
 const cu = inject(cuKey)
 const game = inject(gameKey)
 
-const phase = computed(() => _get(unref(game), 'Phase', ''))
+const header = computed(() => _get(unref(game), 'Header', {}))
+const phase = computed(() => _get(unref(header), 'Phase', ''))
 const cp = computed(() => useCP(game))
-const cpid = computed(() => useCPID(game))
-const isCP = computed(() => useIsCP(game, cu))
+const cpid = computed(() => useCPID(header))
+const isCP = computed(() => useIsCP(header, cu))
 const uIndex = computed(() => (unref(cpid) - 1))
-const user = computed(() => useUserByIndex(game, uIndex))
+const user = computed(() => useUserByIndex(header, uIndex))
 const waitMessage = computed(() => (`Please wait for ${unref(user).Name} to take a turn.`))
-const numPlayers = computed(() => _get(unref(game), 'NumPlayers', 0))
+const numPlayers = computed(() => _get(unref(header), 'NumPlayers', 0))
 
 const message = computed(() => {
   switch(unref(phase)) {

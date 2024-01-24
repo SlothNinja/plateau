@@ -8,6 +8,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// func abdicateAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) error {
+// 	sn.Debugf(msgEnter)
+// 	defer sn.Debugf(msgExit)
+//
+// 	g := &game{sngame}
+// 	return g.abdicate(ctx, cu)
+// }
+
 func (g *game) abdicate(_ *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
@@ -19,12 +27,12 @@ func (g *game) abdicate(_ *gin.Context, cu sn.User) error {
 
 	cp.PerformedAction = true
 	cp.Bid = true
-	g.DeclarersTeam[0], g.DeclarersTeam[1] = g.DeclarersTeam[1], g.DeclarersTeam[0]
+	g.State.DeclarersTeam[0], g.State.DeclarersTeam[1] = g.State.DeclarersTeam[1], g.State.DeclarersTeam[0]
 
 	return nil
 }
 
-func (g game) validateAbdicate(cu sn.User) (*player, error) {
+func (g *game) validateAbdicate(cu sn.User) (*player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -32,16 +40,16 @@ func (g game) validateAbdicate(cu sn.User) (*player, error) {
 	switch {
 	case err != nil:
 		return nil, err
-	case g.NumPlayers != 5:
+	case g.Header.NumPlayers != 5:
 		return nil, fmt.Errorf("the declarer can only abdicate in a 5 player game: %w", sn.ErrValidation)
-	case !(pie.Contains(g.DeclarersTeam, g.lastBid().PID) && g.lastBid().PID != cp.ID):
+	case !(pie.Contains(g.State.DeclarersTeam, g.lastBid().PID) && g.lastBid().PID != cp.id()):
 		return nil, fmt.Errorf("the declarer can only abdicate if partner increased objective: %w", sn.ErrValidation)
-	case len(g.DeclarersTeam) != 2:
+	case len(g.State.DeclarersTeam) != 2:
 		return nil, fmt.Errorf("the declarer can only abdicate if there is a partner: %w", sn.ErrValidation)
-	case pie.First(g.DeclarersTeam) != cp.ID:
+	case pie.First(g.State.DeclarersTeam) != cp.id():
 		return nil, fmt.Errorf("only the declarer may abdicate: %w", sn.ErrValidation)
-	case g.Phase != incObjectivePhase:
-		return nil, fmt.Errorf("cannot abdicate during %q phase: %w", g.Phase, sn.ErrValidation)
+	case g.Header.Phase != incObjectivePhase:
+		return nil, fmt.Errorf("cannot abdicate during %q phase: %w", g.Header.Phase, sn.ErrValidation)
 	default:
 		return cp, nil
 	}

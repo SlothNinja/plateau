@@ -1,11 +1,12 @@
-import { unref } from 'vue'
+import { ref, unref } from 'vue'
 import _find from 'lodash/find'
 import _get from 'lodash/get'
 import _findIndex from 'lodash/findIndex'
-import { useUserByIndex } from '@/composables/user'
+import { useUserByPID } from '@/composables/user'
 
 export function usePlayerByUser(game, user) {
-  const pid = usePIDForUser(game, user)
+  const header = ref(_get(unref(game), 'Header', {}))
+  const pid = usePIDForUser(header, user)
   return usePlayerByPID(game, pid)
 }
 
@@ -14,31 +15,29 @@ export function usePlayerByPID(game, pid) {
   return _find(players, [ 'ID', unref(pid) ])
 }
 
-export function usePIDForUser(game, user) {
-  const g = unref(game)
-  const u = unref(user)
-  const uid = _get(u, 'ID', -1)
-  const uids = _get(g, 'UserIDS', []) 
+export function usePIDForUser(header, user) {
+  const uid = _get(unref(user), 'ID', -1)
+  const uids = _get(unref(header), 'UserIDS', []) 
   const index = _findIndex(uids, id => id == uid)
   return index + 1
 }
 
 export function useCP(game) {
-  const cpid = useCPID(game)
+  const header = _get(unref(game), 'Header', {})
+  const cpid = useCPID(header)
   const players = _get(unref(game), 'Players', [])
   return _find(players, [ 'ID', cpid ])
 }
 
-export function useCPID(game) {
-  const g = unref(game)
-  return _get(g, 'CPIDS[0]', -1)
+export function useCPID(header) {
+  return _get(unref(header), 'CPIDS[0]', -1)
 }
 
-export function useIsCP(game, cu) {
-  return usePIDForUser(game, cu) == useCPID(game)
+export function useIsCP(header, cu) {
+  return usePIDForUser(header, cu) == useCPID(header)
 }
 
-export function useNameFor(game, pid) {
-  const user = useUserByIndex(unref(game), unref(pid) - 1)
+export function useNameFor(header, pid) {
+  const user = useUserByPID(header, pid)
   return _get(user, 'Name', '')
 }

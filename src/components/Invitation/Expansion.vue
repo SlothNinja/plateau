@@ -100,6 +100,7 @@ import _isEmpty from 'lodash/isEmpty'
 
 // Vue
 import { computed, ref, unref, inject, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 // composables
 import { useFetch, usePut } from '@/composables/fetch.js'
@@ -128,7 +129,7 @@ const show = ref(false)
 const length = computed(() => _get(props, 'columns.length', 1))
 
 // Fetch player details for item
-const id = ref(_get(props, 'item.raw.id', false))
+const id = ref(_get(props, 'item.id', false))
 const { data, error } = useFetch(`/sn/invitation/details/${unref(id)}`)
 const details = computed(() => _get(unref(data), 'details', []))
 
@@ -138,26 +139,31 @@ function detailsFor (uid) {
 }
 
 // Create creator and user objects from item
-const creator = computed(() => useCreator(_get(props, 'item.raw', {})))
-const users = computed(() => useUsers(_get(props, 'item.raw', [])))
+const creator = computed(() => useCreator(_get(props, 'item', {})))
+const users = computed(() => useUsers(_get(props, 'item', [])))
 
 // Indicates whether the current user has joined the item
-const notJoined = computed(() => !_includes(_get(props, 'item.raw.UserIDS', []), unref(cuid)))
+const notJoined = computed(() => !_includes(_get(props, 'item.UserIDS', []), unref(cuid)))
 
 // Indicates whether the item is public or password protected
-// const publick = computed(() => _get(props, 'item.raw.public', false))
-const privat = computed(() => _get(props, 'item.raw.Private', false))
+// const publick = computed(() => _get(props, 'item.public', false))
+const privat = computed(() => _get(props, 'item.Private', false))
 
 
 // Inject snackbar
 const { snackbar, updateSnackbar } = inject(snackKey)
 
+const router = useRouter()
 // Accept or drop from invitation
 function action(obj) {
   const action = _get(obj, 'action', '')
-  const id = _get(obj, 'item.raw.id', 0)
+  const id = _get(obj, 'item.id', 0)
   const pword = _get(obj, 'password', '')
-  const { response, error } = usePut(`/sn/invitation/${action}/${id}`, { password: pword })
+  const backendPath = `${import.meta.env.VITE_PLATEAU_BACKEND}sn`
+  const acceptHRef = router.resolve({ name: 'InvitationAction', params: { id: id, action: action } }).href
+  const acceptPath = `${backendPath}${acceptHRef}`
+  console.log(`acceptPath: ${JSON.stringify(acceptPath)}`)
+  const { response, error } = usePut(acceptPath, { password: pword })
 
   // Wait for response data from server and update snackbar and clear password
   watch(response, () => {

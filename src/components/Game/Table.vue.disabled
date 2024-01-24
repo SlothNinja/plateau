@@ -29,7 +29,7 @@ import Bids from '@/components/Game/Bids.vue'
 import BidForm from '@/components/Game/BidForm.vue'
 
 // vue
-import { computed, inject } from 'vue'
+import { computed, inject, unref } from 'vue'
 
 // lodash
 import _get from 'lodash/get'
@@ -44,12 +44,12 @@ const cu = inject(cuKey)
 const isCP = computed(() => (useIsCP(game, cu)))
 
 const showForm = computed(() => {
-  const phase = _get(game, 'value.header.phase', '')
-  return isCP.value && (phase == 'bid' || phase == 'increase objective')
+  const phase = _get(unref(game), 'Header.Phase', '')
+  return unref(isCP) && (phase == 'bid' || phase == 'increase objective')
 })
 
 const showTrick = computed(() => {
-  const phase = _get(game, 'value.header.phase', '')
+  const phase = _get(unref(game), 'Header.Phase', '')
   return phase == 'card play'
 })
 

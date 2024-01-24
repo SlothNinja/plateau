@@ -32,18 +32,18 @@ func (g *game) spacesFor(team []sn.PID) []space {
 	return ss
 }
 
-func (g game) spacesNotOwnedBy(team []sn.PID) []space {
+func (g *game) spacesNotOwnedBy(team []sn.PID) []space {
 	_, notOwnedBy := pie.Diff(g.allSpaces(), g.spacesFor(team))
 	sn.Debugf("notOwnedBy: %#v", notOwnedBy)
 	return notOwnedBy
 }
 
-func (g game) allSpaces() []space {
+func (g *game) allSpaces() []space {
 	return pie.Keys(g.neighbors())
 }
 
-func (g game) neighbors() map[space][]space {
-	if g.NumPlayers == 2 {
+func (g *game) neighbors() map[space][]space {
+	if g.Header.NumPlayers == 2 {
 		return neighbors2()
 	}
 	return neighbors36()

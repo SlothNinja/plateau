@@ -1,16 +1,17 @@
 <template>
   <v-card elevation='4'>
     <v-card-title class='d-flex'>
-      <div>{{useNameFor(game, pid)}}</div>
+      <div :class='textcolor'>{{title}}</div>
       <div class='text-center w-100'>
         <v-btn v-if='canSubmit' @click='submit' size='small' color='green'>Submit</v-btn>
       </div>
     </v-card-title>
     <v-card-text class='h-100 w-100'>
-      <Stacks
+      <CardDisplay
           v-if='showStack'
           :height='height'
-          :stacks='myStacks'
+          :multi='1'
+          :cards='myStacks'
           v-model:selected='selected'
           />
       <CardDisplay
@@ -35,8 +36,8 @@
 
 <script setup>
 // components
-import CardDisplay from '@/components/Game/CardDisplay.vue'
-import Stacks from '@/components/Game/Stacks.vue'
+import CardDisplay from '@/components/Game/CardDisplay'
+import { useColorFor } from '@/composables/color'
 
 // lodash
 import _size from 'lodash/size'
@@ -57,8 +58,11 @@ import { useIsCP, useCPID, useNameFor, usePlayerByUser } from '@/composables/pla
 import { usePut } from '@/composables/fetch'
 import { useStackByPID } from '@/composables/stack'
 
+const cu = inject(cuKey)
+const game = inject(gameKey)
+
 const player = computed(() => usePlayerByUser(game, cu))
-const pid = computed(() =>_get(unref(player), 'ID', 1))
+const pid = computed(() => _get(unref(player), 'ID', -1))
 
 const hand = computed({
   get() {
@@ -72,20 +76,19 @@ const hand = computed({
 const props = defineProps([ 'height' ])
 const hover = ref([])
 
-const cu = inject(cuKey)
-const game = inject(gameKey)
-
-const isCP = computed(() => useIsCP(game, cu))
+const header = computed(() => _get(unref(game), 'Header', {}))
+const isCP = computed(() => useIsCP(header, cu))
 const myStacks = computed(() => useStackByPID(game, pid))
-const numPlayers = computed(() => _get(unref(game), 'NumPlayers', 0))
+const numPlayers = computed(() => _get(unref(header), 'NumPlayers', 0))
 const showStack = computed(() => unref(numPlayers) == 2)
+const title = computed(() => unref(useNameFor(header, pid)))
 
-const phase = computed(() => _get(unref(game), 'Phase', ''))
+const phase = computed(() => _get(unref(header), 'Phase', ''))
 const performedAction  = computed(() => _get(unref(player), 'PerformedAction', false))
 
 const pickPartner = computed(() => (unref(isCP) && (unref(phase) == 'pick partner')))
 
-const pickPartnerCards = computed(() => _get(unref(game), 'Pick', []))
+const pickPartnerCards = computed(() => _get(unref(game), 'State.Pick', []))
 
 const selected = ref([])
 
@@ -116,6 +119,9 @@ const multi = computed(
   }
 )
 
+const dTeam = computed(() => _get(unref(game), 'State.DeclarersTeam'))
+const textcolor = computed(() => `text-${useColorFor(dTeam, pid)}`)
+          
 //////////////////////////////////////
 // Snackbar
 const { snackbar, updateSnackbar } = inject(snackKey)
@@ -134,17 +140,19 @@ function submit() {
     default:
       action = 'play'
   }
-  const { response, error } = usePut(`/sn/game/${action}/${route.params.id}`, unref(selected))
+  let url = `/sn/game/${action}/${route.params.id}`
+  if (process.env.NODE_ENV == 'development') {
+    const backend = import.meta.env.VITE_PLATEAU_BACKEND
+    url = `${backend}sn/game/${action}/${route.params.id}`
+  }
+  // const { response, error } = usePut(url, unref(selected))
+  const { state, isReady, isLoading } = usePut(url, unref(selected))
   selected.value = []
 
-  watch(response, () => update(response))
+  watch(state, () => update(state))
 }
 
 function update(response) {
-    // const g = _get(response, 'value.game', {})
-    // if (!_isEmpty(g)) {
-    //   updateGame(g)
-    // }
     const msg = _get(unref(response), 'Message', '')
     if (!_isEmpty(msg)) {
       updateSnackbar(msg, true)

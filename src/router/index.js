@@ -213,6 +213,14 @@ const routes = [
     }
   },
   {
+    path: '/invitation/:action/:id',
+    name: 'InvitationAction',
+    beforeEnter(to) {
+      const url = `${import.meta.env.VITE_PLATEAU_BACKEND}sn/invitation/${to.params.action}/${to.params.id}`
+      window.location.replace(url)
+    }
+  },
+  {
     path: '/logout',
     name: 'Logout',
     beforeEnter() {

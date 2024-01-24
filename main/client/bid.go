@@ -55,15 +55,15 @@ func getBid(ctx *gin.Context) (bid, error) {
 	return obj, nil
 }
 
-func (g game) currentBid() bid {
-	return pie.Last(g.Bids)
+func (g *game) currentBid() bid {
+	return pie.Last(g.State.Bids)
 }
 
-func (g game) currentBidValue() int64 {
-	if len(g.Bids) == 0 {
+func (g *game) currentBidValue() int64 {
+	if len(g.State.Bids) == 0 {
 		return 0
 	}
-	return g.currentBid().value(g.NumPlayers)
+	return g.currentBid().value(g.Header.NumPlayers)
 }
 
 func (e exchange) value(numPlayers int) int64 {
@@ -171,6 +171,6 @@ func (t teams) value(numPlayers int) int64 {
 	}
 }
 
-func (g game) lastBid() bid {
-	return pie.Last(g.Bids)
+func (g *game) lastBid() bid {
+	return pie.Last(g.State.Bids)
 }

@@ -1,15 +1,16 @@
 <template>
   <v-container fluid>
+
     <v-row dense>
       <v-col cols='6'>
-        <v-row dense class='h-50'>
+        <v-row dense>
           <v-col cols='12'>
-            <Info />
+            <Info :dTeam='dTeam'/>
           </v-col>
         </v-row>
         <v-row dense class='h-50'>
           <v-col cols='12'>
-            <MessageBar />
+            <MessageBar/>
           </v-col>
         </v-row>
       </v-col>
@@ -21,13 +22,19 @@
         </v-row>
       </v-col>
     </v-row>
+
     <v-row dense>
       <v-col cols='6'>
         <v-row dense>
           <v-col cols='12'>
             <v-row dense v-if='showStack'>
               <v-col>
-                <StacksDisplay :height='height' :title='title' :stacks='oStacks' />
+                <v-card elevation='4'>
+                  <v-card-title :class='textcolor'>{{title}}</v-card-title>
+                  <v-card-text class='h-100 w-100' >
+                    <CardDisplay :height='height' :multi='1' :cards='oStacks'/>
+                  </v-card-text>
+                </v-card>
               </v-col>
             </v-row>
             <v-row dense v-if='showForm'>
@@ -81,21 +88,21 @@
 
 <script setup>
 // components
-import Bids from '@/components/Game/Bids.vue'
-import BidForm from '@/components/Game/BidForm.vue'
-import Trick from '@/components/Game/Trick.vue'
-import Hand from '@/components/Game/Hand.vue'
-import Info from '@/components/Game/Info.vue'
-import Board from '@/components/Game/Board.vue'
-import Table from '@/components/Game/Table.vue'
-import MessageBar from '@/components/Game/MessageBar.vue'
-import StacksDisplay from '@/components/Game/StacksDisplay.vue'
+import Bids from '@/components/Game/Bids'
+import BidForm from '@/components/Game/BidForm'
+import Trick from '@/components/Game/Trick'
+import Hand from '@/components/Game/Hand'
+import Info from '@/components/Game/Info'
+import Board from '@/components/Game/Board'
+import MessageBar from '@/components/Game/MessageBar'
+import CardDisplay from '@/components/Game/CardDisplay'
 
 // composables
 import { cuKey, gameKey } from '@/composables/keys'
 import { usePlayerByUser, usePlayerByPID, useNameFor, useCP, useCPID, useIsCP } from '@/composables/player'
 import { useFetch } from '@/composables/fetch'
 import { useStackByPID } from '@/composables/stack'
+import { useColorFor } from '@/composables/color'
 
 // vue
 import { computed, inject, provide, ref, unref, watch} from 'vue'
@@ -107,6 +114,7 @@ import _find from 'lodash/find'
 const cu = inject(cuKey)
 const game = inject(gameKey)
 
+const header = computed(() => _get(unref(game), 'Header', {}))
 const player = computed(() => usePlayerByUser(game, cu))
 const pid = computed(() => _get(unref(player), 'ID', 1))
 const opid = computed(
@@ -124,14 +132,14 @@ const opid = computed(
 
 const height = 170
 
-const round = computed(() => _get(unref(game), 'Round', 1))
+const round = computed(() => _get(unref(header), 'Round', 1))
 
 const results = ref(0)
 
 watch(round, () => (results.value = unref(round)))
 
 const oStacks = computed(() => useStackByPID(game, opid))
-const title = computed(() => useNameFor(game, opid))
+const title = computed(() => unref(useNameFor(header, opid)))
 
 const index = computed(
   () => {
@@ -145,52 +153,54 @@ const index = computed(
 const tricks = computed(
   () => {
     if ((unref(results) == unref(round))) {
-      return _get(unref(game), 'Tricks', [])
+      return _get(unref(game), 'State.Tricks', [])
     }
-    return _get(unref(game), `LastResults[${unref(index)}].Tricks`, [])
+    return _get(unref(game), `State.LastResults[${unref(index)}].Tricks`, [])
   }
 )
 
 const declarersTeam = computed(
   () => {
     if ((unref(results) == unref(round))) {
-      return _get(unref(game), 'DeclarersTeam', [])
+      return _get(unref(game), 'State.DeclarersTeam', [])
     }
-    return _get(unref(game), `LastResults[${unref(index)}].DeclarersTeam`, [])
+    return _get(unref(game), `State.LastResults[${unref(index)}].DeclarersTeam`, [])
   }
 )
 
-const numPlayers = computed(() => _get(unref(game), 'NumPlayers', 0))
+const numPlayers = computed(() => _get(unref(header), 'NumPlayers', 0))
 
 const showStack = computed(() => unref(numPlayers) == 2)
 
 const bids = computed(
   () => {
     if ((unref(results) == unref(round))) {
-      return _get(unref(game), 'Bids', [])
+      return _get(unref(game), 'State.Bids', [])
     }
-    return _get(unref(game), `LastResults[${unref(index)}].Bids`, [])
+    return _get(unref(game), `State.LastResults[${unref(index)}].Bids`, [])
   }
 )
 
 const order = computed(
   () => {
     if ((unref(results) == unref(round))) {
-      return _get(unref(game), 'OrderIDS', [])
+      return _get(unref(header), 'OrderIDS', [])
     }
-    return _get(unref(game), `LastResults[${unref(index)}].SeatOrder`, [])
+    return _get(unref(game), `State.LastResults[${unref(index)}].SeatOrder`, [])
   }
 )
 
 const dTeam = computed(
   () => {
     if ((unref(results) == unref(round))) {
-      return _get(unref(game), 'DeclarersTeam', [])
+      return _get(unref(game), 'State.DeclarersTeam', [])
     }
-    return _get(unref(game), `LastResults[${unref(index)}].DeclarersTeam`, [])
+    return _get(unref(game), `State.LastResults[${unref(index)}].DeclarersTeam`, [])
   }
 )
 
+const textcolor = computed(() => `text-${useColorFor(dTeam, opid)}`)
+          
 function label(hand) {
   if (hand == unref(round)) {
     return 'Current'
@@ -198,7 +208,7 @@ function label(hand) {
   return `Hand ${unref(hand)}`
 }
 
-const phase = computed(() => _get(unref(game), 'Phase', ''))
+const phase = computed(() => _get(unref(header), 'Phase', ''))
 const showForm = computed(() => {
   return (unref(phase) == 'bid' || unref(phase) == 'increase objective')
 })

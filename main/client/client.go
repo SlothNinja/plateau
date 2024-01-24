@@ -8,12 +8,12 @@ import (
 
 // Client provide client structure of the Le Plateau service
 type Client struct {
-	sn.GameClient[*game, *player]
+	*sn.GameClient[game, *game]
 }
 
 // New returns a new Client for the plateau service
 func New(ctx context.Context, opts ...sn.Option) *Client {
-	return (&Client{sn.NewGameClient[*game, *player](ctx, opts...)}).addRoutes()
+	return (&Client{sn.NewGameClient[game, *game](ctx, opts...)}).addRoutes()
 	// return cl.initUserDatastore(ctx).addRoutes()
 	// sn.Debugf("Entering")
 	// defer sn.Debugf("Exiting")

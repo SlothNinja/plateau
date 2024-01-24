@@ -13,19 +13,19 @@
             >
 
             <template v-slot:item.admin='{ item }'>
-              <v-btn @click.stop='abort(item.raw.id)' size='x-small' rounded color='green'>Abort</v-btn>
+              <v-btn @click.stop='abort(item.id)' size='x-small' rounded color='green'>Abort</v-btn>
             </template>
 
             <template v-slot:item.title='{ item }'>
-              <v-icon class='mb-2' size='small' v-if='item.raw.Private'>mdi-lock</v-icon>{{item.raw.Title}}
+              <v-icon class='mb-2' size='small' v-if='item.Private'>mdi-lock</v-icon>{{item.Title}}
             </template>
 
             <template v-slot:item.creator='{ item }'>
-              <UserButton :user='useCreator(item.raw)' :size='size' />
+              <UserButton :user='useCreator(item)' :size='size' />
             </template>
 
             <template v-slot:item.numPlayers='{ item }'>
-              {{item.raw.NumPlayers}}
+              {{item.NumPlayers}}
             </template>
 
             <template v-slot:item.hands='{ item }'>
@@ -33,11 +33,11 @@
             </template>
 
             <template v-slot:item.players="{ item }">
-              <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item.raw)' :key='user.id' />
+              <UserButton class='mb-1' :user="user" :size='size' v-for='user in useUsers(item)' :key='user.id' />
             </template>
 
             <template v-slot:item.lastUpdated="{ item }">
-              {{fromNow(item.raw.UpdatedAt.toDate())}}
+              {{fromNow(item.UpdatedAt.toDate())}}
             </template>
             
             <template v-slot:expanded-row='{ columns, item }'>
@@ -62,6 +62,10 @@ import board36 from '@/assets/board36.png'
 import UserButton from '@/components/Common/UserButton'
 import CardStamp from '@/components/Common/CardStamp'
 import Expansion from '@/components/Invitation/Expansion'
+<<<<<<< Updated upstream
+=======
+// import { VDataTable } from 'vuetify/labs/VDataTable'
+>>>>>>> Stashed changes
 
 // Composables
 import { useFetch, usePut } from '@/composables/fetch'
@@ -85,7 +89,7 @@ import _isEmpty from 'lodash/isEmpty'
 import { cuKey, snackKey } from '@/composables/keys'
 const cu = inject(cuKey)
 
-const invitations = useCollection(query(collection(db, 'Invitation'), where('Status', '==', 'recruiting')))
+const invitations = useCollection(collection(db, 'Invitation'))
 
 const sorted = computed(() => _reverse(_sortBy(unref(invitations), ['UpdatedAt'])))
 
@@ -93,7 +97,7 @@ const expanded = ref([])
 
 const headers = computed(
   () => {
-    if (unref(cu).Admin) {
+    if (_get(unref(cu), 'Admin', false)) {
       return [
         { title: '', key: 'data-table-expand' },
         { title: 'ID', key: 'id' },
@@ -122,7 +126,7 @@ const headers = computed(
 const size = 32
 
 function handsPerPlayer(item) {
-  const opt = JSON.parse(_get(item, 'raw.OptString', {}))
+  const opt = JSON.parse(_get(item, 'OptString', {}))
   return _get(opt, 'HandsPerPlayer', 0)
 }
 

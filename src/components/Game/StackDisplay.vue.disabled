@@ -1,18 +1,27 @@
 <template>
-  <div class='d-flex justify-center align-center mb-2' >
-    <StackDisplay
-        v-for='(stack, index) in stacks'
-        :key='index'
-        :stack='stack'
-        :height='height'
-        @click='select(stack)'
-        />
-  </div>
+  <v-sheet :height='height'>
+      <div
+          v-for='(card, index) in stack'
+          :key='index'
+          @mouseover='hovered(index, true)'
+          @mouseleave='hovered(index, false)'
+          :style='index == 1 ? style: ""'
+          :class='isSelected(card)'
+          >
+          <Card 
+          @click='select(card)'
+          :rank='card.Rank'
+          :suit='card.Suit'
+          :width='height / 2.0'
+          :text='nameFor(card)'
+          />
+      </div>
+  </v-sheet>
 </template>
 
 <script setup>
 // components
-import StackDisplay from '@/components/Game/StackDisplay.vue'
+import Card from '@/components/Game/Card.vue'
 
 // lodash
 import _sortBy from 'lodash/sortBy'
@@ -22,7 +31,6 @@ import _takeRight from 'lodash/takeRight'
 import _includes from 'lodash/includes'
 import _remove from 'lodash/remove'
 import _get from 'lodash/get'
-import _last from 'lodash/last'
 
 // vue
 import { computed, ref, inject, unref, watch } from 'vue'
@@ -30,19 +38,21 @@ import { computed, ref, inject, unref, watch } from 'vue'
 // composables
 import { useCardValue } from '@/composables/cardValue.js'
 import { useIsCP, usePlayerByUser } from '@/composables/player.js'
-import { useUserByIndex } from '@/composables/user.js'
+import { useUserByPID } from '@/composables/user.js'
 import { cuKey, gameKey } from '@/composables/keys.js'
 
 const props = defineProps({
   height: [ Number, String],
-  title: String,
-  multi: Number,
+  stack: Array,
   selected: Array,
-  sort: Boolean,
-  stacks: Array,
 })
+
 const emit = defineEmits(['update:cards', 'update:selected'])
 
+const cu = inject(cuKey)
+const game = inject(gameKey)
+
+const header = computed(() => _get(unref(game), 'Header', {}))
 const player = computed(() => usePlayerByUser(game, cu))
 const hand = computed({
   get() {
@@ -53,23 +63,26 @@ const hand = computed({
   }
 })
 
-
 function nameFor(card) {
   const pid = _get(card, 'PlayedBy', 0)
   if (pid <= 0) {
     return ''
   }
-  const user = useUserByIndex(game, pid - 1)
+  const user = useUserByPID(header, pid)
   return _get(user, 'Name', '')
 }
 
 const hover = ref([])
 
-const cu = inject(cuKey)
-const game = inject(gameKey)
 
+const style = computed(
+  () => {
+    const h = -(unref(props.height) * 0.90)
+    return `margin-top:${h}px`
+  }
+)
 
-const isCP = computed(() => useIsCP(game, cu))
+const isCP = computed(() => useIsCP(header, cu))
 
 function hovered(index, state) {
   const lastIndex = _size(unref(sorted)) - 1
@@ -93,12 +106,7 @@ function initHover() {
 const hoverstyle = 'overflow:visible'
 const nohoverstyle = 'overflow:hidden'
 
-const sorted = computed(() => {
-  if (props.sort) {
-    return _sortBy(hand.value, [ card => card.Suit, useCardValue ])
-  }
-  return hand.value
-})
+const sorted = computed(() => hand.value)
 
 const handSize = computed(() => _size(unref(sorted)))
 const selection = computed({
@@ -113,20 +121,19 @@ const selection = computed({
 watch( handSize, () => { initHover() } )
 
 const disableSelect = computed(() => {
-  return (unref(game).Phase == 'bid') || (!unref(isCP)) || (unref(player).PerformedAction)
+  return (unref(header).Phase == 'bid') || (!unref(isCP)) || (unref(player).PerformedAction)
 })
 
-function select(stack) {
+function select(card) {
   if (unref(disableSelect)) {
     return
   }
 
-  const card = _last(unref(stack))
   if (_includes(unref(selection), card)) {
     _remove(selection.value, card)
   } else {
     selection.value.push(card)
-    selection.value = _takeRight(selection.value, props.multi)
+    selection.value = _takeRight(selection.value, 1)
   }
 }
 

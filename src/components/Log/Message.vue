@@ -2,6 +2,7 @@
   <component
     :is='component'
     :message='message'
+    :entry='entry'
   >
   </component>
 </template>
@@ -17,7 +18,7 @@ import PlayedCard from '@/components/Log/PlayedCard'
 import WonTrick from '@/components/Log/WonTrick'
 import { computed } from 'vue'
 
-const props = defineProps([ 'message' ])
+const props = defineProps([ 'message', 'entry' ])
 
 const component = computed(() => {
   switch (props.message.Template) {

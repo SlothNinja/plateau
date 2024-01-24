@@ -8,7 +8,7 @@ import (
 	"gonum.org/v1/gonum/graph/simple"
 )
 
-func (g game) graphFor(ss []space) boardGraph {
+func (g *game) graphFor(ss []space) boardGraph {
 	graph := newBoardGraph()
 
 	// add all spaces to graph
@@ -65,7 +65,7 @@ type node struct {
 // implement graph.Node interface
 func (n node) ID() int64 { return n.UID }
 
-func (g game) bridge(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
+func (g *game) bridge(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -86,7 +86,7 @@ func (g game) bridge(graph boardGraph, paths path.AllShortest) ([]node, handResu
 	return nil, dFail
 }
 
-func (g game) y(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
+func (g *game) y(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -102,7 +102,7 @@ func (g game) y(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
 	return nil, dFail
 }
 
-func (g game) fork(graph boardGraph, paths path.AllShortest) (path []node, result handResult) {
+func (g *game) fork(graph boardGraph, paths path.AllShortest) (path []node, result handResult) {
 	path1, result1 := g.bridge(graph, paths)
 	if result1 == dFail {
 		return nil, result1
@@ -114,7 +114,7 @@ func (g game) fork(graph boardGraph, paths path.AllShortest) (path []node, resul
 	return append(path1, path2...), dSuccess
 }
 
-func (g game) fiveSides(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
+func (g *game) fiveSides(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
 	s1, s2, s3, s4, s5, s6 := g.side(graph, 1), g.side(graph, 2), g.side(graph, 3), g.side(graph, 4), g.side(graph, 5), g.side(graph, 6)
 
 	path, connected := isConnected(paths, s1, s2, s3, s4, s5)
@@ -149,7 +149,7 @@ func (g game) fiveSides(graph boardGraph, paths path.AllShortest) ([]node, handR
 	return nil, dFail
 }
 
-func (g game) sixSides(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
+func (g *game) sixSides(graph boardGraph, paths path.AllShortest) ([]node, handResult) {
 	s1, s2, s3, s4, s5, s6 := g.side(graph, 1), g.side(graph, 2), g.side(graph, 3), g.side(graph, 4), g.side(graph, 5), g.side(graph, 6)
 
 	path, connected := isConnected(paths, s1, s2, s3, s4, s5, s6)
@@ -178,9 +178,9 @@ func isConnected(paths path.AllShortest, sides ...[]node) (path []node, result b
 	return nil, false
 }
 
-func (g game) side(graph boardGraph, s int) (nodes []node) {
+func (g *game) side(graph boardGraph, s int) (nodes []node) {
 	var sideSpaces map[int][]space
-	if g.NumPlayers == 2 {
+	if g.Header.NumPlayers == 2 {
 		sideSpaces = sides2()
 	} else {
 		sideSpaces = sides36()

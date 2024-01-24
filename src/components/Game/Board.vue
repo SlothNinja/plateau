@@ -76,10 +76,10 @@ function isDeclarers(trick) {
   display: inline-block
 
 .dot-blue
-  background-color: rgb(0 0 150)
+  background-color: rgb(26 35 126)
 
 .dot-red
-  background-color: rgb(150 0 0)
+  background-color: rgb(213 0 0)
 
 .one-diamonds, .one-clubs, .one-spades, .one-hearts 
   display: none

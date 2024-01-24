@@ -65,44 +65,51 @@ func updateStack(stack []card) {
 	}
 }
 
-func (p player) Copy() sn.Playerer {
-	cs := make([]sn.Color, len(p.Colors))
-	copy(cs, p.Colors)
-
-	h := make([]card, len(p.Hand))
-	copy(h, p.Hand)
-
-	s0 := make([]card, len(p.Stack0))
-	copy(s0, p.Stack0)
-
-	s1 := make([]card, len(p.Stack1))
-	copy(s1, p.Stack1)
-
-	s2 := make([]card, len(p.Stack2))
-	copy(s2, p.Stack2)
-
-	s3 := make([]card, len(p.Stack3))
-	copy(s3, p.Stack3)
-
-	s4 := make([]card, len(p.Stack4))
-	copy(s4, p.Stack4)
-
-	p2 := &player{
-		Bid:    p.Bid,
-		Hand:   h,
-		Stack0: s0,
-		Stack1: s1,
-		Stack2: s2,
-		Stack3: s3,
-		Stack4: s4,
+func (p *player) id() sn.PID {
+	if p == nil {
+		return sn.NoPID
 	}
-	p2.ID = p.ID
-	p2.Passed = p.Passed
-	p2.Colors = cs
-	p2.PerformedAction = p.PerformedAction
-	p2.Stats = p.Stats
-	return p2
+	return p.Player.ID
 }
+
+// func (p player) Copy() sn.Playerer {
+// 	cs := make([]sn.Color, len(p.Colors))
+// 	copy(cs, p.Colors)
+//
+// 	h := make([]card, len(p.Hand))
+// 	copy(h, p.Hand)
+//
+// 	s0 := make([]card, len(p.Stack0))
+// 	copy(s0, p.Stack0)
+//
+// 	s1 := make([]card, len(p.Stack1))
+// 	copy(s1, p.Stack1)
+//
+// 	s2 := make([]card, len(p.Stack2))
+// 	copy(s2, p.Stack2)
+//
+// 	s3 := make([]card, len(p.Stack3))
+// 	copy(s3, p.Stack3)
+//
+// 	s4 := make([]card, len(p.Stack4))
+// 	copy(s4, p.Stack4)
+//
+// 	p2 := &player{
+// 		Bid:    p.Bid,
+// 		Hand:   h,
+// 		Stack0: s0,
+// 		Stack1: s1,
+// 		Stack2: s2,
+// 		Stack3: s3,
+// 		Stack4: s4,
+// 	}
+// 	p2.ID = p.ID
+// 	p2.Passed = p.Passed
+// 	p2.Colors = cs
+// 	p2.PerformedAction = p.PerformedAction
+// 	p2.Stats = p.Stats
+// 	return p2
+// }
 
 func (p *player) reset() {
 	p.PerformedAction = false
@@ -113,9 +120,9 @@ func (p *player) bidReset() {
 	p.Passed = false
 }
 
-func (p *player) New() sn.Playerer {
-	return new(player)
-}
+// func (p *player) New() sn.Playerer {
+// 	return new(player)
+// }
 
 // func (g *game) addNewPlayers() {
 // 	g.Players = make([]*player, g.NumPlayers)
@@ -131,44 +138,44 @@ func (p *player) New() sn.Playerer {
 // 	return &p
 // }
 
-func (g game) declarer() *player {
-	return g.PlayerByPID(pie.First(g.DeclarersTeam))
+func (g *game) declarer() *player {
+	return g.PlayerByPID(pie.First(g.State.DeclarersTeam))
 }
 
-func (g game) partner() *player {
-	if len(g.DeclarersTeam) == 2 {
-		return g.PlayerByPID(pie.Last(g.DeclarersTeam))
+func (g *game) partner() *player {
+	if len(g.State.DeclarersTeam) == 2 {
+		return g.PlayerByPID(pie.Last(g.State.DeclarersTeam))
 	}
 	return nil
 }
 
-func (g game) partners() []*player {
-	if len(g.DeclarersTeam) < 2 {
+func (g *game) partners() []*player {
+	if len(g.State.DeclarersTeam) < 2 {
 		return nil
 	}
-	return pie.Map(g.DeclarersTeam[1:], func(pid sn.PID) *player { return g.PlayerByPID(pid) })
+	return pie.Map(g.State.DeclarersTeam[1:], func(pid sn.PID) *player { return g.PlayerByPID(pid) })
 }
 
-func (g game) declarers() []*player {
+func (g *game) declarers() []*player {
 	return pie.Filter(g.Players, func(p *player) bool {
-		return pie.Any(g.DeclarersTeam, func(pid sn.PID) bool {
-			return pid == p.ID
+		return pie.Any(g.State.DeclarersTeam, func(pid sn.PID) bool {
+			return pid == p.id()
 		})
 	})
 }
 
-func (g game) opposersTeam() []sn.PID {
+func (g *game) opposersTeam() []sn.PID {
 	return pie.FilterNot(g.Players.PIDS(), func(pid1 sn.PID) bool {
-		return pie.Any(g.DeclarersTeam, func(pid2 sn.PID) bool {
+		return pie.Any(g.State.DeclarersTeam, func(pid2 sn.PID) bool {
 			return pid1 == pid2
 		})
 	})
 }
 
-func (g game) opposers() []*player {
+func (g *game) opposers() []*player {
 	return pie.FilterNot(g.Players, func(p *player) bool {
-		return pie.Any(g.DeclarersTeam, func(pid sn.PID) bool {
-			return pid == p.ID
+		return pie.Any(g.State.DeclarersTeam, func(pid sn.PID) bool {
+			return pid == p.id()
 		})
 	})
 }

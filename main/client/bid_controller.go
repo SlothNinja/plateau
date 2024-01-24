@@ -12,34 +12,42 @@ func (g *game) startBidPhase() *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	g.Phase = bidPhase
+	g.Header.Phase = bidPhase
 	pie.Each(g.Players, (*player).bidReset)
-	g.Bids = nil
+	g.State.Bids = nil
 	return g.forehand()
 }
 
-func (g *game) bidFinishTurn(ctx *gin.Context, cu sn.User) (*player, *player, error) {
+// func bidFinishTurnAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) (*player, *player, error) {
+// 	sn.Debugf(msgEnter)
+// 	defer sn.Debugf(msgExit)
+//
+// 	g := &game{sngame}
+// 	return g.bidFinishTurn(ctx, cu)
+// }
+
+func (g *game) bidFinishTurn(ctx *gin.Context, cu sn.User) (sn.PID, sn.PID, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	cp, err := g.validateBidFinishTurn(cu)
 	if err != nil {
-		return nil, nil, err
+		return sn.NoPID, sn.NoPID, err
 	}
 
 	np := g.NextPlayer(cp, func(p *player) bool {
-		return !p.Passed && p.ID != g.lastBid().PID
+		return !p.Passed && (p.id() != g.lastBid().PID)
 	})
 
 	if np != nil {
 		// Proceed to next bidder
-		return cp, np, nil
+		return cp.id(), np.id(), nil
 	}
 
 	// all players passed, then next dealer deals new hand
 	if pie.All(g.Players, func(p *player) bool { return p.Passed }) {
 		np = g.startEndHandPhase(dPush, nil)
-		return cp, np, nil
+		return cp.id(), np.id(), nil
 	}
 
 	// Log winning bid
@@ -50,19 +58,19 @@ func (g *game) bidFinishTurn(ctx *gin.Context, cu sn.User) (*player, *player, er
 
 	np = g.startExchange()
 	if np != nil {
-		return cp, np, nil
+		return cp.id(), np.id(), nil
 	}
 
 	np = g.startPickPartner()
 	if np != nil {
-		return cp, np, nil
+		return cp.id(), np.id(), nil
 	}
 
 	np = g.startIncObjective()
-	return cp, np, nil
+	return cp.id(), np.id(), nil
 }
 
-func (g game) validateBidFinishTurn(cu sn.User) (*player, error) {
+func (g *game) validateBidFinishTurn(cu sn.User) (*player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -70,8 +78,8 @@ func (g game) validateBidFinishTurn(cu sn.User) (*player, error) {
 	switch {
 	case err != nil:
 		return nil, err
-	case g.Phase != bidPhase:
-		return nil, fmt.Errorf("expected %q phase but have %q phase: %w", bidPhase, g.Phase, sn.ErrValidation)
+	case g.Header.Phase != bidPhase:
+		return nil, fmt.Errorf("expected %q phase but have %q phase: %w", bidPhase, g.Header.Phase, sn.ErrValidation)
 	case !cp.Bid:
 		return nil, fmt.Errorf("you must bid or pass before finishing turn: %w", sn.ErrValidation)
 	default:

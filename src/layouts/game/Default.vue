@@ -116,7 +116,7 @@ function toggleChat() {
 }
 
 const stackSource = computed(
-  () => doc(db, 'Stack', `${route.params.id}-${unref(cuid)}`)
+  () => doc(db, 'Stack', route.params.id, 'For', `${unref(cuid)}` )
 )
 const dbStack = useDocument(stackSource)
 
@@ -126,9 +126,9 @@ const viewSource = computed(
 const view = useDocument(viewSource)
 
 const current = computed(() => _get(unref(dbStack), 'Current', -1000))
-const cachedPath = computed(() => `${unref(current)}-${unref(cuid)}`)
+// const cachedPath = computed(() => `${unref(current)}-${unref(cuid)}`)
 const cachedSource = computed(
-  () => doc(db, 'Committed', route.params.id, 'Cached', unref(cachedPath))
+  () => doc(db, 'Committed', route.params.id, 'Cached', `${unref(cuid)}`, 'Current', `${unref(current)}`)
 )
 const cached = useDocument(cachedSource)
 

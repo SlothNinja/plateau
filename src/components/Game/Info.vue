@@ -28,10 +28,10 @@ const route = useRoute()
 import { gameKey } from '@/composables/keys'
 const game = inject(gameKey)
 
-const title = computed(() => _get(unref(game), 'Title', ''))
+const title = computed(() => _get(unref(game), 'Header.Title', ''))
 const id = computed(() => _get(unref(route), 'params.id', ''))
-const hand = computed(() => _get(unref(game), 'Round', 0))
+const hand = computed(() => _get(unref(game), 'Header.Round', 0))
 const hands = computed(() => (useHands(game)))
-const phase = computed(() => _get(unref(game), 'Phase', ''))
+const phase = computed(() => _get(unref(game), 'Header.Phase', ''))
 
 </script>

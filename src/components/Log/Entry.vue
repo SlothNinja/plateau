@@ -8,12 +8,12 @@
 
     <v-card-text v-if='pid' class='d-flex align-center'>
       <div>
-        <UserButton :user='useUserByIndex(game, pid-1)' :size='36' />
+        <UserButton :user='useUserByPID(header, pid)' :size='36' />
       </div>
       <div class='w-100'>
         <ul>
           <li class='ml-8' v-for='(message, index) in entry.Lines'>
-            <Message :key='index' :message='message' />
+            <Message :key='index' :message='message' :entry='entry.Data' />
           </li>
         </ul>
       </div>
@@ -22,7 +22,7 @@
     <v-card-text v-else class='d-flex align-center'>
       <div class='w-100'>
         <div class='ml-8' v-for='(message, index) in entry.Lines'>
-          <Message :key='index' :message='message' />
+          <Message :key='index' :message='message' :entry='entry.Data' />
         </div>
       </div>
     </v-card-text>
@@ -42,7 +42,7 @@ import Message from '@/components/Log/Message'
 import UserButton from '@/components/Common/UserButton.vue'
 
 //composables
-import { useUserByIndex } from '@/composables/user.js'
+import { useUserByPID } from '@/composables/user.js'
 import { gameKey } from '@/composables/keys.js'
 
 // vue
@@ -58,6 +58,7 @@ const props = defineProps(['entry'])
 
 const game = inject(gameKey)
 
+const header = computed(() => _get(unref(game), 'Header', {}))
 const handNumber = computed(() => _get(props, 'entry.Data.HandNumber', -1))
 const showHandNumber = computed(() => (unref(handNumber) > -1))
 

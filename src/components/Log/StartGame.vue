@@ -24,10 +24,11 @@ import { computed, inject, unref } from 'vue'
 import _get from 'lodash/get'
 import _map from 'lodash/map'
 
-const props = defineProps(['message'])
+const props = defineProps(['message', 'entry'])
 
 const game = inject(gameKey)
 
 const pids = computed(() => _get(unref(props), 'message.Data.PIDS', []))
-const users = computed(() => _map(unref(pids), pid => useUserByIndex(unref(game), pid-1)))
+const header = computed(() => _get(unref(game), 'Header', {}))
+const users = computed(() => _map(unref(pids), pid => useUserByIndex(header, pid-1)))
 </script>

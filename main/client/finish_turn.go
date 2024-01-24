@@ -6,7 +6,7 @@ import (
 	"github.com/SlothNinja/sn/v3"
 )
 
-func (g game) validateFinishTurn(cu sn.User) (*player, error) {
+func (g *game) validateFinishTurn(cu sn.User) (*player, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 

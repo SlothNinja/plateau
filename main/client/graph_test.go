@@ -10,9 +10,9 @@ import (
 
 func TestConnected2(t *testing.T) {
 
-	var g game
-	g.DeclarersTeam = []sn.PID{1}
-	g.Tricks = []trick{
+	g := newGame()
+	g.State.DeclarersTeam = []sn.PID{1}
+	g.State.Tricks = []trick{
 		trick{[]card{
 			card{oneRank, trumps, 1, true},
 			card{cavalierRank, hearts, 2, true},
@@ -31,7 +31,7 @@ func TestConnected2(t *testing.T) {
 		}, 1},
 	}
 
-	spaces := g.spacesFor(g.DeclarersTeam)
+	spaces := g.spacesFor(g.State.DeclarersTeam)
 	assert.NotNil(t, spaces, "spaces should not be nil")
 
 	graph := g.graphFor(spaces)
@@ -66,9 +66,9 @@ func TestConnected2(t *testing.T) {
 
 func TestConnected3(t *testing.T) {
 
-	var g game
-	g.DeclarersTeam = []sn.PID{1}
-	g.Tricks = []trick{
+	g := newGame()
+	g.State.DeclarersTeam = []sn.PID{1}
+	g.State.Tricks = []trick{
 		trick{[]card{
 			card{oneRank, trumps, 1, true},
 			card{cavalierRank, hearts, 2, true},
@@ -87,7 +87,7 @@ func TestConnected3(t *testing.T) {
 		}, 1},
 	}
 
-	spaces := g.spacesFor(g.DeclarersTeam)
+	spaces := g.spacesFor(g.State.DeclarersTeam)
 	assert.NotNil(t, spaces, "spaces should not be nil")
 
 	graph := g.graphFor(spaces)

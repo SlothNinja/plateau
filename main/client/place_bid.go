@@ -7,9 +7,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// func placeBidAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) error {
+// 	sn.Debugf(msgEnter)
+// 	defer sn.Debugf(msgExit)
+//
+// 	g := &game{sngame}
+// 	return g.placeBid(ctx, cu)
+// }
+
 func (g *game) placeBid(ctx *gin.Context, cu sn.User) error {
-	sn.Debugf(msgEnter)
-	defer sn.Debugf(msgExit)
 
 	cp, bid, err := g.validatePlaceBid(ctx, cu)
 	if err != nil {
@@ -18,17 +24,17 @@ func (g *game) placeBid(ctx *gin.Context, cu sn.User) error {
 
 	cp.PerformedAction = true
 	cp.Bid = true
-	g.Bids = append(g.Bids, bid)
-	g.DeclarersTeam = []sn.PID{cp.ID}
+	g.State.Bids = append(g.State.Bids, bid)
+	g.State.DeclarersTeam = []sn.PID{cp.id()}
 
-	g.NewEntry(placedBidTemplate, sn.Entry{"PID": cp.ID, "HandNumber": g.currentHand()}, sn.Line{"Bid": bid})
+	g.NewEntry(placedBidTemplate, sn.Entry{"PID": cp.id(), "HandNumber": g.currentHand()}, sn.Line{"Bid": bid})
 
 	return nil
 }
 
 const placedBidTemplate = "placed-bid"
 
-func (g game) validatePlaceBid(ctx *gin.Context, cu sn.User) (*player, bid, error) {
+func (g *game) validatePlaceBid(ctx *gin.Context, cu sn.User) (*player, bid, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -45,13 +51,13 @@ func (g game) validatePlaceBid(ctx *gin.Context, cu sn.User) (*player, bid, erro
 		return nil, noBid, err
 	}
 
-	bidValue := bid.value(g.NumPlayers)
+	bidValue := bid.value(g.Header.NumPlayers)
 
 	currentBidValue := g.currentBidValue()
 
 	switch {
-	case g.Phase != bidPhase:
-		return nil, noBid, fmt.Errorf("expected %q phase but have %q phase: %w", bidPhase, g.Phase, sn.ErrValidation)
+	case g.Header.Phase != bidPhase:
+		return nil, noBid, fmt.Errorf("expected %q phase but have %q phase: %w", bidPhase, g.Header.Phase, sn.ErrValidation)
 	case bidValue <= currentBidValue:
 		return nil, noBid, fmt.Errorf("bid has value of %d, which is not greater than the current bid of %d: %w",
 			bidValue, currentBidValue, sn.ErrValidation)
@@ -60,7 +66,7 @@ func (g game) validatePlaceBid(ctx *gin.Context, cu sn.User) (*player, bid, erro
 	}
 }
 
-func (g game) validateBid(ctx *gin.Context) (bid, error) {
+func (g *game) validateBid(ctx *gin.Context) (bid, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -72,9 +78,9 @@ func (g game) validateBid(ctx *gin.Context) (bid, error) {
 		return noBid, err
 	}
 
-	bidValue := bid.value(g.NumPlayers)
+	bidValue := bid.value(g.Header.NumPlayers)
 
-	minValue := minBid(g.NumPlayers).value(g.NumPlayers)
+	minValue := minBid(g.Header.NumPlayers).value(g.Header.NumPlayers)
 
 	if bidValue < minValue {
 		return noBid, fmt.Errorf("bid has value of %d, which is less than the minimum bid of %d: %w",

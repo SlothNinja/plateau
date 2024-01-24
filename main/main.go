@@ -10,7 +10,7 @@ import (
 func main() {
 	cl := client.New(
 		context.Background(),
-		sn.WithLoggerID("user-service"),
+		sn.WithLoggerID("plateau-service"),
 	)
 
 	defer func() {

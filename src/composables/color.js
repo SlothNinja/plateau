@@ -9,7 +9,7 @@ export function useColorFor(dTeam, pid) {
   }
 
   if (_includes(unref(dTeam), unref(pid))) {
-    return 'rgb(150 0 0)'
+    return 'red-accent-4'
   }
-  return 'rgb(0 0 150)'
+  return 'indigo-darken-4'
 }

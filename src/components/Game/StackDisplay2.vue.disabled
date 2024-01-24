@@ -1,15 +1,18 @@
 <template>
-  <v-card elevation='4'>
-    <v-card-title>{{title}}</v-card-title>
-    <v-card-text class='h-100 w-100' >
-      <Stacks :stacks='stacks' :height='height' />
-    </v-card-text>
-  </v-card>
+  <CardDisplay
+      v-if='pickPartner'
+      v-bind='$attrs'
+      :height='height'
+      :multi='1'
+      :cards='cards'
+      v-model:selected='selection'
+      />
 </template>
 
 <script setup>
 // components
-import Stacks from '@/components/Game/Stacks'
+import CardDisplay from '@/components/Game/CardDisplay.vue'
+import Card from '@/components/Game/Card.vue'
 
 // lodash
 import _sortBy from 'lodash/sortBy'
@@ -24,48 +27,41 @@ import _get from 'lodash/get'
 import { computed, ref, inject, unref, watch } from 'vue'
 
 // composables
-import { useCardValue } from '@/composables/cardValue.js'
-import { useIsCP, usePlayerByUser } from '@/composables/player.js'
-import { useUserByIndex } from '@/composables/user.js'
-import { cuKey, gameKey } from '@/composables/keys.js'
+import { useCardValue } from '@/composables/cardValue'
+import { useIsCP, usePlayerByUser } from '@/composables/player'
+import { useUserByPID } from '@/composables/user'
+import { cuKey, gameKey } from '@/composables/keys'
+import { useColorFor } from '@/composables/color'
+
+const cu = inject(cuKey)
+const game = inject(gameKey)
 
 const props = defineProps({
   height: [ Number, String],
-  title: String,
-  multi: Number,
+  stacks: Array,
   selected: Array,
   sort: Boolean,
-  stacks: Array,
+  dTeam: Array,
 })
-const emit = defineEmits(['update:cards', 'update:selected'])
+
+const emit = defineEmits(['update:selected'])
 
 const player = computed(() => usePlayerByUser(game, cu))
-const hand = computed({
-  get() {
-    return _get(props, 'cards', [])
-  },
-  set(value) {
-    emit('update:cards', value)
-  }
-})
-
+const header = computed(() => _get(unref(game), 'Header', {}))
 
 function nameFor(card) {
   const pid = _get(card, 'PlayedBy', 0)
   if (pid <= 0) {
     return ''
   }
-  const user = useUserByIndex(game, pid - 1)
+  const user = useUserByPID(header, pid)
   return _get(user, 'Name', '')
 }
 
 const hover = ref([])
 
-const cu = inject(cuKey)
-const game = inject(gameKey)
 
-
-const isCP = computed(() => useIsCP(game, cu))
+const isCP = computed(() => useIsCP(header, cu))
 
 function hovered(index, state) {
   const lastIndex = _size(unref(sorted)) - 1
@@ -91,9 +87,9 @@ const nohoverstyle = 'overflow:hidden'
 
 const sorted = computed(() => {
   if (props.sort) {
-    return _sortBy(hand.value, [ card => card.Suit, useCardValue ])
+    return _sortBy(unref(props.cards), [ card => card.Suit, useCardValue ])
   }
-  return hand.value
+  return unref(props.cards)
 })
 
 const handSize = computed(() => _size(unref(sorted)))
@@ -109,7 +105,7 @@ const selection = computed({
 watch( handSize, () => { initHover() } )
 
 const disableSelect = computed(() => {
-  return (unref(game).Phase == 'bid') || (!unref(isCP)) || (unref(player).PerformedAction)
+  return (unref(header).Phase == 'bid') || (!unref(isCP)) || (unref(player).PerformedAction)
 })
 
 function select(card) {

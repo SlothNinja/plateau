@@ -12,9 +12,17 @@ func (g *game) startCardPlay() *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	g.Phase = cardPlayPhase
+	g.Header.Phase = cardPlayPhase
 	return g.forehand()
 }
+
+// func playCardAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) error {
+// 	sn.Debugf(msgEnter)
+// 	defer sn.Debugf(msgExit)
+//
+// 	g := &game{sngame}
+// 	return g.playCard(ctx, cu)
+// }
 
 func (g *game) playCard(ctx *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
@@ -30,14 +38,14 @@ func (g *game) playCard(ctx *gin.Context, cu sn.User) error {
 	// otherise, card will not match card in hand and therefore will not be removed
 	cp.play(card)
 
-	card.PlayedBy = cp.ID
-	g.Tricks[g.trickIndex()].Cards = append(g.currentTrick().Cards, card)
+	card.PlayedBy = cp.id()
+	g.State.Tricks[g.trickIndex()].Cards = append(g.currentTrick().Cards, card)
 
 	cp.PerformedAction = true
 
 	if i := len(g.currentTrick().Cards) - 1; i == 0 {
 		g.NewEntry(playedCardTemplate, sn.Entry{"TrickNumber": g.trickNumber(),
-			"HandNumber": g.currentHand()}, sn.Line{"0": card})
+			"HandNumber": g.currentHand(), "DeclarersTeam": g.State.DeclarersTeam}, sn.Line{"0": card})
 	} else {
 		g.AppendLine(sn.Line{fmt.Sprintf("%d", i): card})
 	}
@@ -104,7 +112,7 @@ func removeCards(cards []card, remove ...card) []card {
 	return remainingCards
 }
 
-func (g game) validatePlayCard(ctx *gin.Context, cu sn.User) (*player, card, error) {
+func (g *game) validatePlayCard(ctx *gin.Context, cu sn.User) (*player, card, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
@@ -127,8 +135,8 @@ func (g game) validatePlayCard(ctx *gin.Context, cu sn.User) (*player, card, err
 	ledSuit := g.ledSuit()
 
 	switch {
-	case g.Phase != cardPlayPhase:
-		return nil, noCard, fmt.Errorf("cannot play cards in %q phase: %w", g.Phase, sn.ErrValidation)
+	case g.Header.Phase != cardPlayPhase:
+		return nil, noCard, fmt.Errorf("cannot play cards in %q phase: %w", g.Header.Phase, sn.ErrValidation)
 	case !cp.hasCard(playedCard):
 		return nil, noCard, fmt.Errorf("must play card from your hand: %w", sn.ErrValidation)
 	case ledSuit != noSuit && cp.hasSuit(ledSuit) && playedCard.Suit != ledSuit:
@@ -140,48 +148,56 @@ func (g game) validatePlayCard(ctx *gin.Context, cu sn.User) (*player, card, err
 	}
 }
 
-func (g game) ledSuit() suit {
+func (g *game) ledSuit() suit {
 	return pie.First(g.currentTrick().Cards).Suit
 }
 
-func (g *game) playCardFinishTurn(_ *gin.Context, cu sn.User) (*player, *player, error) {
+// func playCardFinishTurnAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) (*player, *player, error) {
+// 	sn.Debugf(msgEnter)
+// 	defer sn.Debugf(msgExit)
+//
+// 	g := &game{sngame}
+// 	return g.playCardFinishTurn(ctx, cu)
+// }
+
+func (g *game) playCardFinishTurn(_ *gin.Context, cu sn.User) (sn.PID, sn.PID, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
 	cp, err := g.validatePlayCardFinishTurn(cu)
 	if err != nil {
-		return nil, nil, err
+		return sn.NoPID, sn.NoPID, err
 	}
 
 	var np *player
-	if len(g.currentTrick().Cards) != g.NumPlayers {
+	if len(g.currentTrick().Cards) != g.Header.NumPlayers {
 		np = g.NextPlayer(cp)
-		return cp, np, nil
+		return cp.id(), np.id(), nil
 	}
 
 	np = g.endTrick()
 	if np != nil {
-		g.AppendEntry(wonTrickTemplate, sn.Line{"PID": np.ID})
+		g.AppendEntry(wonTrickTemplate, sn.Line{"PID": np.id()})
 	}
 	endHand, result, path := g.endHandCheck()
 	if !endHand {
-		return cp, np, nil
+		return cp.id(), np.id(), nil
 	}
 
 	np = g.startEndHandPhase(result, path)
 
-	return cp, np, nil
+	return cp.id(), np.id(), nil
 }
 
 const wonTrickTemplate = "won-trick"
 
-func (g game) validatePlayCardFinishTurn(cu sn.User) (*player, error) {
+func (g *game) validatePlayCardFinishTurn(cu sn.User) (*player, error) {
 	cp, err := g.validateFinishTurn(cu)
 	switch {
 	case err != nil:
 		return nil, err
-	case g.Phase != cardPlayPhase:
-		return nil, fmt.Errorf("expected %q phase but have %q phase: %w", cardPlayPhase, g.Phase, sn.ErrValidation)
+	case g.Header.Phase != cardPlayPhase:
+		return nil, fmt.Errorf("expected %q phase but have %q phase: %w", cardPlayPhase, g.Header.Phase, sn.ErrValidation)
 	default:
 		return cp, nil
 	}
