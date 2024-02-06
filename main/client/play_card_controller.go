@@ -16,38 +16,35 @@ func (g *game) startCardPlay() *player {
 	return g.forehand()
 }
 
-// func playCardAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) error {
-// 	sn.Debugf(msgEnter)
-// 	defer sn.Debugf(msgExit)
-//
-// 	g := &game{sngame}
-// 	return g.playCard(ctx, cu)
-// }
-
 func (g *game) playCard(ctx *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
 
-	// warning card variable shadows card type
-	cp, card, err := g.validatePlayCard(ctx, cu)
+	cp, c, err := g.validatePlayCard(ctx, cu)
 	if err != nil {
 		return err
 	}
 
-	// need to remove card from hand, before updating card.playedBy
+	// need to play/remove card from hand, before updating card.playedBy
 	// otherise, card will not match card in hand and therefore will not be removed
-	cp.play(card)
+	cp.play(c)
 
-	card.PlayedBy = cp.id()
-	g.State.Tricks[g.trickIndex()].Cards = append(g.currentTrick().Cards, card)
+	c.PlayedBy = cp.id()
+	g.State.Tricks[g.trickIndex()].Cards = append(g.currentTrick().Cards, c)
 
 	cp.PerformedAction = true
 
 	if i := len(g.currentTrick().Cards) - 1; i == 0 {
-		g.NewEntry(playedCardTemplate, sn.Entry{"TrickNumber": g.trickNumber(),
-			"HandNumber": g.currentHand(), "DeclarersTeam": g.State.DeclarersTeam}, sn.Line{"0": card})
+		g.NewEntry(
+			playedCardTemplate,
+			sn.H{
+				"TrickNumber":   g.trickNumber(),
+				"HandNumber":    g.currentHand(),
+				"Trick":         g.currentTrick(),
+				"DeclarersTeam": g.State.DeclarersTeam},
+		)
 	} else {
-		g.AppendLine(sn.Line{fmt.Sprintf("%d", i): card})
+		g.UpdateLastEntry(sn.H{"Trick": g.currentTrick()})
 	}
 
 	return nil
@@ -152,14 +149,6 @@ func (g *game) ledSuit() suit {
 	return pie.First(g.currentTrick().Cards).Suit
 }
 
-// func playCardFinishTurnAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) (*player, *player, error) {
-// 	sn.Debugf(msgEnter)
-// 	defer sn.Debugf(msgExit)
-//
-// 	g := &game{sngame}
-// 	return g.playCardFinishTurn(ctx, cu)
-// }
-
 func (g *game) playCardFinishTurn(_ *gin.Context, cu sn.User) (sn.PID, sn.PID, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
@@ -177,7 +166,7 @@ func (g *game) playCardFinishTurn(_ *gin.Context, cu sn.User) (sn.PID, sn.PID, e
 
 	np = g.endTrick()
 	if np != nil {
-		g.AppendEntry(wonTrickTemplate, sn.Line{"PID": np.id()})
+		g.UpdateLastEntry(sn.H{"WonTrick": np.id()})
 	}
 	endHand, result, path := g.endHandCheck()
 	if !endHand {
@@ -188,8 +177,6 @@ func (g *game) playCardFinishTurn(_ *gin.Context, cu sn.User) (sn.PID, sn.PID, e
 
 	return cp.id(), np.id(), nil
 }
-
-const wonTrickTemplate = "won-trick"
 
 func (g *game) validatePlayCardFinishTurn(cu sn.User) (*player, error) {
 	cp, err := g.validateFinishTurn(cu)

@@ -106,14 +106,6 @@ func newMsgClient(ctx context.Context) *messaging.Client {
 	return cl
 }
 
-// func newLogClient() *sn.LogClient {
-// 	client, err := sn.NewLogClient(projectID())
-// 	if err != nil {
-// 		log.Panicf("unable to create logging client: %v", err)
-// 	}
-// 	return client
-// }
-
 // AddRoutes addes routing for game.
 func (cl *Client) addRoutes() *Client {
 	/////////////////////////////////////////////

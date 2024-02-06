@@ -57,7 +57,7 @@ func (g *game) endTrick() *player {
 }
 
 func (g *game) allCardsPlayed() bool {
-	return pie.All(g.Players, func(p *player) bool { return len(p.Hand) == 0 })
+	return pie.All(g.Players, func(p *player) bool { return len(p.playableCards()) == 0 })
 }
 
 func (g *game) allPassed() bool {

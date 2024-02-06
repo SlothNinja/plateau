@@ -6,9 +6,9 @@
 
 <script setup>
 // composables
-import { cuKey, gameKey } from '@/composables/keys.js'
+import { cuKey, gameKey } from '@/snvue/composables/keys.js'
 import { useCP, useCPID, useIsCP, usePIDForUser } from '@/composables/player.js'
-import { useUserByIndex } from '@/composables/user.js'
+import { useUserByIndex } from '@/snvue/composables/user.js'
 
 // vue
 import { computed, inject, unref } from 'vue'

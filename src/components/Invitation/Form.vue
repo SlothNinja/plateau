@@ -61,8 +61,8 @@ import { ref, unref, watch, inject } from 'vue'
 
 /////////////////////////////////////////////////////
 // Composables
-import  { useFetch, usePut } from '@/composables/fetch.js'
-import  { snackKey } from '@/composables/keys.js'
+import  { useFetch, usePut } from '@/snvue/composables/fetch.js'
+import  { snackKey } from '@/snvue/composables/keys.js'
 
 ////////////////////////////////////////////////////
 // lodash
@@ -79,13 +79,13 @@ const invitation = ref()
 //////////////////////////////////////////////////////
 // Fetch invitation default values from server
 const fetchURL = `${import.meta.env.VITE_PLATEAU_BACKEND}sn/invitation/new`
-const fetchResponse = useFetch(fetchURL)
+const { data: fetchResponse } = useFetch(fetchURL).json()
 
 /////////////////////////////////////////////////////
 // Watch for data promise to resolve from useFetch
 // update invitation to received default values
 // update snackbar message based on any received message
-watch(fetchResponse.isReady, () => update(fetchResponse.state))
+watch(fetchResponse, () => update(fetchResponse))
 
 ///////////////////////////////////////////////////////
 // Put data of new invitation to server
@@ -93,12 +93,12 @@ function putData () {
   invitation.value.OptString = `{ "HandsPerPlayer": ${invitation.value.HandsPerPlayer} }`
   invitation.value.Type = 'plateau'
   const putURL = `${import.meta.env.VITE_PLATEAU_BACKEND}sn/invitation/new`
-  const putResponse = usePut(putURL, invitation)
-  watch(putResponse.isReady, () => update(putResponse.state))
+  const { data: response } = usePut(putURL, invitation).json()
+  watch(response, () => update(response))
 }
 
-function update(data) {
-  invitation.value = _get(unref(data), 'Invitation', {})
+function update(response) {
+  invitation.value = _get(unref(response), 'Invitation', {})
   if (!_isEmpty(unref(invitation))) {
     invitation.value.NumPlayers = 2
     invitation.value.HandsPerPlayer = 1
@@ -106,7 +106,7 @@ function update(data) {
 
   // const opt = JSON.parse(_get(unref(invitation), 'OptString', {}))
   // invitation.value.HandsPerPlayer = _get(opt, 'HandsPerPlayer', 0)
-  const message = _get(unref(data), 'Message', '')
+  const message = _get(unref(response), 'Message', '')
   if (!_isEmpty(message)) {
     updateSnackbar(message)
   }

@@ -103,9 +103,9 @@ import { computed, ref, unref, inject, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 // composables
-import { useFetch, usePut } from '@/composables/fetch.js'
-import { useCreator, useUsers } from '@/composables/user.js'
-import { cuKey, snackKey } from '@/composables/keys.js'
+import { useFetch, usePut } from '@/snvue/composables/fetch.js'
+import { useCreator, useUsers } from '@/snvue/composables/user.js'
+import { cuKey, snackKey } from '@/snvue/composables/keys.js'
 
 // Props
 const props = defineProps({
@@ -163,7 +163,7 @@ function action(obj) {
   const acceptHRef = router.resolve({ name: 'InvitationAction', params: { id: id, action: action } }).href
   const acceptPath = `${backendPath}${acceptHRef}`
   console.log(`acceptPath: ${JSON.stringify(acceptPath)}`)
-  const { response, error } = usePut(acceptPath, { password: pword })
+  const { data: response } = usePut(acceptPath, { password: pword }).json()
 
   // Wait for response data from server and update snackbar and clear password
   watch(response, () => {

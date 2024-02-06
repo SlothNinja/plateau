@@ -1,29 +1,36 @@
 <template>
   <component
-    :is='component'
-    :message='message'
-    :entry='entry'
-  >
+      :is='component'
+      :data='data'
+      >
   </component>
 </template>
 
 <script setup>
 import StartGame from '@/components/Log/StartGame'
+import AnnounceDeal from '@/components/Log/AnnounceDeal'
+import EndHandResults from '@/components/Log/EndHandResults'
+import StartBid from '@/components/Log/StartBid'
 import PlacedBid from '@/components/Log/PlacedBid'
 import PassedBid from '@/components/Log/PassedBid'
 import ExchangedCards from '@/components/Log/ExchangedCards'
 import PassedIncObjective from '@/components/Log/PassedIncObjective'
 import IncObjective from '@/components/Log/IncObjective'
 import PlayedCard from '@/components/Log/PlayedCard'
-import WonTrick from '@/components/Log/WonTrick'
-import { computed } from 'vue'
+import { computed, watch, ref, unref, onMounted } from 'vue'
 
-const props = defineProps([ 'message', 'entry' ])
+const props = defineProps([ 'template', 'data' ])
 
 const component = computed(() => {
-  switch (props.message.Template) {
+  switch (props.template) {
     case "start-game":
       return StartGame
+    case "announce-deal":
+      return AnnounceDeal
+    case "end-hand-results":
+      return EndHandResults
+    case "start-bid":
+      return StartBid
     case "placed-bid":
       return PlacedBid
     case "passed-bid":
@@ -36,11 +43,11 @@ const component = computed(() => {
       return IncObjective
     case "played-card":
       return PlayedCard
-    case "won-trick":
-      return WonTrick
     default:
       return ''
   }
 })
+
+// onMounted(() => title.value='This is title')
 
 </script>

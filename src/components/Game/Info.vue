@@ -25,9 +25,10 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 
 // inject game and current user
-import { gameKey } from '@/composables/keys'
+import { gameKey } from '@/snvue/composables/keys'
 const game = inject(gameKey)
 
+const header = computed(() => _get(unref(game), 'Header', {}))
 const title = computed(() => _get(unref(game), 'Header.Title', ''))
 const id = computed(() => _get(unref(route), 'params.id', ''))
 const hand = computed(() => _get(unref(game), 'Header.Round', 0))

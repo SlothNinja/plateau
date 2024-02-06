@@ -9,7 +9,7 @@
 <script setup>
 
 import UserButton from '@/components/Common/UserButton'
-import { useCreator } from '@/composables/user'
+import { useCreator } from '@/snvue/composables/user'
 import { computed, unref } from 'vue'
 import _get from 'lodash/get'
 

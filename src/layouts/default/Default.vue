@@ -19,7 +19,7 @@ import DefaultView from '@/layouts/default/View.vue'
 import DefaultFooter from '@/layouts/default/Footer.vue'
 import DefaultSnack from '@/layouts/default/SnackBar.vue'
 import { ref, provide } from 'vue'
-import { snackKey } from '@/composables/keys.js'
+import { snackKey } from '@/snvue/composables/keys'
 
 const nav = ref(false)
 const snackbar = ref({

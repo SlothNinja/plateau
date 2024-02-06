@@ -1,24 +1,35 @@
 <template>
-  <div v-if='teams'>
-    Increased bid to "{{exchange}} {{objective}} {{teams}}" for a value of {{bValue}}.
-  </div>
-  <div v-else>
-    Increase bid to "{{exchange}} {{objective}}" for a value of {{bValue}}.
-  </div>
+  <PlayerEntry class='ma-1' :pid='pid'>
+
+    <template #toolbar-title>
+      Hand: {{handNumber}}
+    </template>
+
+    <div v-if='teams'>
+      Increased bid to "{{exchange}} {{objective}} {{teams}}" for a value of {{bValue}}.
+    </div>
+    <div v-else>
+      Increased bid to "{{exchange}} {{objective}}" for a value of {{bValue}}.
+    </div>
+
+  </PlayerEntry>
 </template>
 
 <script setup>
-import { gameKey } from '@/composables/keys.js'
+import PlayerEntry from '@/snvue/components/Log/PlayerEntry'
+import { gameKey } from '@/snvue/composables/keys.js'
 import { computed, inject, unref } from 'vue'
 import _get from 'lodash/get'
 import { bidValue } from '@/composables/bid.js'
-const props = defineProps(['message'])
+const props = defineProps(['data'])
 
 const game = inject(gameKey)
-const bid = computed(() => _get(props, 'message.Data.Bid', {}))
+const bid = computed(() => _get(props, 'data.Bid', {}))
 const exchange = computed(() => _get(unref(bid), 'Exchange', ''))
 const objective = computed(() => _get(unref(bid), 'Objective', ''))
 const teams = computed(() => _get(unref(bid), '.Teams', ''))
 const bValue = computed(() => bidValue(game, bid))
 
+const pid = computed(() => _get(unref(props), 'data.PID', ''))
+const handNumber = computed(() => _get(unref(props), 'data.HandNumber', -1))
 </script>

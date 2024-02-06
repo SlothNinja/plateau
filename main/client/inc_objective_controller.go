@@ -31,13 +31,6 @@ func (g *game) partnerPIDS() []sn.PID {
 	return g.State.DeclarersTeam[1:]
 }
 
-// func incObjectiveAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) error {
-// 	sn.Debugf(msgEnter)
-// 	defer sn.Debugf(msgExit)
-//
-// 	return (&game{sngame}).incObjective(ctx, cu)
-// }
-
 func (g *game) incObjective(ctx *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
@@ -50,7 +43,11 @@ func (g *game) incObjective(ctx *gin.Context, cu sn.User) error {
 	cp.PerformedAction = true
 	cp.Bid = true
 	g.State.Bids = append(g.State.Bids, bid)
-	g.NewEntry(incObjectiveTemplate, sn.Entry{"PID": cp.id(), "HandNumber": g.currentHand()}, sn.Line{"Bid": bid})
+	g.NewEntry(incObjectiveTemplate, sn.H{
+		"PID":        cp.id(),
+		"HandNumber": g.currentHand(),
+		"Bid":        bid,
+	})
 	return nil
 }
 
@@ -92,13 +89,6 @@ func (g *game) validateIncObjective(ctx *gin.Context, cu sn.User) (*player, bid,
 		return cp, bid, nil
 	}
 }
-
-// func incObjectiveFinishTurnAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) (*player, *player, error) {
-// 	sn.Debugf(msgEnter)
-// 	defer sn.Debugf(msgExit)
-//
-// 	return (&game{sngame}).incObjectiveFinishTurn(ctx, cu)
-// }
 
 func (g *game) incObjectiveFinishTurn(_ *gin.Context, cu sn.User) (sn.PID, sn.PID, error) {
 	sn.Debugf(msgEnter)

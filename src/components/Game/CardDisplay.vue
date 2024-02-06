@@ -81,8 +81,8 @@ import { computed, ref, inject, unref, watch } from 'vue'
 // composables
 import { useCardValue } from '@/composables/cardValue'
 import { useIsCP, usePlayerByUser } from '@/composables/player'
-import { useUserByPID } from '@/composables/user'
-import { cuKey, gameKey } from '@/composables/keys'
+import { useUserByPID } from '@/snvue/composables/user'
+import { cuKey, gameKey } from '@/snvue/composables/keys'
 import { useColorFor } from '@/composables/color'
 
 const cu = inject(cuKey)
@@ -168,8 +168,10 @@ function select(card) {
 
   if (_includes(unref(selection), card)) {
     _remove(selection.value, card)
-  } else if ((unref(header).Phase != 'card exchange') ||
-    ((unref(header).Phase != 'card exchange') && (_includes(unref(player).Hand, card)))) {
+    return
+  }
+
+  if ((unref(header).Phase != 'card exchange') || (_includes(unref(player).Hand, card))) {
     selection.value.push(card)
     selection.value = _takeRight(selection.value, props.multi)
   }

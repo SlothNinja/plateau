@@ -11,7 +11,7 @@
 
 <script setup>
 import CardDisplay from '@/components/Game/CardDisplay.vue'
-import { gameKey } from '@/composables/keys.js'
+import { gameKey } from '@/snvue/composables/keys.js'
 import { computed, inject, unref } from 'vue'
 import _get from 'lodash/get'
 

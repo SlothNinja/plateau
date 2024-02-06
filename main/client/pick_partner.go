@@ -46,48 +46,6 @@ func (g *game) otherTeam(pids1 []sn.PID) []sn.PID {
 	})
 }
 
-// func (cl Client) pickPartnerHandler(ctx *gin.Context) {
-// 	cl.Log.Debugf(msgEnter)
-// 	defer cl.Log.Debugf(msgExit)
-//
-// 	cu, err := cl.Current(ctx)
-// 	if err != nil {
-// 		cl.Log.Warningf(err.Error())
-// 	}
-//
-// 	g, err := cl.GetGame(ctx, cu)
-// 	if err != nil {
-// 		sn.JErr(ctx, err)
-// 		return
-// 	}
-//
-// 	cp, np, err := g.pickPartner(ctx, cu)
-// 	if err != nil {
-// 		sn.JErr(ctx, err)
-// 		return
-// 	}
-//
-// 	cp.Stats.Moves++
-// 	cp.Stats.Think += time.Since(g.UpdatedAt)
-//
-// 	np.reset()
-// 	g.SetCurrentPlayers(np)
-//
-// 	if err := cl.Commit(ctx, g, cu); err != nil {
-// 		sn.JErr(ctx, err)
-// 		return
-// 	}
-//
-// 	ctx.JSON(http.StatusOK, nil)
-// }
-
-//	func pickPartnerAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) (*player, *player, error) {
-//		sn.Debugf(msgEnter)
-//		defer sn.Debugf(msgExit)
-//
-//		g := &game{sngame}
-//		return g.pickPartner(ctx, cu)
-//	}
 func (g *game) pickPartner(ctx *gin.Context, cu sn.User) (sn.PID, sn.PID, error) {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)

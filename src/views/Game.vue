@@ -17,7 +17,11 @@
       <v-col cols='6'>
         <v-row dense class='h-100'>
           <v-col cols='12'>
-            <Bids :bids='bids' :order='order' :dTeam='dTeam' />
+            <v-card elevation='4' class='h-100'>
+              <v-card-text>
+                <Bids :bids='bids' :order='order' :dTeam='dTeam' />
+              </v-card-text>
+            </v-card>
           </v-col>
         </v-row>
       </v-col>
@@ -66,7 +70,7 @@
         <v-row dense>
           <v-col cols='12'>
             <v-card>
-            <Board :tricks='tricks' :declarersTeam='declarersTeam' :numPlayers='numPlayers' />
+            <Board :tricks='tricks' :dTeam='dTeam' :numPlayers='numPlayers' />
             </v-card>
           </v-col>
         </v-row>
@@ -98,9 +102,9 @@ import MessageBar from '@/components/Game/MessageBar'
 import CardDisplay from '@/components/Game/CardDisplay'
 
 // composables
-import { cuKey, gameKey } from '@/composables/keys'
+import { cuKey, gameKey } from '@/snvue/composables/keys'
 import { usePlayerByUser, usePlayerByPID, useNameFor, useCP, useCPID, useIsCP } from '@/composables/player'
-import { useFetch } from '@/composables/fetch'
+import { useFetch } from '@/snvue/composables/fetch'
 import { useStackByPID } from '@/composables/stack'
 import { useColorFor } from '@/composables/color'
 
@@ -159,7 +163,7 @@ const tricks = computed(
   }
 )
 
-const declarersTeam = computed(
+const dTeam = computed(
   () => {
     if ((unref(results) == unref(round))) {
       return _get(unref(game), 'State.DeclarersTeam', [])
@@ -187,15 +191,6 @@ const order = computed(
       return _get(unref(header), 'OrderIDS', [])
     }
     return _get(unref(game), `State.LastResults[${unref(index)}].SeatOrder`, [])
-  }
-)
-
-const dTeam = computed(
-  () => {
-    if ((unref(results) == unref(round))) {
-      return _get(unref(game), 'State.DeclarersTeam', [])
-    }
-    return _get(unref(game), `State.LastResults[${unref(index)}].DeclarersTeam`, [])
   }
 )
 

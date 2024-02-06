@@ -8,14 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// func abdicateAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) error {
-// 	sn.Debugf(msgEnter)
-// 	defer sn.Debugf(msgExit)
-//
-// 	g := &game{sngame}
-// 	return g.abdicate(ctx, cu)
-// }
-
 func (g *game) abdicate(_ *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)

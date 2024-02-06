@@ -4,13 +4,13 @@ service cloud.firestore {
     match /Stack/{gid}/For/{uid}/{document=**} {
       allow read: if request.auth.uid == uid;
     }
-    match /Committed/{gid}/View/{uid}/{document=**} {
-      allow read: if request.auth.uid == uid || uid == '0';
-    }
-    match /Committed/{gid}/Cached/{uid}/Current/{document=**} {
+    match /Game/{gid}/Rev/{rev}/ViewFor/{uid}/{document=**} {
       allow read: if request.auth.uid == uid;
     }
-    match /Committed/{gid}/Messages/{document=**} {
+    match /Game/{gid}/Rev/{rev}/CacheFor/{uid}/Rev/{crev}/{document=**} {
+      allow read: if request.auth.uid == uid;
+    }
+    match /Game/{gid}/Messages/{document=**} {
       allow read: if true;
     }
     match /Invitation/{document=**} {

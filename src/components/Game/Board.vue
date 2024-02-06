@@ -32,8 +32,9 @@ import _includes from 'lodash/includes'
 import _map from 'lodash/map'
 import _filter from 'lodash/filter'
 import _flatMap from 'lodash/flatMap'
+import _take from 'lodash/take'
 
-const props = defineProps(['tricks', 'declarersTeam', 'numPlayers'])
+const props = defineProps(['tricks', 'dTeam', 'numPlayers'])
 
 const declarersCards = computed(() => (_flatMap(unref(filtered), (trick) => (isDeclarers(trick) ? trick.Cards : [] ))))
 
@@ -41,7 +42,13 @@ const opposersCards = computed(() => (_flatMap(unref(filtered), (trick) => (isDe
 
 const filtered = computed(() => _filter(props.tricks, (trick) => (trick.WonBy != 0)))
 
-const wonTricks = computed(() => _map(unref(filtered), (trick) => (isDeclarers(trick))))
+const wonTricks = computed(() => {
+  let won = _map(unref(filtered), (trick) => (isDeclarers(trick)))
+  if (unref(props.numPlayers) == 2) {
+    return _take(won, 16)
+  }
+  return _take(won, 13)
+})
 
 function cardClass(rank, suit) {
   let klass = `${unref(rank)}-${unref(suit)}`
@@ -59,7 +66,7 @@ function trickClass(won, index) {
 }
 
 function isDeclarers(trick) {
-  return _includes(props.declarersTeam, trick.WonBy)
+  return _includes(props.dTeam, trick.WonBy)
 }
 
 </script>

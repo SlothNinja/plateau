@@ -7,14 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// func passBidAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) error {
-// 	sn.Debugf(msgEnter)
-// 	defer sn.Debugf(msgExit)
-//
-// 	g := &game{sngame}
-// 	return g.passBid(ctx, cu)
-// }
-
 func (g *game) passBid(_ *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
@@ -29,9 +21,9 @@ func (g *game) passBid(_ *gin.Context, cu sn.User) error {
 	cp.Passed = true
 
 	if g.Header.Phase == incObjectivePhase {
-		g.NewEntry(passedIncObjectiveTemplate, sn.Entry{"PID": cp.id(), "HandNumber": g.currentHand()}, nil)
+		g.NewEntry(passedIncObjectiveTemplate, sn.H{"PID": cp.id(), "HandNumber": g.currentHand()})
 	} else {
-		g.NewEntry(passedBidTemplate, sn.Entry{"PID": cp.id(), "HandNumber": g.currentHand()}, nil)
+		g.NewEntry(passedBidTemplate, sn.H{"PID": cp.id(), "HandNumber": g.currentHand()})
 	}
 
 	return nil

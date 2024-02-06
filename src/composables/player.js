@@ -2,7 +2,7 @@ import { ref, unref } from 'vue'
 import _find from 'lodash/find'
 import _get from 'lodash/get'
 import _findIndex from 'lodash/findIndex'
-import { useUserByPID } from '@/composables/user'
+import { useUserByPID } from '@/snvue/composables/user'
 
 export function usePlayerByUser(game, user) {
   const header = ref(_get(unref(game), 'Header', {}))

@@ -1,7 +1,7 @@
 <template>
   <div :style='style'>
     <div v-if="text != ''" class='text-center font-weight-bold' :class="`text-${textcolor}`" style='white-space: pre'>{{text}}</div>
-    <v-img :src='src' />
+    <v-img :src='src' :eager='true' />
   </div>
 </template>
 

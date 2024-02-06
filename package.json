@@ -17,6 +17,8 @@
     "core-js": "^3.8.3",
     "firebase": "^9.20.0",
     "firestore": "^1.1.6",
+    "lodash": "^4.17.21",
+    "npm": "^10.4.0",
     "roboto-fontface": "*",
     "vue": "^3.4.15",
     "vue-router": "^4.0.0",

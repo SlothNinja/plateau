@@ -22,7 +22,6 @@ const (
 )
 
 func (b bid) value(numPlayers int) int64 {
-	sn.Debugf("b: %#v", b)
 	return b.Exchange.value(numPlayers) + b.Objective.value() + b.Teams.value(numPlayers)
 }
 

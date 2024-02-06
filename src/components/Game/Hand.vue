@@ -53,9 +53,9 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 
 // composables
-import { cuKey, gameKey, snackKey } from '@/composables/keys'
+import { cuKey, gameKey, snackKey } from '@/snvue/composables/keys'
 import { useIsCP, useCPID, useNameFor, usePlayerByUser } from '@/composables/player'
-import { usePut } from '@/composables/fetch'
+import { usePut } from '@/snvue/composables/fetch'
 import { useStackByPID } from '@/composables/stack'
 
 const cu = inject(cuKey)
@@ -146,10 +146,10 @@ function submit() {
     url = `${backend}sn/game/${action}/${route.params.id}`
   }
   // const { response, error } = usePut(url, unref(selected))
-  const { state, isReady, isLoading } = usePut(url, unref(selected))
+  const { data: response } = usePut(url, selected).json()
   selected.value = []
 
-  watch(state, () => update(state))
+  watch(response, () => update(response))
 }
 
 function update(response) {

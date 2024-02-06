@@ -5,6 +5,8 @@ import (
 	"github.com/elliotchance/pie/v2"
 )
 
+const dealTemplate = "announce-deal"
+
 func (g *game) deal() {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
@@ -15,6 +17,11 @@ func (g *game) deal() {
 	default:
 		g.normalDeal()
 	}
+
+	g.NewEntry(dealTemplate, sn.H{
+		"PID":        g.dealer().id(),
+		"HandNumber": g.currentHand(),
+	})
 }
 
 // assumes deck is shuffled

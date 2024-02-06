@@ -87,8 +87,8 @@ import _first from 'lodash/first'
 import _isEmpty from 'lodash/isEmpty'
 
 // composables
-import { usePut } from '@/composables/fetch.js'
-import { cuKey, gameKey, snackKey } from '@/composables/keys.js'
+import { usePut } from '@/snvue/composables/fetch.js'
+import { cuKey, gameKey, snackKey } from '@/snvue/composables/keys.js'
 import { useCP, useCPID, useIsCP } from '@/composables/player.js'
 import { exchangeValue, objectiveValue, teamsValue, bidValue, minBid } from '@/composables/bid.js'
 import { useRoute } from 'vue-router'
@@ -122,6 +122,9 @@ onMounted(() => {
 })
 
 watch(lastBid, (newBid) => {
+  if (_isEmpty(unref(newBid))) {
+    return
+  }
   bid.value = {...unref(newBid)}
   bid.value.PID = unref(cpid)
 })
@@ -240,9 +243,9 @@ function submit() {
     const backend = import.meta.env.VITE_PLATEAU_BACKEND
     url = `${backend}sn/game/${action}/${route.params.id}`
   }
-  const { state, isReady, isLoading } = usePut(url, bid)
+  const { data: response } = usePut(url, bid).json()
 
-  watch(state, () => update(state))
+  watch(response, () => update(response))
 }
 
 /////////////////////////////////////
@@ -253,7 +256,7 @@ function pass() {
     const backend = import.meta.env.VITE_PLATEAU_BACKEND
     url = `${backend}sn/game/passBid/${route.params.id}`
   }
-  const { response, error } = usePut(url)
+  const { data: response } = usePut(url).json()
 
   watch(response, () => update(response))
 }
@@ -261,7 +264,7 @@ function pass() {
 /////////////////////////////////////
 // Send pass action to server
 function abdicate() {
-  const { response, error } = usePut(`/sn/game/abdicate/${route.params.id}`)
+  const { data: response } = usePut(`/sn/game/abdicate/${route.params.id}`).json()
 
   watch(response, () => update(response))
 }

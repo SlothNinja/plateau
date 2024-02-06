@@ -2,7 +2,7 @@
   <v-container>
     <v-row>
       <v-col cols='6'>
-        <v-img :src='board36' ></v-img>
+        <v-img :src='board36' :eager='true'></v-img>
       </v-col>
       <v-col cols='6'>
         <Greeting />

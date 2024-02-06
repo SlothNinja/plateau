@@ -53,9 +53,9 @@ import UserButton from '@/components/Common/UserButton'
 import CardStamp from '@/components/Common/CardStamp'
 
 // Composables
-import { useCreator, useUsers } from '@/composables/user'
+import { useCreator, useUsers } from '@/snvue/composables/user'
 import { fromNow } from '@/composables/fromNow'
-import { usePut } from '@/composables/fetch'
+import { usePut } from '@/snvue/composables/fetch'
 
 // Vue
 import { computed, inject, ref, unref, watch } from 'vue'
@@ -77,7 +77,7 @@ import _reverse from 'lodash/reverse'
 import _sortBy from 'lodash/sortBy'
 
 // inject current user
-import { cuKey, snackKey } from '@/composables/keys'
+import { cuKey, snackKey } from '@/snvue/composables/keys'
 const cu = inject(cuKey)
 const cuid = computed(() => (_get(unref(cu), 'ID', -1)))
 
@@ -169,7 +169,7 @@ function winnerClass(item, uid) {
 const { snackbar, updateSnackbar } = inject(snackKey)
 
 function abandon (id) {
-  const { response, error } = usePut(`/sn/game/abandon/${id}`)
+  const { data: response } = usePut(`/sn/game/abandon/${id}`).json()
   watch(response, () => update(response))
 }
 

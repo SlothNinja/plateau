@@ -68,7 +68,7 @@
 <script setup>
 import { computed, ref, onMounted, inject, unref } from 'vue'
 import UserButton from '@/components/Common/UserButton.vue'
-import { cuKey } from '@/composables/keys'
+import { cuKey } from '@/snvue/composables/keys'
 import _get from 'lodash/get'
 import _map from 'lodash/map'
 

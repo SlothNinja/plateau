@@ -25,13 +25,6 @@ func (g *game) startExchange() *player {
 	return declarer
 }
 
-// func exchangeAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) error {
-// 	sn.Debugf(msgEnter)
-// 	defer sn.Debugf(msgExit)
-//
-// 	return (&game{sngame}).exchange(ctx, cu)
-// }
-
 func (g *game) exchange(ctx *gin.Context, cu sn.User) error {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
@@ -46,7 +39,7 @@ func (g *game) exchange(ctx *gin.Context, cu sn.User) error {
 	_, cp.Hand = pie.Diff(cp.Hand, cards)
 	cp.PerformedAction = true
 
-	g.NewEntry(exchangedCardsTemplate, sn.Entry{"PID": cp.id(), "HandNumber": g.currentHand()}, nil)
+	g.NewEntry(exchangedCardsTemplate, sn.H{"PID": cp.id(), "HandNumber": g.currentHand()})
 
 	return nil
 }
@@ -82,13 +75,6 @@ func (g *game) validateExchange(ctx *gin.Context, cu sn.User) (*player, []card, 
 		return cp, cards, nil
 	}
 }
-
-// func exchangeFinishTurnAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) (*player, *player, error) {
-// 	sn.Debugf(msgEnter)
-// 	defer sn.Debugf(msgExit)
-//
-// 	return (&game{sngame}).exchangeFinishTurn(ctx, cu)
-// }
 
 func (g *game) exchangeFinishTurn(_ *gin.Context, cu sn.User) (sn.PID, sn.PID, error) {
 	sn.Debugf(msgEnter)

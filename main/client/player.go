@@ -72,45 +72,6 @@ func (p *player) id() sn.PID {
 	return p.Player.ID
 }
 
-// func (p player) Copy() sn.Playerer {
-// 	cs := make([]sn.Color, len(p.Colors))
-// 	copy(cs, p.Colors)
-//
-// 	h := make([]card, len(p.Hand))
-// 	copy(h, p.Hand)
-//
-// 	s0 := make([]card, len(p.Stack0))
-// 	copy(s0, p.Stack0)
-//
-// 	s1 := make([]card, len(p.Stack1))
-// 	copy(s1, p.Stack1)
-//
-// 	s2 := make([]card, len(p.Stack2))
-// 	copy(s2, p.Stack2)
-//
-// 	s3 := make([]card, len(p.Stack3))
-// 	copy(s3, p.Stack3)
-//
-// 	s4 := make([]card, len(p.Stack4))
-// 	copy(s4, p.Stack4)
-//
-// 	p2 := &player{
-// 		Bid:    p.Bid,
-// 		Hand:   h,
-// 		Stack0: s0,
-// 		Stack1: s1,
-// 		Stack2: s2,
-// 		Stack3: s3,
-// 		Stack4: s4,
-// 	}
-// 	p2.ID = p.ID
-// 	p2.Passed = p.Passed
-// 	p2.Colors = cs
-// 	p2.PerformedAction = p.PerformedAction
-// 	p2.Stats = p.Stats
-// 	return p2
-// }
-
 func (p *player) reset() {
 	p.PerformedAction = false
 }
@@ -119,24 +80,6 @@ func (p *player) bidReset() {
 	p.Bid = false
 	p.Passed = false
 }
-
-// func (p *player) New() sn.Playerer {
-// 	return new(player)
-// }
-
-// func (g *game) addNewPlayers() {
-// 	g.Players = make([]*player, g.NumPlayers)
-// 	for i := range g.Players {
-// 		g.Players[i] = g.newPlayer(i)
-// 	}
-// }
-//
-// func (g game) newPlayer(i int) *player {
-// 	var p player
-// 	p.ID = sn.PID(i + 1)
-// 	p.Colors = defaultColors()
-// 	return &p
-// }
 
 func (g *game) declarer() *player {
 	return g.PlayerByPID(pie.First(g.State.DeclarersTeam))

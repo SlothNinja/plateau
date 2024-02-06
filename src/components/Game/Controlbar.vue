@@ -12,14 +12,14 @@
       <!-- Rollback control -->
       <v-tooltip location='bottom' text='Rollback' color="info" :disabled='!canRollback' v-if='admin' >
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" icon='mdi-step-backward' :disabled='!canRollback' @click="action('rollback', { rev: stack.Committed })" />
+            <v-btn v-bind="props" icon='mdi-step-backward' :disabled='!canRollback' @click="action('rollback', { rev: undo.Committed })" />
         </template>
       </v-tooltip>
 
       <!-- Rollforward control -->
       <v-tooltip location='bottom' text='Rollforward' color="info" :disabled='!canRollforward' v-if='admin'>
         <template v-slot:activator="{ props }">
-            <v-btn v-bind="props" icon='mdi-step-forward' @click="action('rollforward', { rev: stack.Committed })" />
+            <v-btn v-bind="props" icon='mdi-step-forward' :disabled='!canRollforward' @click="action('rollforward', { rev: undo.Committed })" />
         </template>
       </v-tooltip>
 
@@ -60,18 +60,18 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 
 // inject current user
-import { cuKey, stackKey } from '@/composables/keys.js'
+import { cuKey, stackKey } from '@/snvue/composables/keys.js'
 const cu = inject(cuKey)
-const admin = _get(unref(cu), 'Admin', false)
+const admin = computed(() => _get(unref(cu), 'Admin', false))
 
 //////////////////////////////////////
 // Snackbar
-import { snackKey } from '@/composables/keys.js'
+import { snackKey } from '@/snvue/composables/keys.js'
 const { snackbar, updateSnackbar } = inject(snackKey)
 const stack = inject(stackKey)
 
 // Inject game
-import { gameKey } from '@/composables/keys'
+import { gameKey } from '@/snvue/composables/keys'
 const game = inject(gameKey)
 const header = computed(() => _get(unref(game), 'Header', {}))
 
@@ -85,20 +85,32 @@ const canUndo = computed(() => (unref(running) && unref(isCP) && (unref(stack).C
 const canRedo = computed(() => (unref(running) && unref(isCP) && (unref(stack).Current < unref(stack).Updated)))
 const canReset = computed(() => (unref(running) && unref(isCP)))
 
-const canRollback = computed(() => (unref(admin) && (unref(stack).Current == unref(stack).Committed) && (unref(stack).Committed) > 0))
-const canRollforward = computed(() => (unref(admin) && (unref(stack).Current == unref(stack).Committed)))
+const undo = computed(() => _get(unref(header), 'Undo', {}))
+const canRollback = computed(() => {
+  if (_isEmpty(unref(stack))) {
+    return unref(admin) && (unref(undo).Committed > 0)
+  }
+  return unref(admin) && (unref(stack).Current == unref(stack).Committed) && (unref(stack).Committed > 0)
+})
 
-import { usePut } from '@/composables/fetch.js'
+const canRollforward = computed(() => {
+  if (_isEmpty(unref(stack))) {
+    return unref(admin)
+  }
+    return unref(admin) && (unref(stack).Current == unref(stack).Committed)
+})
+
+import { usePut } from '@/snvue/composables/fetch.js'
 function action(path, data) {
   let url = `/sn/game/${path}/${route.params.id}`
   if (process.env.NODE_ENV == 'development') {
     const backend = import.meta.env.VITE_PLATEAU_BACKEND
     url = `${backend}sn/game/${path}/${route.params.id}`
   }
-  const { state, isReady, isLoading } = usePut(url, data)
+  const { data: response } = usePut(url, data).json()
 
-  watch( state, () => {
-    const msg = _get(unref(state), 'Message', '')
+  watch( response, () => {
+    const msg = _get(unref(response), 'Message', '')
     if (!_isEmpty(msg)) {
       updateSnackbar(msg)
     }

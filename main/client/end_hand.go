@@ -1,11 +1,12 @@
 package client
 
 import (
-	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/sn/v3"
 	"github.com/barkimedes/go-deepcopy"
 	"github.com/elliotchance/pie/v2"
 )
+
+const endHandTemplate = "end-hand-results"
 
 func (g *game) startEndHandPhase(result handResult, path []node) *player {
 	sn.Debugf(msgEnter)
@@ -13,7 +14,9 @@ func (g *game) startEndHandPhase(result handResult, path []node) *player {
 
 	g.Header.Phase = endHandPhase
 	scored := g.scoreHand(result)
-	g.saveLastResult(result, path, scored)
+	results := g.saveLastResult(result, path, scored)
+
+	g.NewEntry(endHandTemplate, sn.H{"Results": results})
 
 	if end := g.endGameCheck(); end {
 		return nil
@@ -107,9 +110,7 @@ func (g *game) startHand() *player {
 	g.nextHand()
 
 	if g.currentHand() == 1 {
-		log.Debugf("g.OrderIDS: %#v", g.Header.OrderIDS)
 		g.RandomizePlayers()
-		log.Debugf("g.OrderIDS: %#v", g.Header.OrderIDS)
 	} else {
 		g.newDealer()
 	}
@@ -140,10 +141,12 @@ func (g *game) revealTalon() {
 	} else {
 		talon.WonBy = pie.First(g.opposersTeam())
 	}
-	g.State.Tricks = append(g.State.Tricks, talon)
+	talonIndex := len(g.State.Tricks) - 1
+	g.State.Tricks[talonIndex] = talon
 }
 
 type lastResult struct {
+	HandNumber    int
 	Bids          []bid
 	SeatOrder     []sn.PID
 	DeclarersTeam []sn.PID
@@ -153,8 +156,9 @@ type lastResult struct {
 	Success       handResult
 }
 
-func (g *game) saveLastResult(result handResult, path []node, scored []int64) {
+func (g *game) saveLastResult(result handResult, path []node, scored []int64) lastResult {
 	last := lastResult{
+		HandNumber:    g.currentHand(),
 		Bids:          g.State.Bids,
 		SeatOrder:     g.Header.OrderIDS,
 		DeclarersTeam: g.State.DeclarersTeam,
@@ -164,26 +168,8 @@ func (g *game) saveLastResult(result handResult, path []node, scored []int64) {
 		Success:       result,
 	}
 	g.State.LastResults = append(g.State.LastResults, deepcopy.MustAnything(last).(lastResult))
+	return last
 }
-
-// func (l lastResult) copy() lastResult {
-// 	last := lastResult{
-// 		Bids:          make([]bid, len(l.Bids)),
-// 		SeatOrder:     make([]sn.PID, len(l.SeatOrder)),
-// 		DeclarersTeam: make([]sn.PID, len(l.DeclarersTeam)),
-// 		Tricks:        make([]trick, len(l.Tricks)),
-// 		Path:          make([]node, len(l.Path)),
-// 		Scored:        make([]int64, len(l.Scored)),
-// 		Success:       l.Success,
-// 	}
-// 	copy(last.Bids, l.Bids)
-// 	copy(last.SeatOrder, l.SeatOrder)
-// 	copy(last.DeclarersTeam, l.DeclarersTeam)
-// 	copy(last.Tricks, l.Tricks)
-// 	copy(last.Path, l.Path)
-// 	copy(last.Scored, l.Scored)
-// 	return last
-// }
 
 func (g *game) currentHand() int {
 	return g.Header.Round

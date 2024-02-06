@@ -1,34 +1,30 @@
 <template>
-  <v-card elevation='4' class='h-100'>
-    <v-card-text>
-      <v-table density='compact'>
-        <thead>
-          <tr>
-            <th class='text-center'>Name</th>
-            <th class='text-center'>Passed</th>
-            <th class='text-center'>Last Bid</th>
-            <th class='text-center'>Score</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr :class='cpClass(p)' v-for='(p, index) in players' :key='index'>
-            <td class='text-center'>
-              <UserButton
-                  :user='useUserByPID(header, p.ID)'
-                  :size='24'
-                  :color='useColorFor(dTeam, p.ID)'
-                  >
-                  {{nameFor(p)}}
-              </UserButton>
-            </td>
-            <td class='text-center'>{{p.Passed}}</td>
-            <td class='text-center'>{{bidLabel(p.ID)}}</td>
-            <td class='text-center'>{{p.Score}}</td>
-          </tr>
-        </tbody>
-      </v-table>
-    </v-card-text>
-  </v-card>
+  <v-table density='compact'>
+    <thead>
+      <tr>
+        <th class='text-center'>Name</th>
+        <th class='text-center'>Passed</th>
+        <th class='text-center'>Last Bid</th>
+        <th class='text-center'>Score</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr :class='cpClass(p)' v-for='(p, index) in players' :key='index'>
+        <td class='text-center'>
+          <UserButton
+              :user='useUserByPID(header, p.ID)'
+              :size='24'
+              :color='useColorFor(dTeam, p.ID)'
+              >
+              {{nameFor(p)}}
+          </UserButton>
+        </td>
+        <td class='text-center'>{{p.Passed}}</td>
+        <td class='text-center'>{{bidLabel(p.ID)}}</td>
+        <td class='text-center'>{{p.Score}}</td>
+      </tr>
+    </tbody>
+  </v-table>
 </template>
 
 <script setup>
@@ -37,7 +33,7 @@ import UserButton from '@/components/Common/UserButton.vue'
 
 // import composables
 import { bidValue } from '@/composables/bid'
-import { useUserByPID } from '@/composables/user'
+import { useUserByPID } from '@/snvue/composables/user'
 import { useIsCP, useCPID, useNameFor, usePlayerByPID } from '@/composables/player'
 import { useColorFor } from '@/composables/color'
 
@@ -69,7 +65,7 @@ function bidLabel(pid) {
 }
 
 // inject game and current user
-import { cuKey, gameKey } from '@/composables/keys.js'
+import { cuKey, gameKey } from '@/snvue/composables/keys.js'
 const cu = inject(cuKey)
 const game = inject(gameKey)
 

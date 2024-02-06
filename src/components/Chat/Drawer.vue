@@ -42,13 +42,13 @@
 <script setup>
 import Message from '@/components/Chat/Message'
 import { computed, inject, ref, watch, unref, nextTick, onMounted } from 'vue'
-import { cuKey, gameKey, snackKey } from '@/composables/keys.js'
+import { cuKey, gameKey, snackKey } from '@/snvue/composables/keys.js'
 import { useDocument, useCollection } from 'vuefire'
 import { useDebouncedRef } from '@/composables/debouncedRef'
 import { doc, collection } from 'firebase/firestore'
 import { useRoute } from 'vue-router'
 import { db } from '@/composables/firebase'
-import { usePut } from '@/composables/fetch'
+import { usePut } from '@/snvue/composables/fetch'
 
 import _get from 'lodash/get'
 import _sortBy from 'lodash/sortBy'
@@ -58,15 +58,16 @@ import _includes from 'lodash/includes'
 import _size from 'lodash/size'
 import _map from 'lodash/map'
 
-const props = defineProps(['modelValue'])
-const emit = defineEmits(['update:modelValue', 'unread'])
+// const props = defineProps(['modelValue'])
+// const emit = defineEmits(['update:modelValue', 'unread'])
+const emit = defineEmits(['unread'])
 
 const route = useRoute()
 const cu = inject(cuKey)
 
 
 const gid = computed(() => _get(unref(route), 'params.id', ''))
-const messagesRef = computed(() => collection(db, 'Committed', unref(gid), 'Messages'))
+const messagesRef = computed(() => collection(db, 'Game', unref(gid), 'Messages'))
 const messages = useCollection(messagesRef)
 const sorted = computed(
   () => {
@@ -77,14 +78,7 @@ const sorted = computed(
   }
 )
 
-const open = computed({
-  get() {
-    return props.modelValue
-  },
-  set(value) {
-    emit('update:modelValue', value)
-  }
-})
+const open = defineModel()
 
 watch(open, () => {
   if(unref(open)) {
@@ -110,12 +104,20 @@ function scrollChatBox(){
   }
 }
 
+const msgURL = computed(() => {
+  if (process.env.NODE_ENV == 'development') {
+    const backend = import.meta.env.VITE_PLATEAU_BACKEND
+    return `${backend}sn/mlog/add/${unref(gid)}`
+  }
+  return `/sn/mlog/add/${unref(gid)}`
+})
+
 ///////////////////////////////////////////////////////
 // Put data of new invitation to server
 function send () {
   let m = unref(message)
   m.creator = unref(cu)
-  const { response, error } = usePut(`/sn/mlog/add/${route.params.id}`, m)
+  const { data: response } = usePut(msgURL, m).json()
   unref(message).text = ''
   watch(response, () => update(response))
 }
@@ -148,7 +150,7 @@ const unread = computed(() => {
 
 watch([open, unreadIDS], () => {
   if ((_size(unref(unreadIDS)) > 0) && (unref(open))) {
-    const { response, error } = usePut(`/sn/mlog/updateRead/${route.params.id}`, { "Read": unref(unreadIDS) })
+    const { data: response } = usePut(`/sn/mlog/updateRead/${route.params.id}`, { "Read": unref(unreadIDS) }).json()
     watch(response, () => update(response))
   }
 })

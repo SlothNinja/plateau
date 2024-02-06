@@ -2,7 +2,11 @@
   <v-app>
     <ChatDrawer v-model='chat' @unread='(n) => unread = n' />
 
-    <LogDrawer v-model='log' />
+    <LogDrawer v-model='log'>
+      <template v-slot:entries>
+        <Message v-for='(entry, index) in entries' :key='index' :template='entry.Template' :data='entry.Data' />
+      </template>
+    </LogDrawer>
 
     <DefaultToolBar @toggleNav='toggleNav'>
 
@@ -41,21 +45,22 @@
 </template>
 
 <script setup>
-import DefaultToolBar from '@/layouts/default/ToolBar.vue'
-import DefaultNavDrawer from '@/layouts/default/NavDrawer.vue'
-import DefaultView from '@/layouts/default/View.vue'
-import DefaultFooter from '@/layouts/default/Footer.vue'
-import DefaultSnack from '@/layouts/default/SnackBar.vue'
-import Controlbar from '@/components/Game/Controlbar.vue'
-import LogDrawer from '@/components/Log/Drawer.vue'
-import ChatDrawer from '@/components/Chat/Drawer.vue'
+import DefaultToolBar from '@/layouts/default/ToolBar'
+import DefaultNavDrawer from '@/layouts/default/NavDrawer'
+import DefaultView from '@/layouts/default/View'
+import DefaultFooter from '@/layouts/default/Footer'
+import DefaultSnack from '@/layouts/default/SnackBar'
+import Controlbar from '@/components/Game/Controlbar'
+import LogDrawer from '@/snvue/components/Log/Drawer'
+import Message from '@/components/Log/Message'
+import ChatDrawer from '@/components/Chat/Drawer'
 import { computed, ref, inject, provide, unref, watch, watchEffect } from 'vue'
-import { cuKey, gameKey, snackKey, stackKey } from '@/composables/keys'
+import { cuKey, gameKey, snackKey, stackKey } from '@/snvue/composables/keys'
 import { useDocument, useCollection } from 'vuefire'
 import { doc, collection } from 'firebase/firestore'
 import { db } from '@/composables/firebase'
 import { useRoute } from 'vue-router'
-import { usePut } from '@/composables/fetch'
+import { usePut } from '@/snvue/composables/fetch'
 
 // lodash
 import _get from 'lodash/get'
@@ -76,7 +81,7 @@ const snackbar = ref({
 })
 
 const cu = inject(cuKey)
-const cuid = computed(() => _get(unref(cu), 'ID', 0))
+const cuid = computed(() => _get(unref(cu), 'ID', 0).toString())
 
 function updateSnackbar(msg) {
   snackbar.value.message = msg
@@ -115,26 +120,35 @@ function toggleChat() {
   chat.value = !chat.value
 }
 
+const id = computed(() => _get(unref(route), 'params.id', 0))
+
+const indexSource = computed(() => doc(db, 'Index', unref(id)))
+const index = useDocument(indexSource)
+
+const rev = computed(() => _get(unref(index), 'Undo.Current', -1).toString())
+
 const stackSource = computed(
-  () => doc(db, 'Stack', route.params.id, 'For', `${unref(cuid)}` )
+  () => doc(db, 'Stack', unref(id), 'For', unref(cuid) )
 )
 const dbStack = useDocument(stackSource)
 
 const viewSource = computed(
-  () => doc(db, 'Committed', route.params.id, 'View', `${unref(cuid)}` )
+  () => doc(db, 'Game', unref(id), 'Rev', unref(rev), 'ViewFor', unref(cuid) )
 )
 const view = useDocument(viewSource)
 
-const current = computed(() => _get(unref(dbStack), 'Current', -1000))
+const current = computed(() => _get(unref(dbStack), 'Current', -1000).toString())
+const committed = computed(() => _get(unref(dbStack), 'Committed', -1000).toString())
 // const cachedPath = computed(() => `${unref(current)}-${unref(cuid)}`)
 const cachedSource = computed(
-  () => doc(db, 'Committed', route.params.id, 'Cached', `${unref(cuid)}`, 'Current', `${unref(current)}`)
+  () => doc(db, 'Game', unref(id), 'Rev', unref(committed), 'CacheFor', unref(cuid), 'Rev', unref(current))
 )
 const cached = useDocument(cachedSource)
 
 const game = computed(() => (unref((_isEmpty(unref(cached))) ? view : cached)))
 provide(gameKey, game)
 
+const entries = computed(() => _get(unref(game), 'Log', []))
 const stack = computed(() => (_isEmpty(unref(dbStack))) ? _get(unref(game), 'Undo', {}) : unref(dbStack))
 provide (stackKey, stack)
 

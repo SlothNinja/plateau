@@ -9,18 +9,18 @@ import { signInWithCustomToken } from "firebase/auth";
 
 /////////////////////////////////////////////////////
 // get and provide current user
-import  { useFetch } from '@/composables/fetch'
-import { cuKey, credentialsKey } from '@/composables/keys'
-
+import  { useFetch } from '@/snvue/composables/fetch'
+import { cuKey, credentialsKey } from '@/snvue/composables/keys'
 import _get from 'lodash/get'
 import _isEmpty from 'lodash/isEmpty'
 
-const fetchURL = `${import.meta.env.VITE_PLATEAU_BACKEND}sn/user/current`
-const { state, isLoading, isReady } = useFetch(fetchURL)
+const cuURL = `${import.meta.env.VITE_PLATEAU_BACKEND}sn/user/current`
+const { data, isFinished } = useFetch(cuURL).json()
+
 const cu = computed(
   () => {
-    if (unref(isReady)) {
-      let cuState = _get(unref(state), 'CU', null)
+    if (unref(isFinished)) {
+      let cuState = _get(unref(data), 'CU', null)
       if (unref(hasFSToken)) {
         return _isEmpty(unref(credentials)) ? null : cuState
       }
@@ -32,8 +32,8 @@ const cu = computed(
 
 const token = computed(
   () => {
-    if (unref(isReady)) {
-      return _get(unref(state), fsTokenKey, null)
+    if (unref(isFinished)) {
+      return _get(unref(data), fsTokenKey, null)
     }
     return null
   }

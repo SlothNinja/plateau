@@ -8,6 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const startBidTemplate = "start-bid"
+
 func (g *game) startBidPhase() *player {
 	sn.Debugf(msgEnter)
 	defer sn.Debugf(msgExit)
@@ -15,16 +17,12 @@ func (g *game) startBidPhase() *player {
 	g.Header.Phase = bidPhase
 	pie.Each(g.Players, (*player).bidReset)
 	g.State.Bids = nil
+	g.NewEntry(startBidTemplate, sn.H{
+		"PID":        g.forehand().id(),
+		"HandNumber": g.currentHand(),
+	})
 	return g.forehand()
 }
-
-// func bidFinishTurnAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) (*player, *player, error) {
-// 	sn.Debugf(msgEnter)
-// 	defer sn.Debugf(msgExit)
-//
-// 	g := &game{sngame}
-// 	return g.bidFinishTurn(ctx, cu)
-// }
 
 func (g *game) bidFinishTurn(ctx *gin.Context, cu sn.User) (sn.PID, sn.PID, error) {
 	sn.Debugf(msgEnter)
@@ -49,12 +47,6 @@ func (g *game) bidFinishTurn(ctx *gin.Context, cu sn.User) (sn.PID, sn.PID, erro
 		np = g.startEndHandPhase(dPush, nil)
 		return cp.id(), np.id(), nil
 	}
-
-	// Log winning bid
-	// g.newEntryFor(lastBid.PID, message{
-	// 	"template": "won-bid",
-	// 	"bid":      lastBid,
-	// })
 
 	np = g.startExchange()
 	if np != nil {

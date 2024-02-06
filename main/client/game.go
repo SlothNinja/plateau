@@ -16,7 +16,6 @@ func newGame() *game {
 
 func (g *game) Start(h sn.Header) sn.PID {
 	g.Game.Start(h)
-	sn.Debugf("g.Log: %#v", g.Log)
 	cp := g.startHand()
 	g.SetCurrentPlayers(cp.id())
 	return cp.id()
@@ -42,7 +41,6 @@ func (g *game) Views() ([]sn.UID, []*game) {
 
 	uids, games := make([]sn.UID, g.Header.NumPlayers+1), make([]*game, g.Header.NumPlayers+1)
 	for i, p := range g.Players {
-		sn.Debugf("p: %#v", p)
 		uids[i] = g.UIDForPID(p.id())
 		games[i] = g.viewFor(p)
 	}

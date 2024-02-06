@@ -7,14 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// func placeBidAction(sngame *sn.Game[state, player, *player], ctx *gin.Context, cu sn.User) error {
-// 	sn.Debugf(msgEnter)
-// 	defer sn.Debugf(msgExit)
-//
-// 	g := &game{sngame}
-// 	return g.placeBid(ctx, cu)
-// }
-
 func (g *game) placeBid(ctx *gin.Context, cu sn.User) error {
 
 	cp, bid, err := g.validatePlaceBid(ctx, cu)
@@ -27,7 +19,11 @@ func (g *game) placeBid(ctx *gin.Context, cu sn.User) error {
 	g.State.Bids = append(g.State.Bids, bid)
 	g.State.DeclarersTeam = []sn.PID{cp.id()}
 
-	g.NewEntry(placedBidTemplate, sn.Entry{"PID": cp.id(), "HandNumber": g.currentHand()}, sn.Line{"Bid": bid})
+	g.NewEntry(placedBidTemplate, sn.H{
+		"PID":        cp.id(),
+		"HandNumber": g.currentHand(),
+		"Bid":        bid,
+	})
 
 	return nil
 }

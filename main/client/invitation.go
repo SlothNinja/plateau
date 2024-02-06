@@ -13,29 +13,6 @@ type invitation struct {
 	sn.Header
 }
 
-// func (i *invitation) New() *invitation {
-// 	var inv invitation
-// 	return &inv
-// }
-//
-// func (inv *invitation) Default() *invitation {
-// 	sn.Debugf(msgEnter)
-// 	defer sn.Debugf(msgExit)
-//
-// 	opt, err := encodeOptions(1)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-//
-// 	// Default Values
-// 	inv = new(invitation)
-// 	inv.Type = sn.Plateau
-// 	inv.Title = randomdata.SillyName()
-// 	inv.NumPlayers = defaultPlayers
-// 	inv.OptString = opt
-// 	return inv
-// }
-
 func getID(ctx *gin.Context) string {
 	return ctx.Param("id")
 }

@@ -38,8 +38,8 @@ import { computed, ref, inject, unref, watch } from 'vue'
 // composables
 import { useCardValue } from '@/composables/cardValue.js'
 import { useIsCP, usePlayerByUser } from '@/composables/player.js'
-import { useUserByPID } from '@/composables/user.js'
-import { cuKey, gameKey } from '@/composables/keys.js'
+import { useUserByPID } from '@/snvue/composables/user.js'
+import { cuKey, gameKey } from '@/snvue/composables/keys.js'
 
 const props = defineProps({
   height: [ Number, String],

@@ -64,13 +64,14 @@ import CardStamp from '@/components/Common/CardStamp'
 import Expansion from '@/components/Invitation/Expansion'
 
 // Composables
-import { useFetch, usePut } from '@/composables/fetch'
-import { useCreator, useUsers } from '@/composables/user'
+import { useFetch, usePut } from '@/snvue/composables/fetch'
+import { useCreator, useUsers } from '@/snvue/composables/user'
 import { fromNow } from '@/composables/fromNow'
 import { db } from '@/composables/firebase'
 
 // Vue
 import { computed, inject, ref, unref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCollection, useFirestore } from 'vuefire'
 import { collection, query, where } from 'firebase/firestore'
 
@@ -82,10 +83,10 @@ import _sortBy from 'lodash/sortBy'
 import _isEmpty from 'lodash/isEmpty'
 
 // inject current user
-import { cuKey, snackKey } from '@/composables/keys'
+import { cuKey, snackKey } from '@/snvue/composables/keys'
 const cu = inject(cuKey)
 
-const invitations = useCollection(collection(db, 'Invitation'))
+const invitations = useCollection(query(collection(db, 'Invitation'), where("Status", "==", "recruiting")))
 
 const sorted = computed(() => _reverse(_sortBy(unref(invitations), ['UpdatedAt'])))
 
@@ -129,8 +130,11 @@ function handsPerPlayer(item) {
 // Inject snackbar
 const { snackbar, updateSnackbar } = inject(snackKey)
 
+const router = useRouter()
 function abort (id) {
-  const { response, error } = usePut(`/sn/invitation/abort/${id}`)
+  const href = router.resolve({ name: 'InvitationAction', params: { action: 'abort', id: unref(id) }}).href
+  const url = `${import.meta.env.VITE_PLATEAU_BACKEND}sn${href}`
+  const { data: response, error } = usePut(url).json()
   watch(response, () => update(response))
 }
 
