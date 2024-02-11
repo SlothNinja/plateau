@@ -5,7 +5,7 @@
       Hand: {{handNumber}} 
     </template>
 
-    <Board :dTeam='dTeam' :numPlayers='numPlayers' :tricks='tricks' />
+    <Board :dTeam='dTeam' :numPlayers='numPlayers' :tricks='tricks' :path='path' />
     <Bids :bids='bids' :dTeam='dTeam' :order='order'/>
     <div>Declarers {{success}} bid.</div>
 
@@ -29,6 +29,7 @@ const bids = computed(() => _get(props, 'data.Results.Bids', []))
 const dTeam = computed(() => _get(props, 'data.Results.DeclarersTeam', []))
 const order = computed(() => _get(props, 'data.Results.SeatOrder', []))
 const tricks = computed(() => _get(props, 'data.Results.Tricks', []))
+const path = computed(() => _get(props, 'data.Results.Path', []))
 
 const success = computed(() => {
   if (_get(props, 'data.Results.Success', '') == 'failure') {

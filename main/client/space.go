@@ -6,8 +6,8 @@ import (
 )
 
 type space struct {
-	rank rank
-	kind kind
+	Rank rank
+	Kind kind
 }
 
 type kind string
@@ -22,8 +22,13 @@ const (
 	trickKind   kind = "trick"
 )
 
-func (g *game) spacesFor(team []sn.PID) []space {
-	ss := pie.Map(g.cardsFor(team), func(c card) space { return c.toSpace() })
+func (g *game) spacesFor(team []sn.PID) (ss []space) {
+	for _, c := range g.cardsFor(team) {
+		s := c.toSpace()
+		if pie.Contains(g.allSpaces(), s) {
+			ss = append(ss, s)
+		}
+	}
 	for i, win := range g.trickWonBy(team) {
 		if win {
 			ss = append(ss, space{toRank(i + 1), trickKind})
@@ -249,7 +254,7 @@ func neighbors2() map[space][]space {
 			space{valetRank, clubKind},
 			space{cavalierRank, diamondKind},
 			space{valetRank, heartKind},
-			space{roiRank, diamondKind},
+			space{roiRank, clubKind},
 		},
 		space{dameRank, diamondKind}: []space{
 			space{cavalierRank, spadeKind},

@@ -59,7 +59,7 @@ import { usePut } from '@/snvue/composables/fetch'
 
 // Vue
 import { computed, inject, ref, unref, watch } from 'vue'
-import { useCollection, useFirestore } from 'vuefire'
+import { useFirestore } from '@vueuse/firebase/useFirestore'
 import { collection, query, where } from 'firebase/firestore'
 import { db } from '@/composables/firebase'
 
@@ -88,7 +88,7 @@ const router = useRouter()
 
 const status = computed(() => _get(route, 'params.status', ''))
 
-const items = useCollection(query(collection(db, 'Index'), where('Status', '==', unref(status))))
+const items = useFirestore(query(collection(db, 'Index'), where('Status', '==', unref(status))))
 
 const sorted = computed(() => _reverse(_sortBy(unref(items), ['UpdatedAt'])))
 

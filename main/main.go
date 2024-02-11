@@ -20,9 +20,11 @@ func main() {
 	}()
 
 	if sn.IsProduction() {
+		sn.Debugf("in production")
 		cl.Router.Run()
 		return
 	}
 
+	sn.Debugf("in debug")
 	cl.Router.RunTLS(":"+cl.GetPort(), "cert.pem", "key.pem")
 }

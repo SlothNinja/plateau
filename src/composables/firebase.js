@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app'
-import { getFirestore, connectFirestoreEmulator, collection } from 'firebase/firestore'
+import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
+import { getAuth, connectAuthEmulator } from 'firebase/auth'
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -17,5 +18,10 @@ export const firebaseApp = initializeApp(firebaseConfig);
 // used for the firestore refs
 export const db = getFirestore(firebaseApp)
 if (process.env.NODE_ENV === 'development') {
-  connectFirestoreEmulator(db, 'localhost', 8080)
+  connectFirestoreEmulator(db, '127.0.0.1', 8080)
+}
+
+export const auth = getAuth(firebaseApp)
+if (process.env.NODE_ENV === 'development') {
+  connectAuthEmulator(auth, "http://127.0.0.1:9099")
 }

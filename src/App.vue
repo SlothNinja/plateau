@@ -4,32 +4,27 @@
 
 <script setup>
 import { computed, provide, readonly, ref, unref, watch } from 'vue'
-import { useFirebaseAuth } from 'vuefire'
+import { useAuth } from '@vueuse/firebase/useAuth'
 import { signInWithCustomToken } from "firebase/auth";
 
 /////////////////////////////////////////////////////
 // get and provide current user
-import  { useFetch } from '@/snvue/composables/fetch'
-import { cuKey, credentialsKey } from '@/snvue/composables/keys'
+import { useFetch } from '@/snvue/composables/fetch'
+import { auth, firebaseApp } from '@/composables/firebase'
+import { cuKey } from '@/snvue/composables/keys'
 import _get from 'lodash/get'
 import _isEmpty from 'lodash/isEmpty'
 
 const cuURL = `${import.meta.env.VITE_PLATEAU_BACKEND}sn/user/current`
 const { data, isFinished } = useFetch(cuURL).json()
 
-const cu = computed(
-  () => {
-    if (unref(isFinished)) {
-      let cuState = _get(unref(data), 'CU', null)
-      if (unref(hasFSToken)) {
-        return _isEmpty(unref(credentials)) ? null : cuState
-      }
-      return cuState
-    }
-    return null
-  }
-)
+const cu = computed(() => _get(unref(data), 'CU', {}))
 
+function updateCU(user) {
+  cu.value = unref(user)
+}
+
+const { isAuthenticated, user } = useAuth(auth)
 const token = computed(
   () => {
     if (unref(isFinished)) {
@@ -42,7 +37,7 @@ const token = computed(
 const fsTokenKey = import.meta.env.VITE_FS_TOKEN_KEY
 const hasFSToken = computed(() => !_isEmpty(fsTokenKey))
 const credentials = ref({})
-const auth = useFirebaseAuth()
+
 watch(
   token,
   () => {
@@ -57,6 +52,5 @@ watch(
 )
 
 provide( cuKey, readonly(cu) )
-provide( credentialsKey, readonly(credentials) )
 ////////////////////////////////////////////////////
 </script>

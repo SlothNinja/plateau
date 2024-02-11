@@ -43,12 +43,12 @@
 import Message from '@/components/Chat/Message'
 import { computed, inject, ref, watch, unref, nextTick, onMounted } from 'vue'
 import { cuKey, gameKey, snackKey } from '@/snvue/composables/keys.js'
-import { useDocument, useCollection } from 'vuefire'
 import { useDebouncedRef } from '@/composables/debouncedRef'
 import { doc, collection } from 'firebase/firestore'
 import { useRoute } from 'vue-router'
 import { db } from '@/composables/firebase'
 import { usePut } from '@/snvue/composables/fetch'
+import { useFirestore } from '@vueuse/firebase/useFirestore'
 
 import _get from 'lodash/get'
 import _sortBy from 'lodash/sortBy'
@@ -68,7 +68,7 @@ const cu = inject(cuKey)
 
 const gid = computed(() => _get(unref(route), 'params.id', ''))
 const messagesRef = computed(() => collection(db, 'Game', unref(gid), 'Messages'))
-const messages = useCollection(messagesRef)
+const messages = useFirestore(messagesRef)
 const sorted = computed(
   () => {
     if (_isEmpty(unref(messages))) {

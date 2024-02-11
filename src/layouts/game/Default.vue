@@ -56,11 +56,11 @@ import Message from '@/components/Log/Message'
 import ChatDrawer from '@/components/Chat/Drawer'
 import { computed, ref, inject, provide, unref, watch, watchEffect } from 'vue'
 import { cuKey, gameKey, snackKey, stackKey } from '@/snvue/composables/keys'
-import { useDocument, useCollection } from 'vuefire'
 import { doc, collection } from 'firebase/firestore'
 import { db } from '@/composables/firebase'
 import { useRoute } from 'vue-router'
 import { usePut } from '@/snvue/composables/fetch'
+import { useFirestore } from '@vueuse/firebase/useFirestore'
 
 // lodash
 import _get from 'lodash/get'
@@ -123,19 +123,19 @@ function toggleChat() {
 const id = computed(() => _get(unref(route), 'params.id', 0))
 
 const indexSource = computed(() => doc(db, 'Index', unref(id)))
-const index = useDocument(indexSource)
+const index = useFirestore(indexSource)
 
 const rev = computed(() => _get(unref(index), 'Undo.Current', -1).toString())
 
 const stackSource = computed(
   () => doc(db, 'Stack', unref(id), 'For', unref(cuid) )
 )
-const dbStack = useDocument(stackSource)
+const dbStack = useFirestore(stackSource)
 
 const viewSource = computed(
   () => doc(db, 'Game', unref(id), 'Rev', unref(rev), 'ViewFor', unref(cuid) )
 )
-const view = useDocument(viewSource)
+const view = useFirestore(viewSource)
 
 const current = computed(() => _get(unref(dbStack), 'Current', -1000).toString())
 const committed = computed(() => _get(unref(dbStack), 'Committed', -1000).toString())
@@ -143,7 +143,7 @@ const committed = computed(() => _get(unref(dbStack), 'Committed', -1000).toStri
 const cachedSource = computed(
   () => doc(db, 'Game', unref(id), 'Rev', unref(committed), 'CacheFor', unref(cuid), 'Rev', unref(current))
 )
-const cached = useDocument(cachedSource)
+const cached = useFirestore(cachedSource)
 
 const game = computed(() => (unref((_isEmpty(unref(cached))) ? view : cached)))
 provide(gameKey, game)

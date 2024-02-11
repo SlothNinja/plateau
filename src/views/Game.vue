@@ -70,7 +70,7 @@
         <v-row dense>
           <v-col cols='12'>
             <v-card>
-            <Board :tricks='tricks' :dTeam='dTeam' :numPlayers='numPlayers' />
+            <Board :tricks='tricks' :dTeam='dTeam' :numPlayers='numPlayers' :path='path' />
             </v-card>
           </v-col>
         </v-row>
@@ -160,6 +160,15 @@ const tricks = computed(
       return _get(unref(game), 'State.Tricks', [])
     }
     return _get(unref(game), `State.LastResults[${unref(index)}].Tricks`, [])
+  }
+)
+
+const path = computed(
+  () => {
+    if ((unref(results) == unref(round))) {
+      return []
+    }
+    return _get(unref(game), `State.LastResults[${unref(index)}].Path`, [])
   }
 )
 

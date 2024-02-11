@@ -72,8 +72,8 @@ import { db } from '@/composables/firebase'
 // Vue
 import { computed, inject, ref, unref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useCollection, useFirestore } from 'vuefire'
 import { collection, query, where } from 'firebase/firestore'
+import { useFirestore } from '@vueuse/firebase/useFirestore'
 
 // Lodash
 import _get from 'lodash/get'
@@ -86,7 +86,7 @@ import _isEmpty from 'lodash/isEmpty'
 import { cuKey, snackKey } from '@/snvue/composables/keys'
 const cu = inject(cuKey)
 
-const invitations = useCollection(query(collection(db, 'Invitation'), where("Status", "==", "recruiting")))
+const invitations = useFirestore(query(collection(db, 'Invitation'), where("Status", "==", "recruiting")))
 
 const sorted = computed(() => _reverse(_sortBy(unref(invitations), ['UpdatedAt'])))
 

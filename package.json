@@ -1,6 +1,6 @@
 {
   "name": "plateau",
-  "version": "1.0.10",
+  "version": "1.0.16",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -12,17 +12,17 @@
     "@mdi/font": "7.0.96",
     "@vitejs/plugin-basic-ssl": "^1.0.1",
     "@vueuse/core": "^10.3.0",
+    "@vueuse/firebase": "^10.7.2",
     "@vueuse/shared": "^10.3.0",
     "add": "^2.0.6",
     "core-js": "^3.8.3",
-    "firebase": "^9.20.0",
+    "firebase": "^9.23.0",
     "firestore": "^1.1.6",
     "lodash": "^4.17.21",
     "npm": "^10.4.0",
     "roboto-fontface": "*",
     "vue": "^3.4.15",
     "vue-router": "^4.0.0",
-    "vuefire": "^3.1.22",
     "vuetify": "^3.5.1",
     "webfontloader": "^1.0.0"
   },

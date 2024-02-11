@@ -17,7 +17,7 @@
     <div
         v-for='(won, index) in wonTricks'
         :key='index'
-        class='dot dot-blue'
+        class='dot'
         :class='trickClass(won, index)'
         >
     </div>
@@ -33,14 +33,22 @@ import _map from 'lodash/map'
 import _filter from 'lodash/filter'
 import _flatMap from 'lodash/flatMap'
 import _take from 'lodash/take'
+import _find from 'lodash/find'
+import _isEmpty from 'lodash/isEmpty'
 
-const props = defineProps(['tricks', 'dTeam', 'numPlayers'])
+const props = defineProps(['tricks', 'dTeam', 'numPlayers', 'path'])
 
 const declarersCards = computed(() => (_flatMap(unref(filtered), (trick) => (isDeclarers(trick) ? trick.Cards : [] ))))
 
 const opposersCards = computed(() => (_flatMap(unref(filtered), (trick) => (isDeclarers(trick) ? [] : trick.Cards ))))
 
 const filtered = computed(() => _filter(props.tricks, (trick) => (trick.WonBy != 0)))
+
+const pathSpaces = computed(() => _map(props.path, n => n.Space))
+
+function glowingClass(rank, kind) {
+  return !_isEmpty(_find(unref(pathSpaces), { Rank: rank, Kind: kind })) ? ' dot-glowing' : ''
+}
 
 const wonTricks = computed(() => {
   let won = _map(unref(filtered), (trick) => (isDeclarers(trick)))
@@ -50,19 +58,43 @@ const wonTricks = computed(() => {
   return _take(won, 13)
 })
 
+function toWord(n) {
+  const words = [
+    'zero',
+    'one',
+    'two',
+    'three',
+    'four',
+    'five',
+    'six',
+    'seven',
+    'eight',
+    'nine',
+    'ten',
+    'eleven',
+    'twelve',
+    'thirteen',
+    'fourteen',
+    'fifteen',
+    'sixteen']
+  return words[n]
+}
+
 function cardClass(rank, suit) {
   let klass = `${unref(rank)}-${unref(suit)}`
   if (unref(props.numPlayers) == 2) {
-    return klass + '-2p'
+    return klass + '-2p' + glowingClass(rank, suit)
   }
-  return klass
+  return klass + glowingClass(rank, suit)
 }
 
 function trickClass(won, index) {
+  const trick = unref(index) + 1
+  const glowing = glowingClass(toWord(trick), 'trick')
   if (unref(props.numPlayers) == 2) {
-    return `trick-${unref(index) + 1}-2p ${unref(won) ? 'dot-red' : 'dot-blue'}`
+    return `trick-${trick}-2p ${unref(won) ? 'dot-red' + glowing : 'dot-blue'}`
   }
-  return `trick-${unref(index) + 1} ${unref(won) ? 'dot-red' : 'dot-blue'}`
+  return `trick-${trick} ${unref(won) ? 'dot-red' + glowing : 'dot-blue'}`
 }
 
 function isDeclarers(trick) {
@@ -81,6 +113,9 @@ function isDeclarers(trick) {
   border-width: 5px
   border-radius: 50%
   display: inline-block
+
+.dot-glowing
+  box-shadow: 0 0 6px 6px yellow
 
 .dot-blue
   background-color: rgb(26 35 126)

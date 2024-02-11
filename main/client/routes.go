@@ -5,8 +5,8 @@ import (
 	log2 "log"
 	"os"
 
-	firebase "firebase.google.com/go"
-	"firebase.google.com/go/messaging"
+	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/messaging"
 	"github.com/SlothNinja/log"
 	"github.com/SlothNinja/sn/v3"
 	"google.golang.org/api/option"
@@ -14,13 +14,13 @@ import (
 
 const (
 	// PlateauProjectIDEnv provides string of PLATEAU_PROJECT_ID environement variable
-	// used to specify project-id of the tammany service
+	// used to specify project-id of the plateau service
 	PlateauProjectIDEnv = "PLATEAU_PROJECT_ID"
 	// PlateauDSURLEnv provides string of PLATEAU_DS_URL environement variable
-	// used to specify the datastore URL of the tammany service
+	// used to specify the datastore URL of the plateau service
 	PlateauDSURLEnv = "PLATEAU_DS_URL"
 	// PlateauHostURLEnv provides string of PLATEAU_HOST_URL environement variable
-	// used to specify the host URL of the tammany service
+	// used to specify the host URL of the plateau service
 	PlateauHostURLEnv = "PLATEAU_HOST_URL"
 
 	// UserProjectIDEnv provides string of USER_PROJECT_ID environement variable
