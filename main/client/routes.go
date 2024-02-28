@@ -131,7 +131,7 @@ func (cl *Client) addRoutes() *Client {
 	gGroup.PUT("play/:id", cl.CachedHandler((*game).playCard))
 
 	// Pick Partner
-	gGroup.PUT("finish/pick/:id", cl.FinishTurnHandler((*game).pickPartner))
+	gGroup.PUT("pick/:id", cl.FinishTurnHandler((*game).pickPartner))
 
 	// Bid Finish
 	gGroup.PUT("finish/bid/:id", cl.FinishTurnHandler((*game).bidFinishTurn))

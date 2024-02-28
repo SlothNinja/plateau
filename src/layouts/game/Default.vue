@@ -125,6 +125,7 @@ const id = computed(() => _get(unref(route), 'params.id', 0))
 const indexSource = computed(() => doc(db, 'Index', unref(id)))
 const index = useFirestore(indexSource)
 
+const uids = computed(() => _get(unref(index), 'UserIDS', []))
 const rev = computed(() => _get(unref(index), 'Undo.Current', -1).toString())
 
 const stackSource = computed(
@@ -133,8 +134,12 @@ const stackSource = computed(
 const dbStack = useFirestore(stackSource)
 
 const viewSource = computed(
-  () => doc(db, 'Game', unref(id), 'Rev', unref(rev), 'ViewFor', unref(cuid) )
+  () => {
+    const uid = _includes(unref(uids), unref(cuid)) ? cuid : 0
+    return doc(db, 'Game', unref(id), 'Rev', unref(rev), 'ViewFor', unref(uid) )
+  }
 )
+
 const view = useFirestore(viewSource)
 
 const current = computed(() => _get(unref(dbStack), 'Current', -1000).toString())

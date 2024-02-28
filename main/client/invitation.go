@@ -2,7 +2,6 @@ package client
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/SlothNinja/sn/v3"
 	"github.com/gin-gonic/gin"
@@ -51,7 +50,7 @@ func (g *game) finalHand() int {
 
 // if field is a serverTimestamp and field is zero value, firestore will auto-timestamp with server time
 // updateTime simply returns zero value, which can be used to zero field and cause server to auto-timestamp
-func updateTime() (t time.Time) { return }
+// func updateTime() (t time.Time) { return }
 
 const (
 	minPlayers     = 2
