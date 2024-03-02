@@ -120,34 +120,24 @@ function toggleChat() {
   chat.value = !chat.value
 }
 
-const id = computed(() => _get(unref(route), 'params.id', 0))
+const id = computed(() => _get(unref(route), 'params.id', '0'))
 
 const indexSource = computed(() => doc(db, 'Index', unref(id)))
 const index = useFirestore(indexSource)
 
-const uids = computed(() => _get(unref(index), 'UserIDS', []))
+const uids = computed(() => _map(_get(unref(index), 'UserIDS', []), v => v.toString()))
 const rev = computed(() => _get(unref(index), 'Undo.Current', -1).toString())
 
-const stackSource = computed(
-  () => doc(db, 'Stack', unref(id), 'For', unref(cuid) )
-)
+const stackSource = computed(() => doc(db, 'Stack', unref(id), 'For', unref(cuid)))
 const dbStack = useFirestore(stackSource)
 
-const viewSource = computed(
-  () => {
-    const uid = _includes(unref(uids), unref(cuid)) ? cuid : 0
-    return doc(db, 'Game', unref(id), 'Rev', unref(rev), 'ViewFor', unref(uid) )
-  }
-)
-
+const uid = computed(() => _includes(unref(uids), unref(cuid)) ? unref(cuid) : '0')
+const viewSource = computed(() => doc(db, 'Game', unref(id), 'Rev', unref(rev), 'ViewFor', unref(uid)))
 const view = useFirestore(viewSource)
 
 const current = computed(() => _get(unref(dbStack), 'Current', -1000).toString())
 const committed = computed(() => _get(unref(dbStack), 'Committed', -1000).toString())
-// const cachedPath = computed(() => `${unref(current)}-${unref(cuid)}`)
-const cachedSource = computed(
-  () => doc(db, 'Game', unref(id), 'Rev', unref(committed), 'CacheFor', unref(cuid), 'Rev', unref(current))
-)
+const cachedSource = computed(() => doc(db, 'Game', unref(id), 'Rev', unref(committed), 'CacheFor', unref(cuid), 'Rev', unref(current)))
 const cached = useFirestore(cachedSource)
 
 const game = computed(() => (unref((_isEmpty(unref(cached))) ? view : cached)))

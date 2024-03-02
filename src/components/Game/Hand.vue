@@ -43,8 +43,6 @@ import { useColorFor } from '@/composables/color'
 import _size from 'lodash/size'
 import _get from 'lodash/get'
 import _isEmpty from 'lodash/isEmpty'
-import _difference from 'lodash/difference'
-import _differenceWith from 'lodash/differenceWith'
 
 // vue
 import { computed, ref, inject, unref, watch } from 'vue'
@@ -62,7 +60,7 @@ const cu = inject(cuKey)
 const game = inject(gameKey)
 
 const player = computed(() => usePlayerByUser(game, cu))
-const pid = computed(() => _get(unref(player), 'ID', -1))
+const pid = computed(() => _get(unref(player), 'ID', 1))
 
 const hand = computed({
   get() {
