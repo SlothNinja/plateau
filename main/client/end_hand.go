@@ -136,11 +136,15 @@ func (g *game) revealTalon() {
 
 	var talon trick
 	talon.Cards = g.State.Deck
-	if g.currentBid().Exchange == noExchangeBid {
-		talon.WonBy = pie.First(g.State.DeclarersTeam)
-	} else {
-		talon.WonBy = pie.First(g.opposersTeam())
-	}
+
+	// Old rules noExchange meant declarers received talon
+	// New rules opposers always receive talon
+	// if g.currentBid().Exchange == noExchangeBid {
+	// 	talon.WonBy = pie.First(g.State.DeclarersTeam)
+	// } else {
+	// 	talon.WonBy = pie.First(g.opposersTeam())
+	// }
+	talon.WonBy = pie.First(g.opposersTeam())
 	talonIndex := len(g.State.Tricks) - 1
 	g.State.Tricks[talonIndex] = talon
 }
