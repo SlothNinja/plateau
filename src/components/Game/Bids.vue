@@ -51,6 +51,7 @@ import { computed, inject, unref } from 'vue'
 const props = defineProps(['bids', 'order', 'dTeam'])
 
 const players = computed(() => _map(_get(props, 'order', []), (pid) => usePlayerByPID(game, pid)))
+const numPlayers = computed(() => _get(unref(game), 'Header.NumPlayers', 0))
 
 function bidLabel(pid) {
   const bid = _findLast(_get(props, 'bids', []), [ 'PID', pid ])
@@ -60,7 +61,7 @@ function bidLabel(pid) {
   const exchange = _get(bid, 'Exchange', '')
   const objective = _get(bid, 'Objective', '')
   const teams = _get(bid, 'Teams', '')
-  const bValue = bidValue(game, bid)
+  const bValue = bidValue(numPlayers, bid)
   return `${exchange} ${objective} ${teams} (${bValue})`
 }
 

@@ -38,13 +38,12 @@ const success = computed(() => {
   return 'made'
 })
 
-const numPlayers = computed(() => _size(unref(order)))
-
+const numPlayers = computed(() => _get(unref(game), 'Header.NumPlayers', 0))
 const bid = computed(() => _get(props, 'data.Bid', {}))
 const exchange = computed(() => _get(unref(bid), 'Exchange', ''))
 const objective = computed(() => _get(unref(bid), 'Objective', ''))
 const teams = computed(() => _get(unref(bid), '.Teams', ''))
-const bValue = computed(() => bidValue(game, bid))
+const bValue = computed(() => bidValue(numPlayers, bid))
 
 const handNumber = computed(() => _get(unref(props), 'data.Results.HandNumber', -1))
 </script>
